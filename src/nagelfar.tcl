@@ -24,18 +24,20 @@
 # the next line restarts using tclsh \
 exec tclsh "$0" "$@"
 
-set debug 0
-set version "Version 0.4 2002-11-14"
+set debug 1
+set version "Version 0.4+ 2003-01-10"
 set thisScript [file join [pwd] [info script]]
 set thisDir    [file dirname $thisScript]
 set ::Syntax(tcl84) [expr {[info tclversion] >= 8.4}]
 
 # Follow any link
-while {[file type $thisScript] == "link"} {
-    set tmplink [file readlink $thisScript]
-    set thisDir [file dirname [file join $thisDir $tmplink]]
-    unset tmplink
+set tmplink $thisScript
+while {[file type $tmplink] == "link"} {
+    set tmplink [file readlink $tmplink]
+    set tmplink [file join $thisDir $tmplink]
+    set thisDir [file dirname $tmplink]
 }
+unset tmplink
 
 #####################
 # Syntax check engine
