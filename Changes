@@ -1,3 +1,22 @@
+Version 1.1
+
+2004-12-21
+ Added instrumenting and markup.
+
+2004-10-??
+ Changes after suggestions from Uwe Koloska:
+ Reapply filter when adding it in GUI.
+ Highlight error in result window when shown in code window.
+ Use ctext if available.
+ Added option to backup file when saving from code window.
+ Added save default options.
+
+2004-09-15
+ Added -strictappend option.
+
+2004-09-10
+ variable and upvar fixes.
+
 Version 1.0.2
 
 2004-09-02
