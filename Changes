@@ -1,3 +1,14 @@
+2003-07-13
+ Added a progress bar and a context menu in the gui.
+ Added a severity level filter on messages.
+ Fixed a bug where the script's own procs where not checked properly.
+
+2003-07-09
+ Made syntax database handle more info about options.
+ Some GUI polish.
+ Nagelfar requires Tcl 8.4.
+ Added support for tclkit. Removed FreeWrap support.
+
 Version 0.6
 
 2003-07-08
