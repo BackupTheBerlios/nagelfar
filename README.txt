@@ -66,6 +66,8 @@ Tidy up code structure. Things are getting messy.
 Maybe places where a constant list is expected (e.g. foreach {a b} ...)
 should be able to recognise [list a b] as a constant list.
 
+Recognise the idiom [list cmd arg arg] as code.
+Recognise the idiom [set $var] for double dereferencing.
 
 BUGS
 
