@@ -1,7 +1,7 @@
 # This script is intended to be run in a Tcl interpreter to extract
 # information for the syntax checker.
 #
-# $Id$
+# $Revision$
 
 # First get some data about the system
 
@@ -19,7 +19,7 @@ proc getSubCmds {args} {
     
     foreach re $res {
 	if {[regexp $re $err -> apa]} {
-	    regsub -all {(, or )|(, )} $apa " " apa
+	    regsub -all {( or )|(, or )|(, )} $apa " " apa
 	    return [lrange $apa 0 end]
 	}
     }
@@ -74,6 +74,7 @@ proc buildDb {ch} {
     
     set subCmd(wm) [getSubCmds wm gurkmeja .]
     set subCmd(array) [getSubCmds array gurkmeja apa]
+    set subCmd(binary) [getSubCmds binary gurkmeja]
     
     set option(fconfigure) [getSubCmds fconfigure stdin -gurkmeja]
     set option(switch) [getSubCmds switch -gurkmeja]
@@ -149,6 +150,8 @@ proc buildDb {ch} {
     set syntax(file) "s x*"
     set syntax(file\ stat) "x n"
     set syntax(update) "s."
+    set syntax(binary) "s x*"
+    set syntax(binary\ scan) "x x n n*"
 
     # General commands
     set syntax(fconfigure) "x o. x. p*"
