@@ -9,7 +9,7 @@ package require tcltest 2.2
 namespace import tcltest::*
 tcltest::configure -verbose "body error"
 #testConstraint knownbug 1
-#tcltest::configure -match nagelfar-6.*
+#tcltest::configure -match nagelfar-1\[5678\].*
 
 proc createTestFile {scr} {
     set ch [open _testfile_ w]
@@ -627,6 +627,71 @@ test nagelfar-14.3 {
         proc cepa {hej hopp} {
             set apa [bepa $hej $hopp]
         }
+    }
+    execTestFile
+} -result {%%}
+
+test nagelfar-15.1 {
+    Tk, object tracking
+} -body {
+    createTestFile {
+        set apa [frame .f -padx 3 -pady 3]
+        $apa configure -padx 2 -miffo 3
+        $apa gurka hejsan
+    }
+    execTestFile
+} -result {%%Line   3: E Bad option -miffo*Line   4: E Unknown subcommand "gurka"*} -match glob
+
+test nagelfar-15.2 {
+    Tk, options
+} -body {
+    createTestFile {
+        set bepa hej
+        set cepa hopp
+        set apa [entry .e -textvariable bepa]
+        $apa configure -textvariable cepa
+    }
+    execTestFile
+} -result {%%}
+
+test nagelfar-16.1 {
+    Types checking
+} -body {
+    createTestFile {
+        set apa [list x y z]
+        llength $apa
+    }
+    execTestFile
+} -result {%%}
+
+# Testing the after command which has the special thing
+# of accepting either an int or a subcommand as first argument.
+test nagelfar-17.1 {
+    Command: after
+} -body {
+    createTestFile { # FIXA: Implement and test this properly
+        after 10
+        after 20 {set apa 5}
+        set id [after 30 set apa 5]
+        after cancel $id
+        after cancel set apa 5
+        after idle {set apa 5}
+        after idle set apa 5
+        after info $id
+    }
+    execTestFile
+} -result {%%}
+
+
+test nagelfar-18.1 {
+    Command: subcommands
+} -body {
+    # Proper detection of subcommands should tell the test that
+    # apa is a variable name.
+    createTestFile {
+        set apa 1
+        trace variable apa w Hej
+        trace add variable apa write Hej
     }
     execTestFile
 } -result {%%}
