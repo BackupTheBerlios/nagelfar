@@ -1,0 +1,33 @@
+SYNTAX DATABASES
+
+The tool uses a file defining what commands are available and how they
+are used. This file is typically called syntaxdb.tcl, and is just a Tcl
+file defining variables.
+
+Any file called syntaxdb*.tcl in your current directory or in the
+directory where nagelfar.tcl is located are detected and possibly used as
+default database unless you specify one on the command line.
+The search order for default database is:
+ syntaxdb.tcl in current directory
+ syntaxdb*.tcl in current directory (if more than one it is unspecified which)
+ syntaxdb.tcl where nagelfar.tcl is located
+ syntaxdb*.tcl where nagelfar.tcl is located
+
+In the GUI, all database found are listed, and those found where nagelfar.tcl
+is located are marked "(app)".
+
+A syntax database is created by syntaxbuild.tcl which makes
+it possible to create customized databases for the interpreter
+where your script will run.
+
+For example, if you want to create a database for Tcl8.2:
+
+tclsh82 syntaxbuild.tcl syntaxdb82.tcl
+or
+tclsh82
+% source syntaxbuild.tcl
+% buildFile syntaxdb82.tcl
+% exit
+
+Then use it:
+nagelfar.tcl -s syntaxdb82.tcl <tcl-file>
