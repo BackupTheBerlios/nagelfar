@@ -15,6 +15,8 @@ Nagelfar requires Tcl 8.4.
 If you do not have 8.4, you can run Nagelfar as a Starkit
 using a 8.4 based Tclkit. http://wiki.tcl.tk/tclkit
 
+To check 8.5 code with {expand}, Nagelfar must be run with 8.5.
+
 
 USAGE
 
@@ -56,9 +58,9 @@ peter.spjuth@space.se
 SOME INFO
 
 A common source of false warnings have to do with call-by-name.
-The syntax checker can be told about procedures using call-by-name
-using inline comments or separate info files. See nagelfar.syntax and
-tests/test.syntax for examples.
+The syntax checker can be told about procedures using call-by-name using
+inline comments or separate info files.  Read doc/inlinecomments.txt and
+see nagelfar.syntax and tests/test.syntax for examples.
 
 
 TODO
@@ -82,8 +84,6 @@ Option to enforce not using "then".
 
 Make a GUI to help working with the database builder.  It should
 be possible to add packages that should be included in the db.
-
-Recognise the new {expand} syntax introduced in 8.5.
 
 
 BUGS
