@@ -24,11 +24,11 @@
 # the next line restarts using tclsh \
 exec tclsh "$0" "$@"
 
-set debug 1
+set debug 0
 package require Tcl 8.4
 
-package provide app-nagelfar 0.6
-set version "Version 0.6+ 2003-07-13"
+package provide app-nagelfar 0.7
+set version "Version 0.7 2003-07-23"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -63,7 +63,9 @@ unset tmplink
 # Moved out message handling to make it more flexible
 proc echo {str} {
     if {[info exists ::Nagelfar(resultWin)]} {
+        $::Nagelfar(resultWin) configure -state normal
         $::Nagelfar(resultWin) insert end $str\n
+        $::Nagelfar(resultWin) configure -state disabled
     } else {
         puts $str
     }
@@ -73,7 +75,9 @@ proc echo {str} {
 # Debug output
 proc decho {str} {
     if {[info exists ::Nagelfar(resultWin)]} {
+        $::Nagelfar(resultWin) configure -state normal
         $::Nagelfar(resultWin) insert end $str\n error
+        $::Nagelfar(resultWin) configure -state disabled
     } else {
         puts stderr $str
     }
@@ -1007,21 +1011,19 @@ proc markVariable {var ws check index knownVarsName} {
 
     # If the base contains substitutions it can't be checked.
     if {$varBaseWs == 0} {
-	if {$check != 2} {
-            # Experimental foreach check FIXA
-            if {[string match {$*} $var]} {
-                set name [string range $var 1 end]
-                if {[info exists ::foreachVar($name)]} {
-                    # Mark them as known instead
-                    foreach name $::foreachVar($name) {
-                        markVariable $name 1 $check $index knownVars
-                    }
-                    #return 1
+        # Experimental foreach check FIXA
+        if {[string match {$*} $var]} {
+            set name [string range $var 1 end]
+            if {[info exists ::foreachVar($name)]} {
+                # Mark them as known instead
+                foreach name $::foreachVar($name) {
+                    markVariable $name 1 $check $index knownVars
                 }
+                #return 1
             }
-	    errorMsg N "Suspicious variable name \"$var\"" $index
         }
-	return 1
+        errorMsg N "Suspicious variable name \"$var\"" $index
+	return 0
     }
 
     if {$check == 2} {
@@ -1959,6 +1961,7 @@ proc doCheck {} {
 
     set ::Nagelfar(editFile) ""
     if {[info exists ::Nagelfar(resultWin)]} {
+        $::Nagelfar(resultWin) configure -state normal
         $::Nagelfar(resultWin) delete 1.0 end
     }
 
@@ -2190,15 +2193,18 @@ proc makeWin {} {
 
     # Set up file dropping in listboxes if TkDnd is available
     if {![catch {package require tkdnd}]} {
+        dnd bindtarget . text/uri-list <Drop> {fileDropFile %D}
+        #dnd bindtarget .ff.lb text/uri-list <Drop> {fileDropFile %D}
         dnd bindtarget .fs.lb text/uri-list <Drop> {fileDropDb %D}
-        dnd bindtarget .ff.lb text/uri-list <Drop> {fileDropFile %D}
     }
 
     # Result section
 
     frame .fr
     progressBar .fr.pr
-    button .fr.b -text "Check" -width 7 -command "doCheck"
+    button .fr.b -text "Check" -underline 0 -width 7 -command "doCheck"
+    bind . <Alt-Key-c> doCheck
+    bind . <Alt-Key-C> doCheck
     set ::Nagelfar(resultWin) [Scroll \
             text .fr.t -width 100 -height 25 -wrap none -font ResultFont]
 
@@ -2304,14 +2310,14 @@ proc makeWin {} {
 
     # Help menu is last
 
-    .m add cascade -label "Help" -underline 0 -menu .m.mh
-    menu .m.mh
+    .m add cascade -label "Help" -underline 0 -menu .m.help
+    menu .m.help
     foreach label {Messages {Syntax Databases}} \
             file {messages.txt syntaxdatabases.txt} {
-        .m.mh add command -label $label -command [list makeDocWin $file]
+        .m.help add command -label $label -command [list makeDocWin $file]
     }
-    .m.mh add separator
-    .m.mh add command -label About -command makeAboutWin
+    .m.help add separator
+    .m.help add command -label About -command makeAboutWin
 
     wm deiconify .
 }
@@ -2447,40 +2453,46 @@ proc closeFile {} {
 # Help
 ######
 
+proc helpWin {w title} {
+    destroy $w
+
+    toplevel $w
+    wm title $w "About Nagelfar"
+    bind $w <Key-Return> "destroy $w"
+    bind $w <Key-Escape> "destroy $w"
+    frame $w.f
+    button $w.b -text "Close" -command "destroy $w"
+    pack $w.b -side bottom
+    pack $w.f -side top -expand y -fill both
+    return $w.f
+}
+
 proc makeAboutWin {} {
     global version
-    destroy .ab
 
-    toplevel .ab
-    wm title .ab "About Nagelfar"
-    text .ab.t -width 45 -height 7 -wrap word -relief flat
-    button .ab.b -text "Close" -command "destroy .ab"
-    pack .ab.b -side bottom
-    pack .ab.t -side top -expand y -fill both
+    set w [helpWin .ab "About Nagelfar"]
 
-    .ab.t insert end "A syntax checker for Tcl\n\n"
-    .ab.t insert end "$version\n\n"
-    .ab.t insert end "Made by Peter Spjuth\n"
-    .ab.t insert end "E-Mail: peter.spjuth@space.se\n"
-    .ab.t insert end "\nTcl version: [info patchlevel]"
+
+    text $w.t -width 45 -height 7 -wrap none -relief flat
+    pack $w.t -side top -expand y -fill both
+
+    $w.t insert end "A syntax checker for Tcl\n\n"
+    $w.t insert end "$version\n\n"
+    $w.t insert end "Made by Peter Spjuth\n"
+    $w.t insert end "E-Mail: peter.spjuth@space.se\n"
+    $w.t insert end "\nTcl version: [info patchlevel]"
     set d [package provide tkdnd]
     if {$d != ""} {
-        .ab.t insert end "\nTkDnd version: $d"
+        $w.t insert end "\nTkDnd version: $d"
     }
-    set last [lindex [split [.ab.t index end] "."] 0]
-    .ab.t configure -height $last
+    set last [lindex [split [$w.t index end] "."] 0]
+    $w.t configure -height $last
+    $w.t configure -state disabled
 }
 
 proc makeDocWin {fileName} {
-    set w .doc
-    destroy .$w
-
-    toplevel $w
-    wm title $w "Nagelfar Help"
+    set w [helpWin .doc "Nagelfar Help"]
     set t [Scroll text $w.t -width 80 -height 25 -wrap none -font ResultFont]
-    button $w.b -text "Close" -command "destroy $w"
-
-    pack $w.b -side bottom
     pack $w.t -side top -expand 1 -fill both
 
     if {![file exists $::thisDir/doc/$fileName]} {
@@ -2493,6 +2505,8 @@ proc makeDocWin {fileName} {
     close $ch
 
     $t insert end $data
+    focus $t
+    $t configure -state disabled
 }
 
 #########
