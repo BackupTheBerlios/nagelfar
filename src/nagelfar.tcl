@@ -1,7 +1,7 @@
 #!/bin/sh
 #----------------------------------------------------------------------
 #  nagelfar.tcl, a syntax checker for Tcl.
-#  Copyright (c) 1999-2003, Peter Spjuth  (peter.spjuth@space.se)
+#  Copyright (c) 1999-2004, Peter Spjuth  (peter.spjuth@space.se)
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.0b1+ 2004-02-03"
+set version "Version 1.0b1+ 2004-02-09"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -950,7 +950,8 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
                         }
                     }
                 } elseif {[lindex $wordstatus $i] == 2} {
-                    checkForComment [lindex $argv $i] [lindex $indices $i]
+                    # FIXA: This is not a good check in e.g. a catch.
+                    #checkForComment [lindex $argv $i] [lindex $indices $i]
                 }
 		parseExpr [lindex $argv $i] [lindex $indices $i] knownVars
 		incr i
@@ -1200,16 +1201,13 @@ proc lookForCommand {cmd ns index} {
         set cmd2 $cmd
     }
 
-    if {[lsearch $::knownCommands $cmd] >= 0 || \
-            [lsearch $::knownProcs $cmd] >= 0} {
+    if {[lsearch $::knownCommands $cmd] >= 0} {
         return
     }
-    if {[lsearch $::knownCommands $cmd1] >= 0 || \
-            [lsearch $::knownProcs $cmd1] >= 0} {
+    if {[lsearch $::knownCommands $cmd1] >= 0} {
         return
     }
-    if {$cmd2 != "" && ([lsearch $::knownCommands $cmd2] >= 0 || \
-            [lsearch $::knownProcs $cmd2] >= 0)} {
+    if {$cmd2 != "" && [lsearch $::knownCommands $cmd2] >= 0} {
         return
     }
 
@@ -1858,7 +1856,7 @@ proc parseBody {body index knownVarsName} {
 
 # This is called when a proc command is encountered.
 proc parseProc {argv indices} {
-    global knownProcs knownCommands knownGlobals syntax
+    global knownCommands knownGlobals syntax
 
     if {[llength $argv] != 3} {
 	errorMsg E "Wrong number of arguments to proc." [lindex $indices 0]
@@ -1895,7 +1893,6 @@ proc parseProc {argv indices} {
         set knownVars(set,[lindex $a 0]) 1
     }
 
-    lappend knownProcs $name
     lappend knownCommands $name
 
 #    decho "Note: parsing procedure $name"
@@ -2119,7 +2116,7 @@ proc buildLineDb {str} {
 
 # Parse a global script
 proc parseScript {script} {
-    global knownGlobals unknownCommands knownProcs syntax
+    global knownGlobals unknownCommands knownCommands syntax
 
     catch {unset unknownCommands}
     set unknownCommands {}
@@ -2147,9 +2144,9 @@ proc parseScript {script} {
     foreach apa $unknownCommands {
         foreach {cmd cmd1 cmd2 index} $apa break
         if {![info exists syntax($cmd1)] && \
-                [lsearch $knownProcs $cmd1] == -1 && \
+                [lsearch $knownCommands $cmd1] == -1 && \
                 ![info exists syntax($cmd2)] && \
-                [lsearch $knownProcs $cmd2] == -1} {
+                [lsearch $knownCommands $cmd2] == -1} {
             errorMsg W "Unknown command \"$cmd\"" $index
         }
     }
@@ -2201,6 +2198,107 @@ proc usage {} {
     puts { -WsubN    : Sets subcommand warning level.}
     puts {   1 (def) = Warn about shortened subcommands.}
     exit
+}
+
+#####################################
+# Registry section
+#####################################
+
+proc makeRegistryFrame {w label key newvalue} {
+    set old {}
+    catch {set old [registry get $key {}]}
+
+    set l [labelframe $w -text $label -padx 4 -pady 4]
+
+    label $l.key1 -text "Key:"
+    label $l.key2 -text $key
+    label $l.old1 -text "Old value:"
+    label $l.old2 -text $old
+    label $l.new1 -text "New value:"
+    label $l.new2 -text $newvalue
+
+    button $l.change -text "Change" -width 10 -command \
+            "[list registry set $key {} $newvalue] ; \
+             [list $l.change configure -state disabled]"
+    button $l.delete -text "Delete" -width 10 -command \
+            "[list registry delete $key] ; \
+             [list $l.delete configure -state disabled]"
+    if {[string equal $newvalue $old]} {
+        $l.change configure -state disabled
+    }
+    if {[string equal "" $old]} {
+        $l.delete configure -state disabled
+    }
+    grid $l.key1 $l.key2 -     -sticky "w" -padx 4 -pady 4
+    grid $l.old1 $l.old2 -     -sticky "w" -padx 4 -pady 4
+    grid $l.new1 $l.new2 -     -sticky "w" -padx 4 -pady 4
+    grid $l.delete - $l.change -sticky "w" -padx 4 -pady 4
+    grid $l.change -sticky "e"
+    grid columnconfigure $l 2 -weight 1
+}
+
+proc makeRegistryWin {} {
+    global thisScript
+
+    # Locate executable for this program
+    set exe [info nameofexecutable]
+    if {[regexp {^(.*wish)\d+\.exe$} $exe -> pre]} {
+        set alt $pre.exe
+        if {[file exists $alt]} {
+            set a [tk_messageBox -icon question -title "Which Wish" -message \
+                    "Would you prefer to use the executable\n\
+                    \"$alt\"\ninstead of\n\
+                    \"$exe\"\nin the registry settings?" -type yesno]
+            if {$a eq "yes"} {
+                set exe $alt
+            }
+        }
+    }
+
+    set top .reg
+    destroy $top
+    toplevel $top
+    wm title $top "Register Nagelfar"
+
+    # Registry keys
+
+    set key {HKEY_CLASSES_ROOT\*.tcl\shell\Check\command}
+
+    # Are we in a starkit?
+    if {[info exists ::starkit::topdir]} {
+        # In a starpack ?
+        set exe [file normalize $exe]
+        if {[string equal [file normalize $::starkit::topdir] $exe]} {
+            set myexe [list $exe]
+        } else {
+            set myexe [list $exe $::starkit::topdir]
+        }
+    } else {
+        if {[regexp {wish\d+\.exe} $exe]} {
+            set exe [file join [file dirname $exe] wish.exe]
+            if {[file exists $exe]} {
+                set myexe [list $exe]
+            }
+        }
+        set myexe [list $exe $thisScript]
+    }
+
+    set valbase {}
+    foreach item $myexe {
+        lappend valbase \"[file nativename $item]\"
+    }
+    set valbase [join $valbase]
+
+    set new "$valbase -gui \"%1\""
+    makeRegistryFrame $top.d "Check" $key $new
+
+    pack $top.d -side "top" -fill x -padx 4 -pady 4
+
+    button $top.close -text "Close" -width 10 -command [list destroy $top] \
+            -default active
+    pack $top.close -side bottom -pady 4
+    bind $top <Key-Return> [list destroy $top]
+    bind $top <Key-Escape> [list destroy $top]
 }
 
 ###########
@@ -2334,11 +2432,6 @@ proc doCheck {} {
         set ::knownCommands [_ipset ::knownCommands]
     } else {
         set ::knownCommands {}
-    }
-    if {[_ipexists ::knownProcs]} {
-        set ::knownProcs [_ipset ::knownProcs]
-    } else {
-        set ::knownProcs {}
     }
 
     catch {unset ::syntax}
@@ -2612,6 +2705,17 @@ proc progressBar {w} {
     progressUpdate -1
 }
 
+# A thing to easily get to debug mode
+proc backDoor {a} {
+    append ::Nagelfar(backdoor) $a
+    set ::Nagelfar(backdoor) [string range $::Nagelfar(backdoor) end-9 end]
+    if {$::Nagelfar(backdoor) eq "PeterDebug"} {
+        set ::debug 1
+        catch {console show}
+        set ::Nagelfar(backdoor) ""
+    }
+}
+
 # Create main window
 proc makeWin {} {
     defaultGuiOptions
@@ -2672,6 +2776,10 @@ proc makeWin {} {
     button .fr.b -text "Check" -underline 0 -width 10 -command "doCheck"
     bind . <Alt-Key-c> doCheck
     bind . <Alt-Key-C> doCheck
+    if {$::debug == 0} {
+        bind . <Key> "backDoor %A"
+    }
+
     set ::Nagelfar(resultWin) [Scroll both \
             text .fr.t -width 100 -height 25 -wrap none -font ResultFont]
 
@@ -2755,7 +2863,7 @@ proc makeWin {} {
     menu .m.mo.me
     .m.mo.me add radiobutton -label "Ascii" \
             -variable ::Nagelfar(encoding) -value ascii
-    .m.mo.me add radiobutton -label "Iso 8859-1" \
+    .m.mo.me add radiobutton -label "Iso8859-1" \
             -variable ::Nagelfar(encoding) -value iso8859-1
     .m.mo.me add radiobutton -label "System ([encoding system])" \
             -variable ::Nagelfar(encoding) -value system
@@ -2766,6 +2874,13 @@ proc makeWin {} {
     menu .m.mt
     .m.mt add command -label "Edit Window" -underline 0 \
             -command {editFile "" 0}
+    if {$::tcl_platform(platform) eq "windows"} {
+        if {![catch {package require registry}]} {
+            .m.mt add separator
+            .m.mt add command -label "Setup Registry" -underline 6 \
+                    -command makeRegistryWin
+        }
+    }
 
     # Debug menu
 
@@ -2989,6 +3104,7 @@ proc makeAboutWin {} {
     $w.t insert end "$version\n\n"
     $w.t insert end "Made by Peter Spjuth\n"
     $w.t insert end "E-Mail: peter.spjuth@space.se\n"
+    $w.t insert end "\nURL: http://spjuth.pointclark.net/Nagelfar.html\n"
     $w.t insert end "\nTcl version: [info patchlevel]"
     set d [package provide tkdnd]
     if {$d != ""} {
