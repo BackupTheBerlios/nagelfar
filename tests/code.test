@@ -1,0 +1,41 @@
+#------------------------------------------------------------*- tcl -*-
+# Tests for individual procedures in Nagelfar's source
+#----------------------------------------------------------------------
+# $Revision$
+#----------------------------------------------------------------------
+
+interp create slave
+slave eval set _nagelfar_test 1
+slave eval source nagelfar.tcl
+
+proc doSplitScript {body} {
+    slave eval [list set ::body $body]
+    slave eval {set ::body [buildLineDb $::body]}
+    slave eval {splitScript $::body 0 ::statements ::indices ::knownVars}
+    return [slave eval set ::statements]
+}
+
+test code-1.1 {
+    splitScript
+} -body {
+    set body {
+        hej
+        du
+        glade
+    }
+    set stmnts [doSplitScript $body]
+} -result [list hej\n du\n glade\n]
+
+test code-1.2 {
+    splitScript
+} -body {
+    set body {
+        for {} \
+                $apa "hej" \; [miffo {
+                }
+                              ]\\; hej
+    }
+    llength [doSplitScript $body]
+} -result 2
+
+interp delete slave
