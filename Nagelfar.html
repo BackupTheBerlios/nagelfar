@@ -254,14 +254,23 @@ Line  85: N Close brace not aligned with line 82 (4 0)
 <a name="NagelfarDownload"></a><h3>Download</h3>
 
 Nagelfar requires Tcl/Tk 8.4 to run. The licence is GPL.<br>
-Version 1.0:<br>
-<a href="nagelfar/nagelfar10.tar.gz">Main distribution</a><br>
+Version 1.0.1:<br>
+<a href="nagelfar/nagelfar101.tar.gz">Main distribution</a><br>
 <a href="nagelfar/nagelfar.kit">Starkit</a><br>
-<a href="nagelfar/nagelfar">Starpack for Linux (x86)</a><br>
-<a href="nagelfar/nagelfar.solaris">Starpack for Solaris (sparc)</a><br>
-<a href="nagelfar/nagelfar.exe">Starpack for Windows</a><br>
+<a href="nagelfar/nagelfar">Executable Starpack for Linux (x86)</a><br>
+<a href="nagelfar/nagelfar.solaris">Executable Starpack for Solaris (sparc)</a><br>
+<a href="nagelfar/nagelfar.exe">Executable Starpack for Windows</a><br>
 
 <a name="NagelfarChanges"></a><h3>Changes</h3>
+Changes in v1.0.1 (2004-06-13):<br>
+<ul>
+  <li>  Fixed some bugs in {expand} handling.  It is still rather incomplete,
+        examples of live code that needs better handling are welcome.  Note
+        that to check {expand} Nagelfar must be run in an 8.5 interpreter,
+        and the syntax database must be generated from 8.5 (the distributed
+        syntax database is currently from 8.4.6).</li>
+</ul>
+<br>
 Changes in v1.0 (2004-05-01):<br>
 <ul>
   <li>  Add multiple files in file add dialog.</li>
