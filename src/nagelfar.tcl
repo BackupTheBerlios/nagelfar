@@ -24,8 +24,8 @@
 # the next line restarts using tclsh \
 exec tclsh "$0" "$@"
 
-set debug 1
-set version "Version 0.2+ 2002-08-29"
+set debug 0
+set version "Version 0.3 2002-09-02"
 set thisScript [file join [pwd] [info script]]
 set thisDir    [file dirname $thisScript]
 
@@ -163,6 +163,19 @@ proc checkComment {str index} {
     # That can't be done here since this is called after the
     # script is split, and the split will fail on an unmatched brace
     # Maybe splitScript can take care of it? Or buildLineDb?
+}
+
+# Handle a stack of current namespaces.
+proc currentNamespace {} {
+    lindex $::Syntax(namespaces) end
+}
+
+proc pushNamespace {ns} {
+    lappend ::Syntax(namespaces) $ns
+}
+
+proc popNamespace {} {
+    set ::Syntax(namespaces) [lrange $::Syntax(namespaces) 0 end-1]
 }
 
 # Move "i" forward to the first non whitespace char
@@ -919,6 +932,29 @@ proc markVariable {var ws check index knownVarsName} {
     }
 }
 
+
+proc lookForCommand {cmd ns index} {
+    # Get both the namespace and global possibility
+    if {[string match "::*" $cmd]} {
+        set cmd1 $cmd
+        set cmd2 ""
+    } else {
+        set cmd1 "${ns}::$cmd"
+        set cmd2 "::$cmd"
+    }
+
+    if {[lsearch $::knownCommands $cmd1] >= 0 || \
+            [lsearch $::knownProcs $cmd1] >= 0} {
+        return
+    }
+    if {$cmd2 != "" && ([lsearch $::knownCommands $cmd2] >= 0 || \
+            [lsearch $::knownProcs $cmd2] >= 0)} {
+        return
+    }
+
+    lappend ::unknownCommands [list $cmd $cmd1 $cmd2 $index]
+}
+
 ##syntax parseStatement x x n
 # Parse one statement and check the syntax of the command
 proc parseStatement {statement index knownVarsName} {
@@ -1201,7 +1237,32 @@ proc parseStatement {statement index knownVarsName} {
             lappend constantsDontCheck all
 	}
 	namespace { # FIXA
-            lappend constantsDontCheck all
+            if {$argc < 1} {
+                WA
+                return
+            }
+            if {[lindex $wordstatus 0] != 0 && \
+                    [string match "ev*" [lindex $argv 0]]} {
+                if {$argc < 3} {
+                    WA
+                    return
+                }
+                set anyUnknown [expr !( [join $wordstatus *])]
+                if {$anyUnknown} {
+                    errorMsg "Only braced namespace evals are checked." \
+                            [lindex $indices 0]
+                } else {
+                    set ns [lindex $argv 1]
+                    if {![string match "::*" $ns]} {
+                        set ns [currentNamespace]::$ns
+                    }
+                    pushNamespace $ns
+                    parseBody [lindex $argv 2] [lindex $indices 2] knownVars
+                    popNamespace
+                }
+            } else {
+                checkCommand $cmd $index $argv $wordstatus $indices
+            }
 	}
 	uplevel { # FIXA
             lappend constantsDontCheck all
@@ -1209,12 +1270,8 @@ proc parseStatement {statement index knownVarsName} {
 	default {
 	    if {[info exists ::syntax($cmd)]} {
 		checkCommand $cmd $index $argv $wordstatus $indices
-	    } elseif {[lsearch $::knownCommands $cmd] == -1 && \
-                    [lsearch $::knownProcs $cmd] == -1} {
-
-#                decho "Uncheck: $cmd argc:$argc line:[calcLineNo $index]"
-                # Store the unknown commands for later check.
-                set ::unknownCommands($cmd) $index
+	    } else {
+                lookForCommand $cmd [currentNamespace] $index
 	    }
 	}
     }
@@ -1418,8 +1475,19 @@ proc parseProc {argv indices} {
     foreach {name args body} $argv {break}
 
     # FIXA, take care of namespace
+    set cns [currentNamespace]
     set ns [namespace qualifiers $name]
-    set name [namespace tail $name]
+    set tail [namespace tail $name]
+    if {![string match "::*" $ns]} {
+        if {$ns != ""} {
+            set ns ${cns}::$ns
+        } else {
+            set ns $cns
+        }
+    }
+    set fullname ${ns}::$tail
+    #puts "proc $name -> $fullname ($cns) ($ns) ($tail)"
+    set name $fullname
 
     # Parse the arguments.
     # Initialise a knownVars array with the arguments.
@@ -1452,7 +1520,9 @@ proc parseProc {argv indices} {
     lappend knownCommands $name
 
 #    decho "Note: parsing procedure $name"
+    pushNamespace $ns
     parseBody $body [lindex $indices 2] knownVars
+    popNamespace
 
     # Update known globals with those that were set in the proc.
     # Values in knownVars:
@@ -1553,19 +1623,24 @@ proc parseScript {script} {
     global knownGlobals unknownCommands knownProcs syntax
 
     catch {unset unknownCommands}
-    array set unknownCommands {}
+    set unknownCommands {}
     array set knownVars {}
     foreach g $knownGlobals {
 	set knownVars($g) 6
     }
     set script [buildLineDb $script]
+    pushNamespace {}
     parseBody $script 0 knownVars
+    popNamespace
 
     # Check commands that where unknown when encountered
-    foreach cmd [array names unknownCommands] {
-        if {![info exists syntax($cmd)] && \
-                [lsearch $knownProcs $cmd] == -1} {
-            errorMsg "Unknown command \"$cmd\"" $unknownCommands($cmd)
+    foreach apa $unknownCommands {
+        foreach {cmd cmd1 cmd2 index} $apa break
+        if {![info exists syntax($cmd1)] && \
+                [lsearch $knownProcs $cmd1] == -1 && \
+                ![info exists syntax($cmd2)] && \
+                [lsearch $knownProcs $cmd2] == -1} {
+            errorMsg "Unknown command \"$cmd\"" $index
         }
     }
     #Update known globals.
