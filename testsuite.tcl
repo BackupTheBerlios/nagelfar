@@ -8,6 +8,7 @@ exec tclsh "$0" "$@"
 package require tcltest 2.2
 namespace import tcltest::*
 tcltest::configure -verbose "body error"
+#tcltest::configure -match nagelfar-6.*
 
 proc createTestFile {scr} {
     set ch [open _testfile_ w]
@@ -204,5 +205,49 @@ test nagelfar-5.1 {
 } -body {
     execTestFile
 } -result {*Procedure "info" does not match previous definition*} -match glob
+
+test nagelfar-6.1 {
+    Expression checking
+} -setup {
+    createTestFile {
+        expr {1 + ""}
+    }
+} -body {
+    execTestFile
+} -result {*Bad expression: can't use empty string as operand of*} -match glob
+
+test nagelfar-6.2 {
+    Expression checking
+} -setup {
+    createTestFile {
+        expr {1 + $apa /}
+    }
+} -body {
+    execTestFile
+} -result {*Bad expression: premature end of expression*} -match glob
+
+test nagelfar-6.3 {
+    Expression checking
+} -setup {
+    createTestFile {
+        set apa 10
+        set bepa 5
+        # This gave an divide by zero error in the first implementation
+        expr {1 / ($apa - $bepa)}
+    }
+} -body {
+    execTestFile
+} -result {Checking file _testfile_} -match glob
+
+test nagelfar-6.4 {
+    Expression checking
+} -setup {
+    createTestFile {
+        set apa 10
+        expr {$apa == {$bepa}}
+    }
+} -body {
+    execTestFile
+} -result {Checking file _testfile_} -match glob
 
 file delete _testfile_
