@@ -24,46 +24,18 @@ test namespace-1.2 {
 } -body {
     createTestFile {
         namespace eval apa {
-            proc bepa {hej hopp} {
+            proc bepa {hej hopp san} {
                 set apa $hej
             }
         }
         proc apa::cepa {hej hopp} {
             set apa [bepa $hej $hopp]
+            set apa [apa::bepa $hej $hopp]
+            set apa [::apa::bepa $hej $hopp]
         }
     }
     execTestFile
-} -result {%%}
-
-test namespace-1.3 {
-    Namespaces, procs 2-pass
-} -body {
-    createTestFile {
-        proc apa::cepa {hej hopp} {
-            set apa [bepa $hej $hopp happ]
-        }
-        proc apa::bepa {hej hopp} {
-            set apa $hej
-        }
-    }
-    execTestFile -flags -dbpicky
-} -result {%%Line   3: E Wrong number of arguments (3) to "apa::bepa"}
-
-test namespace-1.4 {
-    Namespaces, procs 2-pass, ns eval version
-} -body {
-    createTestFile {
-        namespace eval apa {
-            proc cepa {hej hopp} {
-                set apa [bepa $hej $hopp happ]
-            }
-            proc bepa {hej hopp} {
-                set apa $hej
-            }
-        }
-    }
-    execTestFile
-} -result {%%Line   4: E Wrong number of arguments (3) to "apa::bepa"}
+} -result {%%Line\s+8: E Wrong num.*Line\s+9: E Wrong num.*Line\s+10: E Wrong num} -match regexp
 
 test namespace-2.1 {
     Namespaces, imported procs
@@ -92,3 +64,33 @@ test namespace-3.1 {
     }
     execTestFile
 } -result {%%}
+
+test namespace-4.1 {
+    Namespaces, procs 2-pass
+} -body {
+    createTestFile {
+        proc apa::cepa {hej hopp} {
+            set apa [bepa $hej $hopp happ]
+        }
+        proc apa::bepa {hej hopp} {
+            set apa $hej
+        }
+    }
+    execTestFile -flags -dbpicky
+} -result {%%Line   3: E Wrong number of arguments (3) to "apa::bepa"}
+
+test namespace-4.2 {
+    Namespaces, procs 2-pass, ns eval version
+} -body {
+    createTestFile {
+        namespace eval apa {
+            proc cepa {hej hopp} {
+                set apa [bepa $hej $hopp happ]
+            }
+            proc bepa {hej hopp} {
+                set apa $hej
+            }
+        }
+    }
+    execTestFile
+} -result {%%Line   4: E Wrong number of arguments (3) to "apa::bepa"}
