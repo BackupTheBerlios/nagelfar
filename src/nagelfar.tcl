@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 0.8
-set version "Version 0.8 2003-08-14"
+set version "Version 0.8+ 2003-09-24"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -710,9 +710,73 @@ proc parseSubst {str index knownVarsName} {
 # Parse an expression
 proc parseExpr {str index knownVarsName} {
     upvar $knownVarsName knownVars
-    # Just check for variables and commands
-    # This could maybe check more
-    parseSubst $str $index knownVars
+
+    # First do a quick check for $ or [
+    if {[string first "\$" $str] == -1 && [string first "\[" $str] == -1} {
+        set exp $str
+    } else {
+        # This is similar to parseSubst, just that it also check for braces
+        set exp ""
+        set result 1
+        set len [string length $str]
+        set escape 0
+        set brace 0
+        for {set i 0} {$i < $len} {incr i} {
+            set c [string index $str $i]
+            if {[string equal $c "\\"]} {
+                set escape [expr {!$escape}]
+            } elseif {!$escape} {
+                if {[string equal $c "\{"]} {
+                    incr brace
+                } elseif {[string equal $c "\}"]} {
+                    if {$brace > 0} {
+                        incr brace -1
+                    }
+                } elseif {$brace == 0} {
+                    if {[string equal $c "\$"]} {
+                        incr i
+                        parseVar $str $len $index i knownVars
+                        append exp {$dummy}
+                        continue
+                    } elseif {[string equal $c "\["]} {
+                        set si $i
+                        for {} {$i < $len} {incr i} {
+                            if {[info complete [string range $str $si $i]]} {
+                                break
+                            }
+                        }
+                        if {$i == $len} {
+                            errorMsg E "URGA:$si\n:$str:\n:[string range $str $si end]:" $index
+                        }
+                        incr si
+                        incr i -1
+                        parseBody [string range $str $si $i] \
+                                [expr {$index + $si}] knownVars
+                        incr i
+                        append exp {$dummy}
+                        continue
+                    } elseif {[string equal $c "\]"] && $i == ($len - 1)} {
+                        # Note unescaped bracket at end of word since it's
+                        # likely to mean it should not be there.
+                        errorMsg N "Unescaped end bracket" [expr {$index + $i}]
+                    }
+                }
+            } else {
+                set escape 0
+            }
+            append exp $c
+        }
+    }
+
+    # The above have replaced any variable substitution or command
+    # substitution in the expression by "$dummy"
+    set dummy 1
+
+    if {[catch {expr $exp} msg]} {
+        regsub {syntax error in expression.*:\s+} $msg {} msg
+        if {[string match "*divide by zero*" $msg]} return
+        errorMsg E "Bad expression: $msg" $index
+    }
 }
 
 # A "macro" for checkCommand to print common error message
@@ -2148,6 +2212,84 @@ proc updateDbSelection {{fromVar 0}} {
     foreach ix [$::Nagelfar(dbWin) curselection] {
         lappend ::Nagelfar(db) [lindex $::Nagelfar(allDb) $ix]
     }
+}
+
+if {[catch {package require snit}]} {
+    namespace eval snit {
+        proc widget {args} {}
+    }
+}
+::snit::widget ScrollX {
+    option -direction both
+    option -auto 0
+
+    delegate method * to child
+    delegate option * to child
+
+    constructor {class args} {
+        set child [$class $win.s]
+        $self configurelist $args
+        grid $win.s -row 0 -column 0 -sticky news
+        grid columnconfigure $win 0 -weight 1
+        grid rowconfigure    $win 0 -weight 1
+
+        # Move border properties to frame
+        set bw [$win.s cget -borderwidth]
+        set relief [$win.s cget -relief]
+        $win configure -relief $relief -borderwidth $bw
+        $win.s configure -borderwidth 0
+    }
+
+    method child {} {
+        return $child
+    }
+
+    method SetScrollbar {sb from to} {
+        $sb set $from $to
+        if {$options(-auto) && $from == 0.0 && $top == 1.0} {
+            grid remove $sb
+        } else {
+            grid $sb
+        }
+    }
+
+    onconfigure -direction {value} {
+        switch -- $value {
+            both {
+                set scrollx 1
+                set scrolly 1
+            }
+            x {
+                set scrollx 1
+                set scrolly 0
+            }
+            y {
+                set scrollx 0
+                set scrolly 1
+            }
+            default {
+                return -code error "Bad -direction \"$value\""
+            }
+        }
+        set options(-direction) $value
+        destroy $win.sbx $win.sby
+        if {$scrollx} {
+            $win.s configure -xscrollcommand [mymethod SetScrollbar $win.sbx]
+            scrollbar $win.sbx -orient horizontal -command [list $win.s xview]
+            grid $win.sbx -row 1 -sticky we
+        } else {
+            $win.s configure -xscrollcommand {}
+        }
+        if {$scrolly} {
+            $win.s configure -yscrollcommand [mymethod SetScrollbar $win.sby]
+            scrollbar $win.sby -orient vertical -command [list $win.s yview]
+            grid $win.sby -row 0 -column 1 -sticky ns
+        } else {
+            $win.s configure -yscrollcommand {}
+        }
+        
+    }
+
 }
 
 # A little helper to make a scrolled window
