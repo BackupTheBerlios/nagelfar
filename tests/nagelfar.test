@@ -194,6 +194,17 @@ test nagelfar-4.7 {
     execTestFile
 } -result {%%Line   3: E Bad option -?* to string match}
 
+test nagelfar-4.8 {
+    Options checking
+} -body {
+    createTestFile {
+        # Shortening should not affect other checking
+        string equal -length 2 apa bepa
+        string equal -len    2 apa bepa
+    }
+    execTestFile
+} -result {%%Line   4: W Shortened option for string equal, -len -> -length}
+
 test nagelfar-5.1 {
     Procedure checking
 } -body {
