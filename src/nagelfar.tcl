@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 0.9
-set version "Version 0.9+ 2003-12-20"
+set version "Version 0.9+ 2004-01-03"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -1971,24 +1971,34 @@ proc parseProc {argv indices} {
 }
 
 # Given an index in the original string, calculate its line number.
-proc calcLineNo {i} {
+proc calcLineNo {ix} {
     global newlineIx
 
     # Shortcut for exact match, which happens when the index is first
     # in a line. This is common when called from wasIndented.
-    set i [lsearch -integer -sorted $newlineIx $i]
+    set i [lsearch -integer -sorted $newlineIx $ix]
     if {$i >= 0} {
         return [expr {$i + 2}]
     }
 
-    set n 1
-    foreach ni $newlineIx {
-        if {$ni > $i} {
-            return $n
+    # Binary search
+    set first 0
+    set last [expr {[llength $newlineIx] - 1}]
+
+    while {$first < ($last - 1)} {
+        set n [expr {($first + $last) / 2}]
+        set ni [lindex $newlineIx $n]
+        if {$ni < $ix} {
+            set first $n
+        } elseif {$ni > $ix} {
+            set last $n
+        } else {
+            # Equality should have been caught in the lsearch above.
+            decho "Internal error: Equal element slipped through in calcLineNo"
+            return [expr {$n + 2}]
         }
-        incr n
     }
-    return [llength $newlineIx]
+    return [expr {$last + 1}]
 }
 
 # Given an index in the original string, tell if that line was indented
@@ -2071,6 +2081,7 @@ proc parseScript {script} {
 	set knownVars(namespace,$g) ""
     }
     set script [buildLineDb $script]
+
     pushNamespace {}
     set ::Nagelfar(onlyproc) 0
     if {$::Nagelfar(2pass)} {
