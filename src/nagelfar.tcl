@@ -25,19 +25,26 @@
 exec tclsh "$0" "$@"
 
 set debug 1
-set version "Version 0.4+ 2003-01-10"
+set version "Version 0.4+ 2003-02-10"
 set thisScript [file join [pwd] [info script]]
 set thisDir    [file dirname $thisScript]
 set ::Syntax(tcl84) [expr {[info tclversion] >= 8.4}]
 
-# Follow any link
-set tmplink $thisScript
-while {[file type $tmplink] == "link"} {
-    set tmplink [file readlink $tmplink]
-    set tmplink [file join $thisDir $tmplink]
-    set thisDir [file dirname $tmplink]
+# Support for FreeWrap 5.5
+if {[info proc ::freewrap::unpack] != ""} {
+    set debug 0
+    set thisDir [file dirname [info nameofexecutable]]
+    set thisScript ""
+} else {
+    # Follow any link
+    set tmplink $thisScript
+    while {[file type $tmplink] == "link"} {
+        set tmplink [file readlink $tmplink]
+        set tmplink [file join $thisDir $tmplink]
+        set thisDir [file dirname $tmplink]
+    }
+    unset tmplink
 }
-unset tmplink
 
 #####################
 # Syntax check engine
@@ -639,7 +646,7 @@ proc parseExpr {str index knownVarsName} {
 
 # A "macro" for checkCommand to print common error message
 proc WA {} {
-    upvar cmd cmd index index argc argc argv argv indices indices
+    upvar "cmd" cmd "index" index "argc" argc "argv" argv "indices" indices
     errorMsg "Wrong number of arguments ($argc) to \"$cmd\"" $index
 
     set t 1
@@ -658,7 +665,7 @@ proc WA {} {
 # to call it recursively.
 # 'firsti' says at which index in argv et.al. the arguments begin.
 proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
-    upvar constantsDontCheck constantsDontCheck knownVars knownVars
+    upvar "constantsDontCheck" constantsDontCheck "knownVars" knownVars
 
     set argc [llength $argv]
     set syn $::syntax($cmd)
@@ -1055,8 +1062,7 @@ proc parseStatement {statement index knownVarsName} {
 		return
 	    }
 	    # Skip the proc if any part of it is not constant
-	    set anyUnknown [expr !( [join $wordstatus *])]
-	    if {$anyUnknown} {
+	    if {[lsearch $wordstatus 0] >= 0} {
 		errorMsg "Non constant argument to proc \"[lindex $argv 0]\".\
                         Skipping." $index
 		return
@@ -1290,8 +1296,8 @@ proc parseStatement {statement index knownVarsName} {
                     WA
                     return
                 }
-                set anyUnknown [expr !( [join $wordstatus *])]
-                if {$anyUnknown} {
+                # Look for unknown parts
+                if {[lsearch $wordstatus 0] >= 0} {
                     errorMsg "Only braced namespace evals are checked." \
                             [lindex $indices 0]
                 } else {
@@ -1415,7 +1421,7 @@ proc splitScript {script index statementsName indicesName} {
 		# Most lines will have no leading whitespace since
 		# buildLineDb removes most of it. This takes care
 		# of all remaining.
-                if {[string is space -failindex i $tryline]} {
+                if {[string is space -failindex "i" $tryline]} {
                     # Only space, discard the line
                     incr index [string length $tryline]
                     set tryline ""
@@ -1732,6 +1738,21 @@ proc usage {} {
 # GUI stuff
 ###########
 
+proc busyCursor {} {
+    if {![info exists ::oldcursor]} {
+        set ::oldcursor  [. cget -cursor]
+        set ::oldcursor2 [$::Syntax(resultWin) cget -cursor]
+    }
+
+    . config -cursor watch
+    $::Syntax(resultWin) config -cursor watch
+}
+
+proc normalCursor {} {
+    . config -cursor $::oldcursor
+    $::Syntax(resultWin) config -cursor $::oldcursor2
+}
+
 proc exitApp {} {
     exit
 }
@@ -1799,6 +1820,10 @@ proc doCheck {} {
         return
     }
 
+    if {$::Syntax(gui)} {
+        busyCursor
+    }
+
     set ::Syntax(editFile) ""
     if {[info exists ::Syntax(resultWin)]} {
         $::Syntax(resultWin) delete 1.0 end
@@ -1837,6 +1862,9 @@ proc doCheck {} {
                 puts stderr "Could not find file $f"
             }
         }
+    }
+    if {$::Syntax(gui)} {
+        normalCursor
     }
 }
 
@@ -1887,25 +1915,24 @@ proc makeWin {} {
 
     frame .fs
     label .fs.l -text "Syntax database files"
-    button .fs.b -text "Add" -command addDbFile
+    button .fs.b -text "Add" -width 7 -command addDbFile
     listbox .fs.lb -yscrollcommand ".fs.sby set" -listvariable ::Syntax(allDb) \
             -height 4 -width 40 -selectmode extended
     updateDbSelection 1
     bind .fs.lb <<ListboxSelect>> updateDbSelection
     scrollbar .fs.sby -orient vertical -command ".fs.lb yview"
 
-    grid .fs.l -sticky w
-    grid .fs.b -sticky w
-    grid .fs.lb .fs.sby -sticky news
+    grid .fs.l  .fs.b x       -sticky w
+    grid .fs.lb -     .fs.sby -sticky news
     grid columnconfigure .fs 0 -weight 1
-    grid rowconfigure .fs 2 -weight 1
+    grid rowconfigure .fs 1 -weight 1
     
     
     # File section
 
     frame .ff
     label .ff.l -text "Tcl files to check"
-    button .ff.b -text "Add" -command addFile
+    button .ff.b -text "Add" -width 7 -command addFile
     listbox .ff.lb -yscrollcommand ".ff.sby set" \
             -listvariable ::Syntax(files) \
             -height 4 -width 40
@@ -1913,11 +1940,10 @@ proc makeWin {} {
     bind .ff.lb <Key-Delete> "removeFile"
     bind .ff.lb <Button-1> "focus .ff.lb"
 
-    grid .ff.l -sticky w
-    grid .ff.b -sticky w
-    grid .ff.lb .ff.sby -sticky news
+    grid .ff.l  .ff.b x       -sticky w
+    grid .ff.lb -     .ff.sby -sticky news
     grid columnconfigure .ff 0 -weight 1
-    grid rowconfigure .ff 2 -weight 1
+    grid rowconfigure .ff 1 -weight 1
 
     # Set up file dropping in listboxes if TkDnd is available
     if {![catch {package require tkdnd}]} {
@@ -1929,7 +1955,7 @@ proc makeWin {} {
 
     set ::Syntax(resultWin) .fr.t
     frame .fr
-    button .fr.b -text "Check" -command "doCheck"
+    button .fr.b -text "Check" -width 7 -command "doCheck"
     text .fr.t -width 100 -height 25 -wrap none -font "Courier 8" \
             -xscrollcommand ".fr.sbx set" \
             -yscrollcommand ".fr.sby set"
@@ -1960,6 +1986,8 @@ proc makeWin {} {
         .pw add .pw.f -sticky news
         .pw add .fr   -sticky news
         pack .pw -fill both -expand 1
+        # Make sure the "ghost sash" below follows resize of window
+        bind .pw <Configure> {.pw sash place 1 2 %h}
     } else {
         grid .fs .ff -sticky news
         grid .fr -   -sticky news
@@ -2221,6 +2249,11 @@ if {![info exists gurka]} {
     }
     lappend apa [file join $thisDir syntaxdb.tcl]
     eval lappend apa [glob -nocomplain [file join $thisDir syntaxdb*.tcl]]
+    # Support a wrapped database in FreeWrap
+    if {[info procs ::freewrap::unpack] != ""} {
+        lappend apa /syntaxdb.tcl
+        eval lappend apa [glob -nocomplain /syntaxdb*.tcl]
+    }
 
     foreach file $apa {
         if {[file exists $file] && [lsearch $::Syntax(allDb) $file] == -1} {
