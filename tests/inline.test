@@ -1,5 +1,4 @@
-#!/bin/sh
-#----------------------------------------------------------------------
+#------------------------------------------------------------*- tcl -*-
 # Tests for inlining information in comments.
 #----------------------------------------------------------------------
 # $Revision$
@@ -10,7 +9,7 @@ test inline-1.1 {
 } -body {
     createTestFile {
         ##nagelfar syntax Miffo x x
-        
+
         Miffo a b c
     }
     execTestFile
@@ -76,7 +75,7 @@ test inline-4.1 {
     createTestFile {
         ##nagelfar syntax Miffo x x
         ##nagelfar return Miffo varName
-        
+
         set apa [Miffo a b]
         set $apa
     }
