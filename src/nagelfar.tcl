@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.0.1+ 2004-07-16"
+set version "Version 1.0.1+ 2004-08-13"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -499,7 +499,7 @@ proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
                     } else {
                         errorMsg W "Shortened option for $cmd,\
                                 $arg -> [lindex $match 0]" $index
-                        
+
                         set item "$cmd [lindex $match 0]"
                     }
                 } else {
@@ -1387,7 +1387,8 @@ proc parseStatement {statement index knownVarsName} {
         if {[lindex $words 0] eq "proc"} {
             # OK
         } elseif {[lindex $words 0] eq "namespace" && \
-                [lindex $words 1] eq "eval"} {
+                [lindex $words 1] eq "eval" && \
+                ![regexp {^[{"]?\s*["}]?$} [lindex $words 3]]} {
             # OK
         } else {
             return ""
@@ -1478,7 +1479,7 @@ proc parseStatement {statement index knownVarsName} {
             return
         }
     }
- 
+
     # The parsing below can pass information to the constants checker
     # This list primarily consists of args that are supposed to be variable
     # names without a $ in front.
@@ -1534,6 +1535,7 @@ proc parseStatement {statement index knownVarsName} {
 	variable {
 	    # FIXA, namespaces?
 	    # FIXA, qualified names?
+            # FIXA, variable ${type}::Snit_info
 	    set i 0
 	    foreach {var val} $argv {ws1 ws2} $wordstatus {
 		regexp {::([^:]+)$} $var -> var
@@ -1870,7 +1872,9 @@ proc parseStatement {statement index knownVarsName} {
                     return
                 }
                 # Look for unknown parts
-                if {!([lindex $wordstatus 1] & 1) || \
+                if {[string is space [lindex $argv 2]]} {
+                    # Empty body, do nothing
+                } elseif {!([lindex $wordstatus 1] & 1) || \
                         !([lindex $wordstatus 2] & 1)} {
                     if {!$::Nagelfar(onlyproc)} { # Messages in second pass
                         errorMsg N "Only braced namespace evals are checked." \
@@ -1939,16 +1943,56 @@ proc splitScript {script index statementsName indicesName knownVarsName} {
 
     set statements {}
     set indices {}
-    set lines [split $script \n]
+
     set tryline ""
     set newstatement 1
     set firstline ""
     string length $tryline
 
-    foreach line $lines {
-        # Restore the \n that split removed
-	append line \n
-	while {![string equal $line ""]} {
+    set bracelevel 0
+
+    foreach line [split $script \n] {
+        # Here we must remember that "line" misses the \n that split ate.
+        # When line is used below we add \n.
+        # The extra \n generated on the last line does not matter.
+
+        if {$bracelevel > 0} {
+            # Manual brace parsing is entered when we know we are in
+            # a braced block.  Return to ordinary parsing as soon
+            # as a balanced brace is found.
+
+            # Extract relevant characters
+            foreach char [regexp -all -inline {\\.|{|}} $line] {
+                if {$char eq "\{"} {
+                    incr bracelevel
+                } elseif {$char eq "\}"} {
+                    incr bracelevel -1
+                    if {$bracelevel <= 0} break
+                }
+            }
+            if {$bracelevel > 0} {
+                # We are still in a braced block so go on to the next line
+		append tryline $line\n
+		set line ""
+                continue
+            }
+        }
+
+        # An empty line can never cause completion, since at this stage
+        # any backslash-newline has been removed.
+        if {[string is space $line]} {
+            if {$tryline eq ""} {
+                incr index [string length $line]
+                incr index
+            } else {
+                append tryline $line\n
+            }
+            continue
+        }
+
+        append line \n
+
+	while {$line ne ""} {
 
             # Some extra checking on close braces to help finding
             # brace mismatches
@@ -1974,7 +2018,7 @@ proc splitScript {script index statementsName indicesName knownVarsName} {
                 }
 		incr i
 		set line [string range $line $i end]
-		set splitSemi 1
+                set splitSemi 1
 	    } else {
 		append tryline $line
                 if {$newstatement} {
@@ -2025,6 +2069,7 @@ proc splitScript {script index statementsName indicesName knownVarsName} {
 		    checkComment $tryline $index knownVars
 		} else {
 		    if {$splitSemi} {
+                        # Remove the semicolon from the statement
 			lappend statements [string range $tryline 0 end-1]
 		    } else {
 			lappend statements $tryline
@@ -2056,6 +2101,15 @@ proc splitScript {script index statementsName indicesName knownVarsName} {
                 contMsg "This may indicate a brace mismatch."
             }
 	}
+
+        # If the line is complete except for a trailing open brace
+        # we can switch to just scanning braces.
+        # This could be made more general but since this is the far most
+        # common case it's probably not worth complicating it.
+        if {[string range $tryline end-2 end] eq " \{\n" && \
+                    [info complete [string range $tryline 0 end-2]]} {
+            set bracelevel 1
+        }
     }
     # If tryline is non empty, it did not become complete
     if {[string length $tryline] != 0} {
@@ -2671,7 +2725,7 @@ proc fileDropFile {files} {
 ##nagelfar syntax _ipset    v
 ##nagelfar syntax _iparray  s v
 ##nagelfar subcmd _iparray  exists get
- 
+
 # Load syntax database using safe interpreter
 proc loadDatabases {} {
     interp create -safe loadinterp
@@ -3583,6 +3637,9 @@ if {![info exists gurka]} {
     set ::Nagelfar(2pass) 1
     set ::Nagelfar(encoding) system
     set ::Nagelfar(dbpicky) 0
+
+    if {[info exists _nagelfar_test]} return
+
     getOptions
 
     # Locate default syntax database(s)
