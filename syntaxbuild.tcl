@@ -50,6 +50,7 @@ proc getSubCmds {args} {
     lappend res {option .* must be (.*)$}
     lappend res {option .* should be one of (.*)$}
     lappend res {bad .* must be (.*)$}
+    lappend res {: must be (.*)$}
 
     foreach re $res {
 	if {[regexp $re $err -> apa]} {
@@ -179,7 +180,6 @@ proc buildDb {ch} {
     set syntax(close)            1
     set syntax(concat)          "r 0"
     set syntax(continue)         0
-    # FIXA: 8.5 "dict"
     set syntax(encoding)        "s x*"
     set syntax(encoding\ convertfrom) "r 1 2"
     set syntax(encoding\ convertto)   "r 1 2"
@@ -215,7 +215,6 @@ proc buildDb {ch} {
     set syntax(interp)          "s x*"
     set syntax(join)            "r 1 2"
     set syntax(lappend)         "n x*"
-    # FIXA: 8.5 lassign
     if {[catch {lindex apa 0 0}]} {
         set syntax(lindex)       2        ;# Pre 8.4
     } else {
@@ -226,7 +225,6 @@ proc buildDb {ch} {
     set syntax(llength)          1
     set syntax(load)            "r 1 3"
     set syntax(lrange)           3
-    # FIXA: 8.5 lrepeat
     set syntax(lreplace)        "r 3"
     if {[catch {lsearch -all -glob apa bepa}]} {
         set syntax(lsearch)     "o? x x"  ;# Pre 8.4
@@ -297,7 +295,6 @@ proc buildDb {ch} {
     set syntax(trace\ variable) "n x x"
     set syntax(trace\ vinfo)    "l"
     set syntax(trace\ vdelete)  "v x x"
-    # FIXA: 8.5 unload
     set syntax(unset)           "o* l l*"
     set syntax(update)          "s."
     # "uplevel" is handled specially
@@ -305,6 +302,25 @@ proc buildDb {ch} {
     # "variable" is handled specially
     set syntax(vwait)           "n"
     set syntax(while)           "E c"
+
+    # Things added in 8.5
+    if {[info commands dict] ne ""} {
+        set syntax(dict)          "s x*"
+        set syntax(dict\ append)  "n x x*"
+        set syntax(dict\ incr)    "n x x*"
+        set syntax(dict\ lappend) "n x x*"
+        set syntax(dict\ set)     "n x x*"
+        set syntax(dict\ unset)   "n x x*"
+        # FIXA: handle this style:
+        set syntax(dict\ update)  "n x x x* c"
+        set syntax(dict\ with)    "n x* c"
+        # FIXA: handle variables in dict for
+        set syntax(dict\ for)     "x x c"
+
+        set syntax(lassign)    "x n n*"
+        set syntax(lrepeat)    "r 2"
+        set syntax(unload)     "o* x x*"
+    }
 
     # Some special Tcl commands
     set syntax(dde)             "o? s x*"  ;# FIXA: is this correct?
@@ -397,7 +413,7 @@ proc buildDb {ch} {
                 set subCmd($cmd) $opts
                 #puts "AutoSub: $cmd $subCmd($cmd)"
             } else {
-                #puts "Failed AutoSub: $cmd"
+                #puts "Failed AutoSub: $cmd $syn"
             }
         }
     }
