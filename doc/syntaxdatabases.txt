@@ -5,7 +5,7 @@ are used. This file is typically called syntaxdb.tcl, and is just a Tcl
 file defining variables.
 
 Any file called syntaxdb*.tcl in your current directory or in the
-directory where Nagelfar is located are detected and possibly used as
+directory where Nagelfar is located is detected and possibly used as
 default database unless you specify one on the command line.
 The search order for default database is:
  syntaxdb.tcl in current directory
@@ -31,3 +31,7 @@ tclsh82
 
 Then use it:
 nagelfar.tcl -s syntaxdb82.tcl <tcl-file>
+
+
+On Windows it is usually just to double click on syntaxbuild.tcl
+and a new syntaxdb.tcl is generated using your installed Tcl version.
