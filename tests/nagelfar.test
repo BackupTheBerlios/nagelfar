@@ -380,6 +380,16 @@ test nagelfar-7.3 {
     execTestFile
 } -result {%%Line   3: N Non constant level to upvar: "$x"}
 
+test nagelfar-7.4 {
+    Command: upvar
+} -body {
+    createTestFile {
+        upvar bepa bepa
+        llength $bepa
+    }
+    execTestFile
+} -result {%%}
+
 test nagelfar-8.1 {
     Variable handling
 } -constraints knownbug -body {
@@ -611,3 +621,58 @@ test nagelfar-18.1 {
     }
     execTestFile
 } -result {%%}
+
+test nagelfar-19.1 {
+    interp alias, aliases ambiguity
+} -body {
+    createTestFile {
+        interp aliases
+        interp alia
+    }
+    execTestFile
+} -result {%%Line   3: E Ambigous subcommand for interp, alia -> alias/aliases}
+
+test nagelfar-19.2 {
+    interp alias, recognise
+} -body {
+    createTestFile {
+        interp alias {} lfilter {} lsearch -all -inline
+        set apa [list hej hopp]
+        lfilter $apa h*
+    }
+    execTestFile
+} -result {%%}
+
+test nagelfar-19.3 {
+    interp alias, track
+} -body {
+    createTestFile {
+        interp alias {} lfilter {} lsearch -all -inline
+        set apa [list hej hopp]
+        lfilter -miffo $apa h*
+    }
+    execTestFile
+} -result {%%Line   4: E Bad option -miffo to lsearch}
+
+test nagelfar-19.4 {
+    interp alias, track
+} -body {
+    createTestFile {
+        interp alias {} strncmp {} string match -nocase
+        set apa "hej hopp"
+        strncmp h* $apa
+        strncmp -nocase h* $apa
+    }
+    execTestFile
+} -result {%%Line   5: E Wrong number of arguments (5) to "string match"}
+
+test nagelfar-19.5 {
+    interp alias, track
+} -body {
+    createTestFile {
+        interp alias {} strncmp {} string match -nocasd
+        set apa "hej hopp"
+        strncmp h* $apa
+    }
+    execTestFile
+} -result {%%Line   4: E Bad option -nocasd to string match}
