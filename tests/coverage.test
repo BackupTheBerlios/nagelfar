@@ -27,16 +27,16 @@ test coverage-1.1 {
         lappend res $lineNo
     }
     set res
-} -result [list {%%Writing file _testfile__i} 9 5 3 3 5 9]
+} -result [list {%%Writing file _testfile__i} 9 9 8 5 3 3 5 8 9 9]
 
 test coverage-2.1 {
     Multiple files
 } -body {
     createTestFile {
         proc x1 {y z} {
-            if {$y} {
+            if {$y} {# Should be able to handle a comment here
                 set hej 1
-            }
+            };# Should be able to handle a comment here
             if {$z} {
                 set hej 1
             }
@@ -45,9 +45,9 @@ test coverage-2.1 {
     file rename _testfile_ _testfile_1
     createTestFile {
         proc x2 {y z} {
-            if {$y} {
+            if {$y} {# Should be able to handle a comment here
                 set hej 1
-            } 
+            };# Should be able to handle a comment here 
             if {$z} {
                 set hej 1
             }
@@ -73,7 +73,7 @@ test coverage-2.1 {
     interp delete apa
 
     lsort -dictionary $res
-} -result {_testfile_1,6 _testfile_2,3} -cleanup {
+} -result {_testfile_1,5 _testfile_1,6 _testfile_2,3 _testfile_2,8} -cleanup {
     file delete _testfile_1_i _testfile_1
     file delete _testfile_2_i _testfile_2
     file delete _testfile_1_log _testfile_2_log
