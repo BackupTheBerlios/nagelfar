@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.1+ 2005-01-01"
+set version "Version 1.1.1 2005-01-02"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -48,30 +48,6 @@ if {[info exists ::starkit::topdir]} {
 } else {
     lappend auto_path $thisDir
 }
-
-# A profiling tool
-proc _dumplogme {} {
-    if {[info exists ::logme]} {
-        parray ::logme
-    }
-}
-    
-proc _initlogme {} {
-    proc logme {} {
-        set a [lindex [info level -1] 0]
-        if {[info exists ::logme($a)]} {
-            incr ::logme($a)
-        } else {
-            set ::logme($a) 1
-        }
-    }
-    rename proc _proc
-
-    _proc "proc" {name arg body} {
-        uplevel 1 [list _proc $name $arg "logme\n $body"]
-    }
-}
-#_initlogme
 
 #####################
 # Syntax check engine
@@ -209,46 +185,6 @@ proc trimStr {str {len 10}} {
         set str [string range $str 0 [expr {$len - 4}]]...
     }
     return $str
-}
-
-# A profiling thingy
-proc timestamp {str} {
-    global _timestamp_
-    set apa [clock clicks]
-    if {[info exists _timestamp_]} {
-        puts stderr $str:$apa:[expr {$apa - $_timestamp_}]
-    } else {
-        puts stderr $str:$apa
-    }
-    set _timestamp_ $apa
-}
-
-# A tool to collect profiling data
-##nagelfar syntax profile x c
-proc profile {str script} {
-    global profiledata
-    if {![info exists profiledata($str)]} {
-        set profiledata($str)   0
-        set profiledata($str,n) 0
-    }
-    set apa [clock clicks]
-    set res [uplevel 1 $script]
-    incr profiledata($str) [expr {[clock clicks] - $apa}]
-    incr profiledata($str,n)
-    return $res
-}
-
-proc dumpProfileData {} {
-    global profiledata
-    set maxl 0
-    foreach name [array names profiledata] {
-	if {[string length $name] > $maxl} {
-	    set maxl [string length $name]
-	}
-    }
-    foreach name [lsort -dictionary [array names profiledata]] {
-	puts stdout [format "%-*s = %s" $maxl $name $profiledata($name)]
-    }
 }
 
 # Test for comments with unmatched braces.
@@ -4023,178 +3959,4 @@ proc defaultGuiOptions {} {
         option add *Panedwindow.sashWidth 4
         option add *Panedwindow.sashPad 0
     }
-}
-
-################################
-# End of procs, global code here
-################################
-
-# Global code is only run first time to allow re-sourcing
-if {![info exists gurka]} {
-    set gurka 1
-    set ::Nagelfar(db) {}
-    set ::Nagelfar(files) {}
-    set ::Nagelfar(gui) 0
-    set ::Nagelfar(filter) {}
-    set ::Nagelfar(2pass) 1
-    set ::Nagelfar(encoding) system
-    set ::Nagelfar(dbpicky) 0
-    set ::Nagelfar(withCtext) 0
-
-    if {[info exists _nagelfar_test]} return
-
-    getOptions
-
-    # Locate default syntax database(s)
-    set ::Nagelfar(allDb) {}
-    set ::Nagelfar(allDbView) {}
-    set apa {}
-    lappend apa [file join [pwd] syntaxdb.tcl]
-    eval lappend apa [glob -nocomplain [file join [pwd] syntaxdb*.tcl]]
-
-    lappend apa [file join $thisDir syntaxdb.tcl]
-    eval lappend apa [glob -nocomplain [file join $thisDir syntaxdb*.tcl]]
-
-    foreach file $apa {
-        if {[file isfile $file] && [file readable $file] && \
-                [lsearch $::Nagelfar(allDb) $file] == -1} {
-            lappend ::Nagelfar(allDb) $file
-            if {[file dirname $file] == $::thisDir} {
-                lappend ::Nagelfar(allDbView) "[file tail $file] (app)"
-            } else {
-                lappend ::Nagelfar(allDbView) [fileRelative [pwd] $file]
-            }
-        }
-    }
-
-    # Parse command line options
-    for {set i 0} {$i < $argc} {incr i} {
-        set arg [lindex $argv $i]
-        switch -glob -- $arg {
-            --h* -
-            -h* {
-                usage
-            }
-            -s {
-                incr i
-                set arg [lindex $argv $i]
-                if {[file isfile $arg] && [file readable $arg]} {
-                    lappend ::Nagelfar(db) $arg
-                    lappend ::Nagelfar(allDb) $arg
-                    lappend ::Nagelfar(allDbView) $arg
-                } else {
-                    puts stderr "Cannot read \"$arg\""
-                }
-            }
-            -encoding {
-                incr i
-                set enc [lindex $argv $i]
-                if {$enc eq ""} {set enc system}
-                if {[lsearch -exact [encoding names] $enc] < 0} {
-                    puts stderr "Bad encoding name: \"$enc\""
-                    set enc system
-                }
-                set ::Nagelfar(encoding) $enc
-            }
-            -2pass {
-                set ::Nagelfar(2pass) 1
-            }
-            -gui {
-                set ::Nagelfar(gui) 1
-            }
-            -instrument {
-                set ::Nagelfar(instrument) 1
-                # Put checks down as much as possible
-                array set ::Prefs {
-                    warnBraceExpr 0
-                    warnShortSub 0
-                    strictAppend 0
-                    forceElse 0
-                    noVar 1
-                    severity E
-                }
-            }
-            -markup {
-                incr i
-                instrumentMarkup [lindex $argv $i]
-                exit
-            }
-            -novar {
-                set ::Prefs(noVar) 1
-            }
-            -dbpicky { # A debug thing to help make a more complete database
-                set ::Nagelfar(dbpicky) 1
-            }
-            -Wexpr* {
-                set ::Prefs(warnBraceExpr) [string range $arg 6 end]
-            }
-            -Wsub* {
-                set ::Prefs(warnShortSub) [string range $arg 5 end]
-            }
-            -Welse* {
-                set ::Prefs(forceElse) [string range $arg 6 end]
-            }
-            -strictappend {
-                set ::Prefs(strictAppend) 1
-            }
-            -filter {
-                incr i
-                addFilter [lindex $argv $i]
-            }
-            -severity {
-                incr i
-                set ::Prefs(severity) [lindex $argv $i]
-                if {![regexp {^[EWN]$} $::Prefs(severity)]} {
-                    puts "Bad severity level '$::Prefs(severity)',\
-                            should be E/W/N."
-                    exit
-                }
-            }
-            -* {
-                puts "Unknown option $arg."
-                usage
-            }
-            default {
-                lappend ::Nagelfar(files) $arg
-            }
-        }
-    }
-
-    # Use default database if none were given
-    if {[llength $::Nagelfar(db)] == 0} {
-        if {[llength $::Nagelfar(allDb)] != 0} {
-            lappend ::Nagelfar(db) [lindex $::Nagelfar(allDb) 0]
-        }
-    }
-
-    # If there is no file specified, try invoking a GUI
-    if {$::Nagelfar(gui) || [llength $::Nagelfar(files)] == 0} {
-        if {[catch {package require Tk}]} {
-            if {$::Nagelfar(gui)} {
-                puts stderr "Failed to start GUI"
-                exit 1
-            } else {
-                puts stderr "No files specified"
-                exit 1
-            }
-        }
-        # use ctext if available
-        if {![catch {package require ctext}]} {
-            if {![catch {package require ctext_tcl}]} {
-                if {[info procs ctext::setHighlightTcl] ne ""} {
-                    set ::Nagelfar(withCtext) 1
-                    proc ctext::update {} {::update}
-                }
-            }
-        }
-
-        set ::Nagelfar(gui) 1
-        makeWin
-        vwait forever
-        exit
-    }
-
-    doCheck
-    #_dumplogme
-    exit
 }
