@@ -19,10 +19,10 @@ proc execTestFile {args} {
     array set xx $args
     set fn $xx(-fn)
     array unset xx -fn
-    eval [list exec [info nameofexecutable] syntax.tcl $fn] [array get xx] 
+    eval [list exec [info nameofexecutable] nagelfar.tcl $fn] [array get xx] 
 }    
 
-test syntax-1.1 {
+test nagelfar-1.1 {
     Command line checks
 } -setup {
     createTestFile {
@@ -32,7 +32,7 @@ test syntax-1.1 {
     execTestFile -fn _____
 } -returnCodes 1 -result {*Could not find file _____*} -match glob
 
-test syntax-2.1 {
+test nagelfar-2.1 {
     Basic functionality
 } -setup {
     createTestFile {
@@ -43,7 +43,7 @@ test syntax-2.1 {
     execTestFile
 } -result {Checking file _testfile_} -match glob
 
-test syntax-2.2 {
+test nagelfar-2.2 {
     Basic functionality
 } -setup {
     createTestFile {
@@ -53,7 +53,7 @@ test syntax-2.2 {
     execTestFile -filter *Unknown*
 } -result {Checking file _testfile_} -match glob
 
-test syntax-3.1 {
+test nagelfar-3.1 {
     Basic errors
 } -setup {
     createTestFile {

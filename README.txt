@@ -3,10 +3,10 @@ USAGE
 This tool is both a command line tool and a GUI tool.
 
 Typical usage:
-syntax.tcl <tcl-file>
+nagelfar.tcl <tcl-file>
 
 For a usage summary:
-syntax.tcl -h
+nagelfar.tcl -h
 
 Multiple files can be checked in one command. In that case the tool
 will remember procedures from previous files when checking a file.
@@ -37,13 +37,13 @@ are used. This file is typically called syntaxdb.tcl, and is just a Tcl
 file defining variables.
 
 Any file called syntaxdb*.tcl in your current directory or in the
-directory where syntax.tcl is located are detected and possibly used as
+directory where nagelfar.tcl is located are detected and possibly used as
 default database unless you specify one on the command line.
 The search order for default database is:
  syntaxdb.tcl in current directory
  syntaxdb*.tcl in current directory (if more than one it is unspecified which)
- syntaxdb.tcl where syntax.tcl is located
- syntaxdb*.tcl where syntax.tcl is located
+ syntaxdb.tcl where nagelfar.tcl is located
+ syntaxdb*.tcl where nagelfar.tcl is located
 
 A syntax database is created by syntaxbuild.tcl which makes
 it possible to create customized databases for the interpreter
@@ -54,7 +54,7 @@ For example, if you want to create a database for Tcl8.2:
 tclsh82 syntaxbuild.tcl syntaxdb82.tcl
 
 Then use it:
-syntax.tcl -s syntaxdb82.tcl <tcl-file>
+nagelfar.tcl -s syntaxdb82.tcl <tcl-file>
 
 
 FEEDBACK
@@ -67,7 +67,7 @@ SOME INFO
 
 A common source of false warnings have to do with call-by-name.
 The syntax checker can be told about procedures using call-by-name
-using inline comments or separate info files. See syntax.syntax and
+using inline comments or separate info files. See nagelfar.syntax and
 tests/test.syntax for examples.
 
 
@@ -115,8 +115,6 @@ Handle widgets -command options, bind code and other callbacks
 Handle e.g. -textvariable
 Handle namespaces and qualified vars
 Everything marked FIXA
-Give this program a silly name. (maybe Psyche, Peter's SYntax CHEcker)
-Optimise. Always optimise.
 Tidy up messages. Tidy up code structure. Things are getting messy.
 
 Handle when some options take a value (p) and some don't (o).
