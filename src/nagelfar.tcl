@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 0.9
-set version "Version 0.9+ 2004-01-03"
+set version "Version 0.9+ 2004-01-07"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -800,6 +800,31 @@ proc parseExpr {str index knownVarsName} {
     }
 }
 
+# This is to detect bad comments in constant lists.
+# This will cause messages if there are comments in blocks
+# that are not recognised as code.
+proc checkForComment {word index} {
+    # Check for #
+    set si 0
+    while {[set si [string first \# $word $si]] >= 0} {
+        # Is it first in a line?
+        if {[string index $word [expr {$si - 1}]] eq "\n"} {
+            errorMsg N "Suspicious \# char. Possibly a bad comment." \
+                    [expr {$index + $si}]
+            break
+        }
+        incr si
+    }
+}
+
+proc checkForCommentL {words wordstatus indices} {
+    foreach word $words ws $wordstatus i $indices {
+        if {$ws == 2} {
+            checkForComment $word $i
+        }
+    }
+}
+
 # A "macro" for checkCommand to print common error message
 # It should not be called from anywhere else.
 proc WA {} {
@@ -818,8 +843,6 @@ proc WA {} {
 }
 
 # Check a command that have a syntax defined in the database
-# This is called from parseStatement, and was moved out to be able
-# to call it recursively.
 # 'firsti' says at which index in argv et.al. the arguments begin.
 proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
     upvar "constantsDontCheck" constantsDontCheck "knownVars" knownVars
@@ -856,6 +879,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 	if {($argc - $firsti) != $syn} {
 	    WA
 	}
+        checkForCommentL $argv $wordstatus $indices
 	return
     } elseif {[string equal [lindex $syn 0] "r"]} {
 	if {($argc - $firsti) < [lindex $syn 1]} {
@@ -863,6 +887,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 	} elseif {[llength $syn] >= 3 && ($argc - $firsti) > [lindex $syn 2]} {
 	    WA
 	}
+        checkForCommentL $argv $wordstatus $indices
 	return
     }
 
@@ -895,9 +920,15 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 	    x {
 		# x* matches anything up to the end.
 		if {[string equal $mod "*"]} {
+                    checkForCommentL [lrange $argv $i end] \
+                            [lrange $wordstatus $i end] \
+                            [lrange $indices $i end]
 		    set i $argc
 		    break
 		}
+		if {[lindex $wordstatus $i] == 2} {
+                    checkForComment [lindex $argv $i] [lindex $indices $i]
+                }
 		if {![string equal $mod "?"] || $i < $argc} {
 		    incr i
 		}
@@ -921,6 +952,8 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
                                     $cmd statement." [lindex $indices $i]
                         }
                     }
+                } elseif {[lindex $wordstatus $i] == 2} {
+                    checkForComment [lindex $argv $i] [lindex $indices $i]
                 }
 		parseExpr [lindex $argv $i] [lindex $indices $i] knownVars
 		incr i
