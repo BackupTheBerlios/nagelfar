@@ -1,7 +1,7 @@
 #!/bin/sh
 #--------------------------------------------------------------
 # Syntax.tcl, a syntax checker for Tcl.
-# Copyright (c) 1999, Peter Spjuth
+# Copyright (c) 1999-2000, Peter Spjuth
 #
 # $Id$
 #--------------------------------------------------------------
@@ -14,15 +14,20 @@ set defknownGlobals  [info globals]
 set defknownCommands [info commands]
 set defknownProcs    [info procs]
 
-set thisscript [file join [pwd] [info script]]
-set thisdir    [file dirname $thisscript]
+set thisScript [file join [pwd] [info script]]
+set thisDir    [file dirname $thisScript]
+if {[file type $thisScript] == "link"} {
+    set tmplink [file readlink $thisScript]
+    set thisDir [file dirname [file join $thisDir $tmplink]]
+    unset tmplink
+}
 
 # TODO: Handle widgets -command options, bind code and other callbacks
 #       Handle namespaces and qualified vars
 #       Handle multiple files. Remember variables.
 #       Everything marked FIXA
 #       Give this program a silly name. (maybe Psyche, Peter's SYntax CHEcker)
-#       Optimise. Always optimse.
+#       Optimise. Always optimise.
 #       Tidy up messages. Tidy up code structure. Things are getting messy.
 
 # Arguments to many procedures:
@@ -56,6 +61,7 @@ proc errorMsg {msg i} {
     echo "${pre}Line [calcLineNo $i]: $msg"
 }
 
+# A profiling thingy
 proc timestamp {str} {
     global _timestamp_
     set apa [clock clicks]
@@ -81,7 +87,6 @@ proc profile {str script} {
 }
 
 # Experimental test for comments with unmatched braces.
-# This is no good yet, since earlier parsing craps up before this.
 proc checkPossibleComment {str lineNo} {
     
     set n1 [llength [split $str \{]]
@@ -131,7 +136,7 @@ proc scanWord {str len index iName} {
         set closeChar [string range apa 1 0]
     }
 
-    if {[string compare $closeChar  ""]} {
+    if {[string compare $closeChar ""]} {
 	for {} {$i < $len} {incr i} {
             # Search for closeChar
             set i [string first $closeChar $str $i]
@@ -144,7 +149,7 @@ proc scanWord {str len index iName} {
 		return
 	    }
             if {[info complete [string range $str $si $i]]} {
-                #Check for following whitespace
+                # Check for following whitespace
                 set j [expr {$i + 1}]
                 if {$j == $len || [string is space [string index $str $j]]} {
                     return
@@ -267,7 +272,7 @@ proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
     return $used
 }
 
-##syntax splitListx x n
+##syntax splitList x x n
 # Make a list of a string. This is easy, just treat it as a list.
 # But we must keep track of indices, so our own parsing is needed too.
 proc splitList {str index iName} {
@@ -293,17 +298,19 @@ proc splitList {str index iName} {
 	    ws { # Whitespace
 		if {[string is space $c]} continue
 		# End of whitespace, i.e. a new element
-		lappend indices [expr {$index + $i}]
 		if {[string equal $c "\{"]} {
 		    set level 1
 		    set state brace
+                    lappend indices [expr {$index + $i + 1}]
 		} elseif {[string equal $c "\""]} {
 		    set state quote
+                    lappend indices [expr {$index + $i + 1}]
 		} else {
 		    if {[string equal $c "\\"]} {
 			set escape 1
 		    }
 		    set state word
+                    lappend indices [expr {$index + $i}]
 		}
 	    }
 	    word {
@@ -1109,9 +1116,8 @@ proc parseStatement {statement index knownVarsName} {
     # Check unmarked constants against known variables to detect missing $.
     if {[lsearch $constantsDontCheck all] == -1} {
 	set i 0
-	foreach ws $wordstatus {
+	foreach ws $wordstatus var $argv {
 	    if {$ws == 1 && [lsearch $constantsDontCheck $i] == -1} {
-		set var [lindex $argv $i]
 		if {[info exists knownVars($var)]} {
 		    errorMsg "Found constant \"$var\" which is also a\
                             variable." [lindex $indices $i]
@@ -1141,15 +1147,13 @@ proc splitScript {script index statementsName indicesName} {
 
             # Some extra checking on close braces to help finding
             # brace mismatches
-            set closeBrace 0
+            set closeBrace -1
             if {[regexp "^\}\\s*$" $line]} {
                 set closeBraceIx [expr {[string length $tryline] + $index}]
                 if {$newstatement} {
                     errorMsg "Close brace first in statement." $closeBraceIx
                 }
-                if {![wasIndented $closeBraceIx]} {
-                    set closeBrace 1
-                }
+                set closeBrace [wasIndented $closeBraceIx]
             }
 
 	    # Move everything up to the next semicolon, newline or eof to tryline
@@ -1219,15 +1223,26 @@ proc splitScript {script index statementsName indicesName} {
 		    }
 		    lappend indices $index
 		}
+                if {$closeBrace != -1} {
+                    set tmp [wasIndented $index]
+                    if {$tmp != $closeBrace} {
+                        errorMsg "Close brace not aligned with line\
+                                [calcLineNo $index] ($tmp $closeBrace)" $closeBraceIx
+                    }
+                }
 		incr index [string length $tryline]
 		set tryline ""
                 set newstatement 1
-	    } elseif {$closeBrace} {
+	    } elseif {!$closeBrace && \
+                    ![string match "namespace eval*" $tryline]} {
                 # A close brace that is not indented is typically the end of
                 # a global statement, like "proc".
                 # If it does not end the statement, there are probably a 
                 # brace mismatch.
-                errorMsg "Found non indented close brace that did not end statement." $closeBraceIx
+                # When inside a namespace eval block, this is probably ok.
+                errorMsg "Found non indented close brace that did not end\
+                        statement. This may indicate a brace mismatch." \
+                        $closeBraceIx
             }
 	}
     }
@@ -1262,7 +1277,7 @@ proc parseBody {body index knownVarsName} {
     }
 }
 
-# This is called when a proc command is ecountered.
+# This is called when a proc command is encountered.
 proc parseProc {argv indices} {
     global knownProcs knownCommands knownGlobals syntax
     
@@ -1346,6 +1361,13 @@ proc wasIndented {i} {
     lindex $indentInfo $n
 }
 
+# Length of initial whitespace
+proc countIndent {str} {
+    set str [string range $str 0 end-[string length [string trimleft $str]]]
+    regsub -all { {0,7}\t} $str "        " str
+    return [string length $str]
+}
+
 # Build a database of newlines to be able to calculate line numbers.
 # Also replace all escaped newlines with a space, and remove all 
 # whitespace from the start of lines. Later processing is greatly 
@@ -1367,7 +1389,8 @@ proc buildLineDb {str} {
 
     foreach line $lines {
 	incr lineNo
-        set indent [string match "\[ \t\]*" $line]
+        # Count indent spaces and remove them
+        set indent [countIndent $line]
 	set line [string trimleft $line]
         # Check for comments.
 	if {[string equal [string index $line 0] "#"]} {
@@ -1452,7 +1475,7 @@ proc usage {} {
 # Locate default syntax database
 set defaultDb ""
 foreach file [list [file join [pwd] syntaxdb.tcl] \
-        [file join $thisdir syntaxdb.tcl]] {
+        [file join $thisDir syntaxdb.tcl]] {
     if {[file exists $file]} {
         set defaultDb $file
         break
@@ -1498,7 +1521,7 @@ if {![info exists gurka]} {
             if {$defaultDb == ""} {
                 puts "No syntax database file."
                 set knownGlobals  $defknownGlobals
-                set knownCommands $defknownKCommands
+                set knownCommands $defknownCommands
                 set knownProcs    $defknownProcs
             } else {
                 source $defaultDb
@@ -1521,7 +1544,7 @@ if {![info exists gurka]} {
         if {$defaultDb == ""} {
             puts "No syntax database file."
             set knownGlobals  $defknownGlobals
-            set knownCommands $defknownKCommands
+            set knownCommands $defknownCommands
             set knownProcs    $defknownProcs
         } else {
             source $defaultDb
