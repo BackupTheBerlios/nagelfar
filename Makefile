@@ -38,7 +38,7 @@ nagelfar.vfs/lib/griffin:
 nagelfar.vfs/lib/tkdnd:
 	cd nagelfar.vfs/lib ; ln -s $(TKDND) tkdnd
 nagelfar.vfs/lib/ctext:
-	cd nagelfar.vfs/lib ; ln -s $(CTEXT) ctext
+#	cd nagelfar.vfs/lib ; ln -s $(CTEXT) ctext
 
 links: nagelfar.vfs/lib/app-nagelfar/nagelfar.tcl \
 	nagelfar.vfs/lib/app-nagelfar/syntaxdb.tcl \
