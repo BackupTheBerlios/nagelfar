@@ -75,6 +75,9 @@ proc buildDb {ch} {
     set ver   [package present Tcl]
 
     puts $ch "# Automatically generated syntax database."
+    puts -nonewline $ch "# Generated with syntaxbuild "
+    puts $ch {$Revision$}
+
     set useTk [expr {![catch {package present Tk}]}]
     if {!$useTk} {
         puts $ch "# Based on Tcl version $patch\n"
@@ -129,8 +132,12 @@ proc buildDb {ch} {
 
     set syntax(after)           "r 1"
     set syntax(append)          "n x*"
-    set syntax(array)           "s n x*"
-    set syntax(array\ names)    "v x?"
+    set syntax(array)           "s v x?"
+    set syntax(array\ exists)   "l"
+    set syntax(array\ names)    "v x? x?"
+    set syntax(array\ set)      "n x"
+    set syntax(array\ size)     "v"
+    set syntax(array\ statistics) "v"
     set syntax(binary)          "s x*"
     set syntax(binary\ scan)    "x x n n*"
     set syntax(break)            0
