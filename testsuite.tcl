@@ -505,4 +505,17 @@ test nagelfar-12.3 {
     execTestFile -flags -2pass
 } -result "%%Line   4: N Suspicious \# char. Possibly a bad comment."
 
+test nagelfar-13.1 {
+    Syntax database, multiple ?
+} -setup {
+    createTestFile {
+        array set hej {1 2}
+        array names hej
+        array names hej *a*
+        array names hej -regexp *a*
+    }
+} -body {
+    execTestFile
+} -result {%%}
+
 file delete _testfile_
