@@ -90,6 +90,17 @@ test nagelfar-3.3 {
     execTestFile
 } -result {*Unescaped end bracket*Unescaped end bracket*} -match glob
 
+test nagelfar-3.4 {
+    Basic errors
+} -setup {
+    createTestFile {
+        set apa bepa
+        set cepa [set $apa]
+    }
+} -body {
+    execTestFile
+} -result {*Suspicious variable name "$apa"*} -match glob
+
 test nagelfar-4.1 {
     Options checking
 } -setup {
