@@ -19,11 +19,15 @@ proc createTestFile {scr} {
 
 proc execTestFile {args} {
     set xx(-fn) _testfile_
+    set xx(-flags) {}
     array set xx $args
     set fn $xx(-fn)
     array unset xx -fn
+    set flags $xx(-flags)
+    array unset xx -flags
+
     eval [list exec [info nameofexecutable] nagelfar.tcl $fn] [array get xx] \
-            ;#2>@ stderr
+            $flags ;#2>@ stderr
 }    
 
 
@@ -273,6 +277,21 @@ test nagelfar-5.5 {
     execTestFile
 } -result {Checking file _testfile_} -match glob
 
+test nagelfar-5.6 {
+    Procedure checking, "wrong order"
+} -setup {
+    createTestFile {
+        proc hej {a b c} {
+            return [hopp apa bepa cepa]
+        }
+        proc hopp {a b} {
+            return $a
+        }
+    }
+} -body {
+    execTestFile -flags -2pass
+} -result {*Wrong number of arguments (3) to "hopp"*} -match glob
+
 test nagelfar-6.1 {
     Expression checking
 } -setup {
@@ -361,5 +380,59 @@ test nagelfar-8.1 {
 } -body {
     execTestFile
 } -result {should detect missing dollar} -match glob
+
+test nagelfar-9.1 {
+    if statement, as comment
+} -setup {
+    createTestFile {
+        if 0 {
+            set y $x
+        }
+        expr {$y}
+    }
+} -body {
+    execTestFile
+} -result {*Unknown variable "y"*} -match glob
+
+test nagelfar-9.2 {
+    if statement, as comment
+} -setup {
+    createTestFile {
+        if 0 then {
+            set y $x
+        }
+        expr {$y}
+    }
+} -body {
+    execTestFile
+} -result {*Unknown variable "y"*} -match glob
+
+test nagelfar-10.1 {
+    Brace alignment 
+} -constraints { 
+    knownbug
+} -setup {
+    createTestFile "
+        cmd xx yy \\
+            apa {
+               hejsan
+            }
+    "
+} -body {
+    execTestFile
+} -result {Checking file _testfile_} -match glob
+
+test nagelfar-10.2 {
+    Brace alignment 
+} -setup {
+    createTestFile {
+        list xx yy {
+            hejsan
+         }
+    }
+} -body {
+    execTestFile
+} -result {*Close brace not aligned with line 2 (8 9)*} -match glob
+
 
 file delete _testfile_
