@@ -4,7 +4,18 @@ exec tclsh "$0" "$@"
 
 set cho [open test.html w]
 
-puts $cho "<pre>"
+puts $cho "<html>"
+puts $cho "<body>"
+
+puts $cho {<table cellpadding="2" cellspacing="0" border="1">}
+puts $cho "  <tbody>"
+puts $cho "    <tr>"
+puts $cho "      <th>Test File</th>"
+puts $cho "      <th>The result of checking it:</th>"
+puts $cho "    </tr>"
+puts $cho "    <tr>"
+
+puts $cho {<td style="vertical-align: top; white-space: nowrap;"><pre>}
 set ch [open test.tcl r]
 set n 1
 while {[gets $ch line] != -1} {
@@ -16,16 +27,30 @@ while {[gets $ch line] != -1} {
     incr n
 }
 close $ch
-puts $cho "</pre>"
+puts $cho "</pre></td>"
 
-puts $cho "<br><br>"
-puts $cho "The result of checking the above is:"
-puts $cho "<br><br>"
 
-puts $cho "<pre>"
+puts $cho {<td style="vertical-align: top; white-space: nowrap;"><pre>}
 set ch [open test.result r]
-puts -nonewline $cho [read $ch]
+set n 1
+while {[gets $ch line] != -1} {
+    if {[regexp {^Line\s+(\d+)} $line -> errLine]} {
+        while {$errLine > $n} {
+            puts $cho ""
+            incr n
+        }
+    }
+    puts $cho $line
+    incr n
+}
 close $ch
-puts $cho "</pre>"
+puts $cho "</pre></td>"
+
+puts $cho "</tr>"
+puts $cho "</tbody>"
+puts $cho "</table>"
+
+puts $cho "</body>"
+puts $cho "</html>"
 
 close $cho

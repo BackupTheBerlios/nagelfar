@@ -37,7 +37,8 @@ proc apa {} {
 }
 
 # Test call-by-name handling
-# The syntax of this proc is described in the file test.syntax
+# The syntax of this proc is described in
+# the file test.syntax
 proc copy {srcName dstName} {
     upvar $srcName src $dstName dst
     set dst $src
@@ -73,8 +74,9 @@ proc epa {} {
     }
 }
 
-# This should be last in the file, since the missing close brace
-# disturbs anything after it
+# This should be last in the file, since
+# the missing close brace disturbs anything
+# after it
 proc depa {} {
     # Missing close brace
     if {[string length apa] {
