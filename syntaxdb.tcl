@@ -1,10 +1,9 @@
 # Automatically generated syntax database.
-# Generated with syntaxbuild $Revision$
+# Generated with syntaxbuild Revision: 1.16 
 # Based on Tcl/Tk version 8.4.4
 
 set ::knownGlobals {argc argv argv0 auto_index auto_oldpath auto_path env errorCode errorInfo tcl_interactive tcl_libPath tcl_library tcl_nonwordchars tcl_patchLevel tcl_pkgPath tcl_platform tcl_rcFileName tcl_version tcl_wordchars tk_library tk_patchLevel tk_strictMotif tk_version}
 set ::knownCommands {. after append array auto_execok auto_import auto_load auto_load_index auto_mkindex auto_mkindex_old auto_qualify auto_reset bell binary bind bindtags break button canvas case catch cd checkbutton clipboard clock close concat continue destroy encoding entry eof error eval event exec exit expr fblocked fconfigure fcopy file fileevent flush focus font for foreach format frame gets glob global grab grid history if image incr info interp join label labelframe lappend lindex linsert list listbox llength load lower lrange lreplace lsearch lset lsort menu menubutton message namespace open option pack package panedwindow parray pid pkg_compareExtension pkg_mkIndex place proc puts pwd radiobutton raise read regexp regsub rename return scale scan scrollbar seek selection send set socket source spinbox split string subst switch tclLdAout tclLog tclPkgSetup tclPkgUnknown tcl_endOfWord tcl_findLibrary tcl_startOfNextWord tcl_startOfPreviousWord tcl_wordBreakAfter tcl_wordBreakBefore tell text time tk tk_chooseColor tk_chooseDirectory tk_getOpenFile tk_getSaveFile tk_menuSetFocus tk_messageBox tk_popup tk_textCopy tk_textCut tk_textPaste tkwait toplevel trace unknown unset update uplevel upvar variable vwait while winfo wm}
-set ::knownProcs {auto_execok auto_import auto_load auto_load_index auto_mkindex auto_mkindex_old auto_qualify auto_reset history parray pkg_compareExtension pkg_mkIndex tclLdAout tclLog tclPkgSetup tclPkgUnknown tcl_endOfWord tcl_findLibrary tcl_startOfNextWord tcl_startOfPreviousWord tcl_wordBreakAfter tcl_wordBreakBefore tk_chooseColor tk_chooseDirectory tk_getOpenFile tk_getSaveFile tk_menuSetFocus tk_messageBox tk_popup tk_textCopy tk_textCut tk_textPaste unknown}
 set ::syntax(after) {r 1}
 set ::syntax(append) {n x*}
 set ::syntax(array) {s v x?}
@@ -13,6 +12,7 @@ set {::syntax(array names)} {v x? x?}
 set {::syntax(array set)} {n x}
 set {::syntax(array size)} v
 set {::syntax(array statistics)} v
+set {::syntax(array unset)} {l x?}
 set ::syntax(auto_execok) 1
 set ::syntax(auto_import) 1
 set ::syntax(auto_load) {r 1 2}
