@@ -120,3 +120,17 @@ Optimise. Always optimise.
 Tidy up messages. Tidy up code structure. Things are getting messy.
 
 Handle when some options take a value (p) and some don't (o).
+
+Be able to detect standard options (or for a specific command)
+that are followed by a certain type (typically 'n' or 'c').
+
+
+BUGS
+
+The close brace alignment check should match against the line
+with the opening brace, not the start of the command:
+    cmd xx yy \
+        apa {
+            hejsan
+        }
+Line  4: Close brace not aligned with line 1 (4 8)
