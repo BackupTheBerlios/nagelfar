@@ -43,8 +43,9 @@ editor. You can edit and save the file.
 
 FEEDBACK
 
-Bugs, suggestions, beer, teddybears and cash can be sent to:
+Bugs and suggestions can be sent to:
 peter.spjuth@space.se
+(I also accept beer and teddybears)
 
 
 SOME INFO
@@ -57,9 +58,10 @@ tests/test.syntax for examples.
 
 TODO
 
+The database in syntaxbuild is far from complete when it comes to subcommands.
 Handle widgets -command options, bind code and other callbacks
 Handle e.g. -textvariable
-Handle namespaces and qualified vars
+Handle namespaces and qualified vars better
 Everything marked FIXA
 Tidy up code structure. Things are getting messy.
 
@@ -68,6 +70,10 @@ should be able to recognise [list a b] as a constant list.
 
 Recognise the idiom [list cmd arg arg] as code.
 Recognise the idiom [set $var] for double dereferencing.
+Option to enforce switch --.
+
+Make a GUI to help working with the database builder.
+
 
 BUGS
 
