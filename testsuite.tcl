@@ -26,8 +26,11 @@ proc execTestFile {args} {
     set flags $xx(-flags)
     array unset xx -flags
 
-    eval [list exec [info nameofexecutable] nagelfar.tcl $fn] [array get xx] \
-            $flags ;#2>@ stderr
+    set res [eval [list exec [info nameofexecutable] nagelfar.tcl $fn] \
+            [array get xx] $flags] ;#2>@ stderr
+    # Simplify result by shortening standard result
+    regsub {Checking file _testfile_\n?} $res "%%" res
+    return $res
 }    
 
 
@@ -39,7 +42,7 @@ test nagelfar-1.1 {
     }
 } -body {
     execTestFile -fn _____
-} -returnCodes 1 -result {*Could not find file _____*} -match glob
+} -returnCodes 1 -result {Could not find file _____}
 
 
 test nagelfar-2.1 {
@@ -53,7 +56,7 @@ test nagelfar-2.1 {
     }
 } -body {
     execTestFile
-} -result {Checking file _testfile_} -match glob
+} -result {%%}
 
 test nagelfar-2.2 {
     Basic functionality
@@ -63,7 +66,7 @@ test nagelfar-2.2 {
     }
 } -body {
     execTestFile -filter *Unknown*
-} -result {Checking file _testfile_} -match glob
+} -result {%%}
 
 test nagelfar-2.3 {
     Basic functionality
@@ -80,7 +83,7 @@ test nagelfar-2.3 {
     }
 } -body {
     execTestFile
-} -result {Checking file _testfile_} -match glob
+} -result {%%}
 
 
 test nagelfar-3.1 {
@@ -91,7 +94,7 @@ test nagelfar-3.1 {
     }
 } -body {
     execTestFile
-} -result {*Unknown variable "bepa"*} -match glob
+} -result {%%Line   2: E Unknown variable "bepa"}
 
 test nagelfar-3.2 {
     Basic errors
@@ -103,7 +106,7 @@ test nagelfar-3.2 {
     }
 } -body {
     execTestFile
-} -result {*Wrong number of arguments (2) to "hej"*} -match glob
+} -result {%%Line   4: E Wrong number of arguments (2) to "hej"}
 
 test nagelfar-3.3 {
     Basic errors
@@ -114,7 +117,7 @@ test nagelfar-3.3 {
     }
 } -body {
     execTestFile
-} -result {*Unescaped end bracket*Unescaped end bracket*} -match glob
+} -result {%%Line   2: N Unescaped end bracket*Line   3: N Unescaped end bracket} -match glob
 
 test nagelfar-3.4 {
     Basic errors
@@ -125,7 +128,7 @@ test nagelfar-3.4 {
     }
 } -body {
     execTestFile
-} -result {*Suspicious variable name "$apa"*} -match glob
+} -result {%%Line   3: N Suspicious variable name "$apa"}
 
 test nagelfar-3.5 {
     Basic errors
@@ -140,7 +143,7 @@ test nagelfar-3.5 {
     }
 } -body {
     execTestFile
-} -result {*Unknown variable "Miffo(hampa)"} -match glob
+} -result {%%Line   5: E Unknown variable "Miffo(hampa)"}
 
 test nagelfar-4.1 {
     Options checking
@@ -151,7 +154,7 @@ test nagelfar-4.1 {
     }
 } -body {
     execTestFile
-} -result {Checking file _testfile_} -match glob
+} -result {%%}
 
 test nagelfar-4.2 {
     Options checking
@@ -161,7 +164,7 @@ test nagelfar-4.2 {
     }
 } -body {
     execTestFile
-} -result {*Ambigous option*-d *-dictionary*} -match glob
+} -result {%%Line   2: E Ambigous option for lsort, -d -> -decreasing/-dictionary}
 
 test nagelfar-4.3 {
     Options checking
@@ -171,7 +174,7 @@ test nagelfar-4.3 {
     }
 } -body {
     execTestFile
-} -result {*Wrong number of arguments*} -match glob
+} -result {%%Line   2: E Wrong number of arguments (3) to "lsort"}
 
 # This error gives a different message which I hope I can correct.
 test nagelfar-4.4 {
@@ -196,7 +199,7 @@ test nagelfar-4.5 {
     }
 } -body {
     execTestFile
-} -result {Checking file _testfile_} -match glob
+} -result {%%}
 
 test nagelfar-5.1 {
     Procedure checking
@@ -209,7 +212,8 @@ test nagelfar-5.1 {
     }
 } -body {
     execTestFile
-} -result {*Procedure "info" does not match previous definition*} -match glob
+} -result {%%Line   2: W Procedure "info" does not match previous definition*}\
+        -match glob
 
 test nagelfar-5.2 {
     Procedure checking
@@ -225,7 +229,7 @@ test nagelfar-5.2 {
     }
 } -body {
     execTestFile
-} -result {Checking file _testfile_} -match glob
+} -result {%%}
 
 test nagelfar-5.3 {
     Procedure checking, detecting upvar
@@ -242,7 +246,7 @@ test nagelfar-5.3 {
     }
 } -body {
     execTestFile
-} -result {*Suspicious variable name "$y"*} -match glob
+} -result {%%Line   9: N Suspicious variable name "$y"}
 
 test nagelfar-5.4 {
     Procedure checking, detecting upvar
@@ -258,7 +262,7 @@ test nagelfar-5.4 {
     }
 } -body {
     execTestFile
-} -result {*Unknown variable "x"*} -match glob
+} -result {%%Line   8: E Unknown variable "x"}
 
 test nagelfar-5.5 {
     Procedure checking, detecting upvar
@@ -275,7 +279,7 @@ test nagelfar-5.5 {
     }
 } -body {
     execTestFile
-} -result {Checking file _testfile_} -match glob
+} -result {%%}
 
 test nagelfar-5.6 {
     Procedure checking, "wrong order"
@@ -290,7 +294,7 @@ test nagelfar-5.6 {
     }
 } -body {
     execTestFile -flags -2pass
-} -result {*Wrong number of arguments (3) to "hopp"*} -match glob
+} -result {%%Line   3: E Wrong number of arguments (3) to "hopp"}
 
 test nagelfar-6.1 {
     Expression checking
@@ -300,17 +304,18 @@ test nagelfar-6.1 {
     }
 } -body {
     execTestFile
-} -result {*Bad expression: can't use empty string as operand of*} -match glob
+} -result {%%Line   2: E Bad expression: can't use empty string as operand of "+"}
 
 test nagelfar-6.2 {
     Expression checking
 } -setup {
     createTestFile {
+        set apa 1
         expr {1 + $apa /}
     }
 } -body {
     execTestFile
-} -result {*Bad expression: premature end of expression*} -match glob
+} -result {%%Line   3: E Bad expression: premature end of expression}
 
 test nagelfar-6.3 {
     Expression checking
@@ -318,12 +323,12 @@ test nagelfar-6.3 {
     createTestFile {
         set apa 10
         set bepa 5
-        # This gave an divide by zero error in the first implementation
+        # This gave a divide by zero error in the first implementation
         expr {1 / ($apa - $bepa)}
     }
 } -body {
     execTestFile
-} -result {Checking file _testfile_} -match glob
+} -result {%%}
 
 test nagelfar-6.4 {
     Expression checking
@@ -334,7 +339,7 @@ test nagelfar-6.4 {
     }
 } -body {
     execTestFile
-} -result {Checking file _testfile_} -match glob
+} -result {%%}
 
 test nagelfar-7.1 {
     Command: upvar
@@ -344,7 +349,7 @@ test nagelfar-7.1 {
     }
 } -body {
     execTestFile
-} -result {*Wrong number of arguments (2) to "upvar"*} -match glob
+} -result {%%Line   2: E Wrong number of arguments (2) to "upvar"}
 
 test nagelfar-7.2 {
     Command: upvar
@@ -355,7 +360,7 @@ test nagelfar-7.2 {
     }
 } -body {
     execTestFile
-} -result {*Suspicious upvar variable "$x"*} -match glob
+} -result {%%Line   3: N Suspicious upvar variable "$x"}
 
 test nagelfar-7.3 {
     Command: upvar
@@ -366,7 +371,7 @@ test nagelfar-7.3 {
     }
 } -body {
     execTestFile
-} -result {*Non constant level to upvar: $x*} -match glob
+} -result {%%Line   3: N Non constant level to upvar: "$x"}
 
 test nagelfar-8.1 {
     Variable handling
@@ -379,7 +384,7 @@ test nagelfar-8.1 {
     }
 } -body {
     execTestFile
-} -result {should detect missing dollar} -match glob
+} -result {should detect missing dollar}
 
 test nagelfar-9.1 {
     if statement, as comment
@@ -392,7 +397,7 @@ test nagelfar-9.1 {
     }
 } -body {
     execTestFile
-} -result {*Unknown variable "y"*} -match glob
+} -result {%%Line   5: E Unknown variable "y"}
 
 test nagelfar-9.2 {
     if statement, as comment
@@ -405,7 +410,7 @@ test nagelfar-9.2 {
     }
 } -body {
     execTestFile
-} -result {*Unknown variable "y"*} -match glob
+} -result {%%Line   5: E Unknown variable "y"}
 
 test nagelfar-10.1 {
     Brace alignment 
@@ -420,7 +425,7 @@ test nagelfar-10.1 {
     "
 } -body {
     execTestFile
-} -result {Checking file _testfile_} -match glob
+} -result {%%}
 
 test nagelfar-10.2 {
     Brace alignment 
@@ -432,7 +437,72 @@ test nagelfar-10.2 {
     }
 } -body {
     execTestFile
-} -result {*Close brace not aligned with line 2 (8 9)*} -match glob
+} -result {%%Line   4: N Close brace not aligned with line 2 (8 9)}
 
+test nagelfar-11.1 {
+    Line numbers
+} -setup {
+    createTestFile "
+        list xx yy \\
+                zz \$y
+        set apa \$bepa
+        if 1 {
+            list xx yy \\
+                    zz \\
+                    zz \\
+                    zz \\
+                    \$x
+        }
+    "
+} -body {
+    execTestFile
+} -result {^%%Line\s+3:.*Line\s+4:.*Line\s+10:} -match regexp
+
+test nagelfar-12.1 {
+    Comments, bad in switch
+} -setup {
+    createTestFile {
+        switch apa {
+            hej {
+                set x 1
+            }
+            # A bad comment
+            hopp {
+                set y 1
+            }
+        }
+    }
+} -body {
+    execTestFile
+} -result "%%Line   6: W Switch pattern starting with #. This could be a bad comment.*" -match glob
+
+test nagelfar-12.2 {
+    Comments, bad in list
+} -setup {
+    createTestFile {
+        array set apa {
+            elem1 val1
+            # A bad comment
+            elem2 val2
+        }
+    }
+} -body {
+    execTestFile
+} -result "%%Line   4: N Suspicious \# char. Possibly a bad comment."
+
+test nagelfar-12.3 {
+    Comments, bad in list
+} -setup {
+    createTestFile {
+        miffo apa {
+            elem1 val1
+            # A bad comment
+            elem2 val2
+        }
+        proc miffo {a b} {}
+    }
+} -body {
+    execTestFile -flags -2pass
+} -result "%%Line   4: N Suspicious \# char. Possibly a bad comment."
 
 file delete _testfile_
