@@ -70,14 +70,15 @@ proc createSyntax {procName} {
 
 # Build a syntax database and write it to a channel
 proc buildDb {ch} {
-    set ver [info patchlevel]
+    set patch [info patchlevel]
+    set ver   [package present Tcl]
 
     puts $ch "# Automatically generated syntax database."
     set useTk [expr {![catch {package present Tk}]}]
     if {!$useTk} {
-        puts $ch "# Based on Tcl version $ver\n"
+        puts $ch "# Based on Tcl version $patch\n"
     } else {
-        puts $ch "# Based on Tcl/Tk version $ver\n"
+        puts $ch "# Based on Tcl/Tk version $patch\n"
     }
     puts $ch [list set ::knownGlobals $::kG]
     puts $ch [list set ::knownCommands $::kC]
@@ -175,7 +176,11 @@ proc buildDb {ch} {
     set syntax(load)            "r 1 3"
     set syntax(lrange)           3
     set syntax(lreplace)        "r 3"
-    set syntax(lsearch)         "o? x x"
+    if {[catch {lsearch -all -glob apa bepa}]} {
+        set syntax(lsearch)     "o? x x"  ;# Pre 8.4
+    } else {
+        set syntax(lsearch)     "o* x x"
+    }
     set syntax(lsort)           "o* x"
     # "namespace" is handled specially
     set syntax(namespace)       "s x*"
