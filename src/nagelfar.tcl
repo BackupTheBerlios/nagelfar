@@ -1,7 +1,7 @@
 #!/bin/sh
 #----------------------------------------------------------------------
 #  nagelfar.tcl, a syntax checker for Tcl.
-#  Copyright (c) 1999-2004, Peter Spjuth  (peter.spjuth@space.se)
+#  Copyright (c) 1999-2005, Peter Spjuth  (peter.spjuth@space.se)
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.1 2004-12-22"
+set version "Version 1.1+ 2005-01-01"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -2486,6 +2486,7 @@ proc countIndent {str} {
 # Also replace all escaped newlines with a space, and remove all
 # whitespace from the start of lines. Later processing is greatly
 # simplified if it does not need to bother with those.
+# Returns the simplified script.
 proc buildLineDb {str} {
     global newlineIx indentInfo
 
@@ -2496,6 +2497,15 @@ proc buildLineDb {str} {
     }
     set newlineIx {}
     set indentInfo {}
+
+    # Detect a header.  Backslash-newline is not substituted in the header,
+    # and the index after the header is kept.  This is to preserve the header
+    # in code coverage mode.
+    # The first non-empty non-comment line ends the header.
+    set ::instrumenting(header) 0
+    set headerLines 1
+    set previousWasEscaped 0
+
     # This is a trick to get "sp" and "nl" to get an internal string rep.
     # This also makes sure it will not be a shared object, which can mess up
     # the internal rep.
@@ -2512,18 +2522,26 @@ proc buildLineDb {str} {
         # Check for comments.
 	if {[string equal [string index $line 0] "#"]} {
 	    checkPossibleComment $line $lineNo
-	}
+	} elseif {$headerLines && $str ne "" && !$previousWasEscaped} {
+            set headerLines 0
+            set ::instrumenting(header) [string length $result]
+        }
+
         # Count backslashes to determine if it's escaped
+        set previousWasEscaped 0
         if {[string equal [string index $line end] "\\"]} {
 	    set len [string length $line]
             set si [expr {$len - 2}]
             while {[string equal [string index $line $si] "\\"]} {incr si -1}
             if {($len - $si) % 2 == 0} {
                 # An escaped newline
-                append result [string range $line 0 end-1] $sp
-                lappend newlineIx [string length $result]
-                lappend indentInfo $indent
-                continue
+                set previousWasEscaped 1
+                if {!$headerLines} {
+                    append result [string range $line 0 end-1] $sp
+                    lappend newlineIx [string length $result]
+                    lappend indentInfo $indent
+                    continue
+                }
             }
         }
         # Unescaped newline
@@ -2602,7 +2620,7 @@ proc parseFile {filename} {
     set script [read $ch]
     close $ch
 
-    array unset ::instrument
+    array unset ::instrumenting
 
     initMsg
     parseScript $script
@@ -2630,8 +2648,9 @@ proc dumpInstrumenting {filename} {
         }
     }
     set init [list [list set current $tail]]
+    set headerIndex $::instrumenting(header)
     foreach ix [lsort -decreasing -integer $indices] {
-        if {$ix == 0} continue
+        if {$ix <= $headerIndex} break
         set line [calcLineNo $ix]
         set item "$tail,$line"
         set i 2
@@ -2659,10 +2678,15 @@ proc dumpInstrumenting {filename} {
         lappend init [list set log($item) 1]
     }
     set ch [open $ifile w]
+    # Start with a copy of the original's header
+    if {$headerIndex > 0} {
+        puts $ch [string range $iscript 0 [expr {$headerIndex - 1}]]
+        set iscript [string range $iscript $headerIndex end]
+    }
     # Create a prolog equal in all instrumented files
     puts $ch {
         namespace eval ::_instrument_ {}
-        if {[info procs ::_instrument_::source] == ""} {
+        if {[info commands ::_instrument_::source] == ""} {
             rename ::source ::_instrument_::source
             proc ::source {fileName} {
                 set newFileName $fileName
@@ -2718,6 +2742,10 @@ proc dumpInstrumenting {filename} {
 
     puts $ch $iscript
     close $ch
+    
+    # Copy permissions to instrumented file.
+    catch {file attributes $ifile -permissions \
+            [file attributes $filename -permissions]}
 }
 
 proc instrumentMarkup {filename} {
@@ -2793,7 +2821,9 @@ proc usage {} {
  -WsubN            : Sets subcommand warning level to N.
    1 (def)         = Warn about shortened subcommands.
  -WelseN           : Enforce else keyword. Default 1.
- -strictappend     : Enforce having an initialised variable in (l)append.}
+ -strictappend     : Enforce having an initialised variable in (l)append.
+ -instrument       : Instrument source file for code coverage.
+ -markup           : Markup source file with code coverage result.}
     exit
 }
 
