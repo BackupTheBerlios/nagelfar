@@ -1,10 +1,26 @@
 #!/bin/sh
-#--------------------------------------------------------------
-# Syntax.tcl, a syntax checker for Tcl.
-# Copyright (c) 1999-2000, Peter Spjuth
+#----------------------------------------------------------------------
+#  Syntax.tcl, a syntax checker for Tcl.
+#  Copyright (c) 1999-2002, Peter Spjuth  (peter.spjuth@space.se)
 #
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; see the file COPYING.  If not, write to
+#  the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+#  Boston, MA 02111-1307, USA.
+#
+#----------------------------------------------------------------------
 # $Revision$
-#--------------------------------------------------------------
+#----------------------------------------------------------------------
 # the next line restarts using tclsh \
 exec tclsh "$0" "$@"
 
@@ -14,6 +30,7 @@ set defknownGlobals  [info globals]
 set defknownCommands [info commands]
 set defknownProcs    [info procs]
 
+set version "Version 0.1 2002-08-21"
 set thisScript [file join [pwd] [info script]]
 set thisDir    [file dirname $thisScript]
 if {[file type $thisScript] == "link"} {
@@ -138,7 +155,7 @@ proc scanWord {str len index iName} {
         set closeChar [string range apa 1 0]
     }
 
-    if {[string compare $closeChar ""]} {
+    if {![string equal $closeChar ""]} {
 	for {} {$i < $len} {incr i} {
             # Search for closeChar
             set i [string first $closeChar $str $i]
@@ -225,7 +242,7 @@ proc splitStatement {statement index indicesName} {
     while {$i < $len} {
         set si $i
 	lappend indices [expr {$i + $index}]
-        profile scanWord {scanWord $statement $len $index i}
+        scanWord $statement $len $index i
         lappend words [string range $statement $si $i]
         incr i
         skipWS $statement $len i
@@ -607,12 +624,12 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 		    set i $argc
 		    break
 		}
-		if {[string compare $mod "?"] || $i < $argc} {
+		if {![string equal $mod "?"] || $i < $argc} {
 		    incr i
 		}
 	    }
 	    e { # An expression
-		if {[string compare $mod ""]} {
+		if {![string equal $mod ""]} {
 		    echo "Modifier \"$mod\" is not supported for \"e\" in\
                             syntax for $cmd."
 		}
@@ -629,7 +646,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 		incr i
 	    }
 	    c { # A code block
-		if {[string compare $mod ""]} {
+		if {![string equal $mod ""]} {
 		    echo "Modifier \"$mod\" is not supported for \"c\" in\
                             syntax for $cmd."
 		}
@@ -648,7 +665,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 		incr i
 	    }
 	    s { # A subcommand
-		if {[string compare $mod ""] && [string compare $mod "."]} {
+		if {![string equal $mod ""] && ![string equal $mod "."]} {
 		    echo "Modifier \"$mod\" is not supported for \"s\" in\
                             syntax for $cmd."
 		}
@@ -722,7 +739,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 	    }
 	    o {
 		set max 0
-		if {[string compare $mod "*"]} {
+		if {![string equal $mod "*"]} {
 		    set max 1
 		}
 		set used [checkOptions $cmd $argv $wordstatus $indices $i $max]
@@ -735,7 +752,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 	    }
 	    p {
 		set max 0
-		if {[string compare $mod "*"]} {
+		if {![string equal $mod "*"]} {
 		    set max 2
 		}
 		set used [checkOptions $cmd $argv $wordstatus $indices $i \
@@ -1024,8 +1041,8 @@ proc parseStatement {statement index knownVarsName} {
 		    }
 		}
 	    }
-	    if {[string compare $state "else"] \
-                    && [string compare $state "illegal"]} {
+	    if {![string equal $state "else"] \
+                    && ![string equal $state "illegal"]} {
 		errorMsg "Badly formed if statement" $index
 		echo "  Missing one body."
 		return
@@ -1284,7 +1301,7 @@ proc splitScript {script index statementsName indicesName} {
 proc parseBody {body index knownVarsName} {
     upvar $knownVarsName knownVars
 
-    profile splitScript {splitScript $body $index statements indices}
+    splitScript $body $index statements indices
 
     foreach statement $statements index $indices {
 	parseStatement $statement $index knownVars
@@ -1468,14 +1485,16 @@ proc parseFile {filename} {
     set script [read $ch]
     close $ch
 
-    profile total {parseScript $script}
+    parseScript $script
 }
 
 proc usage {} {
+    puts $::version
     puts {Usage: syntax.tcl [options] [-s dbfile] scriptfile ...}
+    puts { -h        : Show usage.}
     puts { -s dbfile : Include a database file. (More than one is allowed.)}
     puts { -WexprN   : Sets expression warning level.}
-    puts {   2 (def) = Warn about any unbraces expression.}
+    puts {   2 (def) = Warn about any unbraced expression.}
     puts {   1       = Don't warn on single commands. "if [apa] {...}" is ok.}
     puts { -WsubN    : Sets subcommand warning level.}
     puts {   1 (def) = Warn about shortened subcommands.}
@@ -1548,8 +1567,6 @@ if {![info exists gurka]} {
             puts "Checking file $f"
             parseFile $f
         }
-#        evalstats
-#        parray profiledata
         exit
     } else {
         #We have no arguments. Just try to load the syntaxDb.
@@ -1563,91 +1580,3 @@ if {![info exists gurka]} {
         }
     }
 }
-
-# Below here are test stuff.
-
-if {[catch {package present Tk}]} {
-    set wehavetk 0
-} else {
-    set wehavetk 1
-}
-
-if {$tcl_interactive} {
-    
-} else {
-    catch {console show ; console eval {focus .console}}
-}
-
-#Test stuff
-
-proc pt {{n 0}} {
-    if {$n == 0} {
-        if {$::tcl_platform(platform) == "windows"} {
-            set n 5
-        } else {
-            set n 1000
-        }
-    }
-    catch {unset ::_profile_}
-    set ::tcl_profile $n
-    parseFile syntax1.tcl
-    set ::tcl_profile 0
-    pprofile
-}
-proc ptu {{n 0}} {
-    if {$n == 0} {
-        if {$::tcl_platform(platform) == "windows"} {
-            set n 5
-        } else {
-            set n 1000
-        }
-    }
-    catch {unset ::_profile_}
-    set ::tcl_profile $n
-    parseFile unicode.tcl
-    set ::tcl_profile 0
-    pprofile
-}
-
-proc pprofile {} {
-    global _profile_
-    if {![array exists _profile_]} {
-	puts "No profile data available."
-	return
-    }
-    set maxl 0
-    foreach name [array names _profile_] {
-	set base $name
-	regexp {(.*),} $name -> base
-	if {![info exists sum($base)]} {set sum($base) 0}
-	incr sum($base) $_profile_($name)
-	if {[string length $name] > $maxl} {
-	    set maxl [string length $name]
-	}
-    }
-    set nw 1
-    set x $_profile_(_total_)
-    while {$x >= 10} {
-	incr nw
-	set x [expr {$x / 10}]
-    }
-    foreach name [lsort [array names _profile_]] {
-	if {[string match _* $name]} {
-	    puts stdout [format "%-*s = %*s" $maxl $name $nw $_profile_($name)]
-	} else {
-	    puts -nonewline stdout [format "%-*s = %*s (%4.1f%%)" $maxl $name $nw $_profile_($name) [expr {$_profile_($name) * 100.0 / $_profile_(_total_)}]]
-	    if {[info exists sum($name)] && $sum($name) != $_profile_($name)} {
-		puts stdout [format " %*s (%4.1f%%)" $nw $sum($name) [expr {$sum($name) * 100.0 / $_profile_(_total_)}]]
-	    } else {
-		puts stdout ""
-	    }
-	}
-    }
-}
-
-#pt
-#catch {parray _stats}
-#parseFile syntax1.tcl
-#parseFile unicode.tcl
-#parray profiledata
-#catch {parray _stats}
