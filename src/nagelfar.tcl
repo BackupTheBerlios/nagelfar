@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.0.2+ 2004-09-10"
+set version "Version 1.0.2+ 2004-09-15"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -42,6 +42,29 @@ while {[file type $tmplink] == "link"} {
 }
 unset tmplink
 
+# A profiling tool
+proc _dumplogme {} {
+    if {[info exists ::logme]} {
+        parray ::logme
+    }
+}
+    
+proc _initlogme {} {
+    proc logme {} {
+        set a [lindex [info level -1] 0]
+        if {[info exists ::logme($a)]} {
+            incr ::logme($a)
+        } else {
+            set ::logme($a) 1
+        }
+    }
+    rename proc _proc
+
+    _proc "proc" {name arg body} {
+        uplevel 1 [list _proc $name $arg "logme\n $body"]
+    }
+}
+#_initlogme
 
 #####################
 # Syntax check engine
@@ -300,24 +323,21 @@ proc popNamespace {} {
     set ::Nagelfar(namespaces) [lrange $::Nagelfar(namespaces) 0 end-1]
 }
 
-# Move "i" forward to the first non whitespace char
-proc skipWS {str len iName} {
-    upvar $iName i
-
+# Return the index of the first non whitespace char following index "i".
+proc skipWS {str len i} {
     set j [string length [string trimleft [string range $str $i end]]]
-    set i [expr {$len - $j}]
+    return [expr {$len - $j}]
 }
 
 # Scan the string until the end of one word is found.
 # When entered, i points to the start of the word.
-# When returning, i points to the last char of the word.
-proc scanWord {str len index iName} {
-    upvar $iName i
-
-    set si $i
+# Returns the index of the last char of the word.
+proc scanWord {str len index i} {
+    set si1 $i
+    set si2 $i
     set c [string index $str $i]
 
-    if {$::Nagelfar(allowExpand) && $c eq "\{"} {
+    if {$c eq "\{" && $::Nagelfar(allowExpand)} {
         if {[string range $str $i [expr {$i + 7}]] eq "{expand}"} {
             set ni [expr {$i + 8}]
             set nc [string index $str $ni]
@@ -325,6 +345,7 @@ proc scanWord {str len index iName} {
                 # Non-space detected, it is expansion
                 set c $nc
                 set i $ni
+                set si2 $i
             }
         }
     }
@@ -348,20 +369,19 @@ proc scanWord {str len index iName} {
                 # reach this function.
                 decho "Internal error: Did not find close char in scanWord.\
                         Line [calcLineNo $index]."
-                set i $len
-                return
+                return $len
             }
-            set word [string range $str $si $i]
+            set word [string range $str $si2 $i]
             if {[info complete $word]} {
                 # Check for following whitespace
                 set j [expr {$i + 1}]
                 if {$j == $len || [string is space [string index $str $j]]} {
-                    return
+                    return $i
                 }
                 errorMsg E "Extra chars after closing $charType." \
                         [expr {$index + $i}]
                 contMsg "Opening $charType of above was on line %L." \
-                        [expr {$index + $si}]
+                        [expr {$index + $si2}]
                 # Switch over to scanning for whitespace
                 incr i
                 break
@@ -376,21 +396,20 @@ proc scanWord {str len index iName} {
         } else {
             set i $len
         }
-        if {[info complete [string range $str $si $i]]} {
-            incr i -1
-            return
+        if {[info complete [string range $str $si2 $i]]} {
+            return [expr {$i - 1}]
         }
     }
 
     # Theoretically, no incomplete string should come to this function,
     # but some precaution is never bad.
-    if {![info complete [string range $str $si end]]} {
+    if {![info complete [string range $str $si2 end]]} {
         decho "Internal error in scanWord: String not complete.\
-                Line [calcLineNo [expr {$index + $si}]]."
+                Line [calcLineNo [expr {$index + $si1}]]."
         decho $str
         return -code break
     }
-    incr i -1
+    return [expr {$i - 1}]
 }
 
 # Split a statement into words.
@@ -408,7 +427,7 @@ proc splitStatement {statement index indicesName} {
     set i 0
     # There should not be any leading whitespace in the string that
     # reaches this function. Check just in case.
-    skipWS $statement $len i
+    set i [skipWS $statement $len $i]
     if {$i != 0 && $i < $len} {
         decho "Internal error:"
         decho " Whitespace in splitStatement. [calcLineNo $index]"
@@ -422,10 +441,10 @@ proc splitStatement {statement index indicesName} {
     while {$i < $len} {
         set si $i
         lappend indices [expr {$i + $index}]
-        scanWord $statement $len $index i
+        set i [scanWord $statement $len $index $i]
         lappend words [string range $statement $si $i]
         incr i
-        skipWS $statement $len i
+        set i [skipWS $statement $len $i]
     }
     return $words
 }
@@ -2224,6 +2243,8 @@ proc splitScript {script index statementsName indicesName knownVarsName} {
 proc parseBody {body index knownVarsName} {
     upvar $knownVarsName knownVars
 
+    #set ::instrumenting($index) 1
+
     # Cache the splitScript result to optimise 2-pass checking.
     if {[info exists ::Nagelfar(cacheBody)] && \
             [info exists ::Nagelfar(cacheBody,$body)]} {
@@ -2530,6 +2551,7 @@ proc parseScript {script} {
 	set knownVars(type,$g)      ""
     }
     set script [buildLineDb $script]
+    #set ::instrumenting(script) $script
 
     pushNamespace {}
     set ::Nagelfar(firstpass) 0
@@ -2579,9 +2601,50 @@ proc parseFile {filename} {
     set script [read $ch]
     close $ch
 
+    #array unset ::instrument
+
     initMsg
     parseScript $script
     flushMsg
+    
+    return ;# Disable experimental instrumenting
+    if {[info exists ::Nagelfar(instrument)] && \
+            $::Nagelfar(instrument) && \
+            [file extension $filename] ne ".syntax"} {
+        set tail [file tail $filename]
+        set ifile [file rootname $filename]_i[file extension $filename]
+        set iscript $::instrumenting(script)
+        set indices {}
+        foreach item [array names ::instrumenting] {
+            if {[string is digit $item]} {
+                lappend indices $item
+            }
+        }
+        set pre {}
+        foreach ix [lsort -decreasing -integer $indices] {
+            set line [calcLineNo $ix]
+            set item "$tail,$line"
+            set i 2
+            while {[info exists done($item)]} {
+                set item "$tail,$line,$i"
+                incr i
+            }
+            set done($item) 1
+            lappend pre [list set ::_instrument($item) 1]
+
+            set iscript [string range $iscript 0 [expr {$ix - 1}]][list unset -nocomplain ::_instrument($item)]\;[string range $iscript $ix end]
+        }
+        set ch [open $ifile w]
+        puts $ch [join $pre \n]
+        puts $ch $iscript
+
+        puts $ch {
+            proc _instrument_report {} {
+                parray ::_instrument
+            }
+        }
+        close $ch
+    }
 }
 
 # Add a message filter
@@ -3844,6 +3907,9 @@ if {![info exists gurka]} {
             -gui {
                 set ::Nagelfar(gui) 1
             }
+            -instrument {
+                set ::Nagelfar(instrument) 1
+            }
             -novar {
                 set ::Prefs(noVar) 1
             }
@@ -3907,5 +3973,6 @@ if {![info exists gurka]} {
     }
 
     doCheck
+    _dumplogme
     exit
 }
