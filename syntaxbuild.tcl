@@ -70,9 +70,9 @@ proc buildDb {ch} {
     } else {
         puts $ch "# Based on Tcl/Tk version $ver\n"
     }
-    puts $ch [list set knownGlobals $::kG]
-    puts $ch [list set knownCommands $::kC]
-    puts $ch [list set knownProcs $::kP]
+    puts $ch [list set ::knownGlobals $::kG]
+    puts $ch [list set ::knownCommands $::kC]
+    puts $ch [list set ::knownProcs $::kP]
 
     # Build a database of options and subcommands
     # TODO: Add all such commands
@@ -125,6 +125,34 @@ proc buildDb {ch} {
     # global, upvar, variable, set
     # if, switch, foreach
     # expr, proc, bind, eval
+    # interp, namespace, uplevel
+
+    # Starting to build up for all commands
+    #set syntax(after)
+    #set syntax(bgerror)
+    #set syntax(dde)
+    #set syntax(encoding)
+    #set syntax(eof)
+    #set syntax(exec)
+    #set syntax(fblocked)
+    #set syntax(fcopy)
+    #set syntax(fileevent)
+    #set syntax(filename)
+    #set syntax(flush)
+    #set syntax(history)
+    #set syntax(linsert)
+    #set syntax(load)
+    #set syntax(memory)
+    #set syntax(msgcat)
+    #set syntax(parray)
+    #set syntax(pid)
+    #set syntax(registry)
+    #set syntax(resource)
+    #set syntax(seek)
+    #set syntax(socket)
+    #set syntax(tell)
+    #set syntax(time)
+    #set syntax(vwait)
 
     # Commands with a set number of arguments that are not checked.
     set syntax(break)    0
@@ -164,7 +192,7 @@ proc buildDb {ch} {
     set syntax(info)         "s x*"
     set syntax(info\ exists) "l"
     set syntax(interp)       "s x*"
-    set syntax(file)         "s x x*"
+    set syntax(file)         "s x*"
     set syntax(file\ lstat)  "x n"
     set syntax(file\ stat)   "x n"
     set syntax(namespace)    "s x*"
@@ -177,6 +205,7 @@ proc buildDb {ch} {
     set syntax(binary\ scan) "x x n n*"
     set syntax(trace)        "s x x*"
     set syntax(trace\ variable) "n x x"
+    set syntax(trace\ vinfo) "l"
 
     if {$useTk} {
 	set syntax(winfo) "s x x*"
@@ -200,7 +229,7 @@ proc buildDb {ch} {
     set syntax(incr) "v x?"
     set syntax(regexp) "o* x x n*"
 
-    set syntax(scan) "x x n n*"
+    set syntax(scan) "x x n*"
     set syntax(unset) "l l*"
 
     # Build syntax info for procs
@@ -219,7 +248,7 @@ proc buildDb {ch} {
                 if {[lsearch $::kC [lindex [split $i] 0]] == -1} {
                     puts stderr "Skipping ${a}($i) since $i is not known."
                 } else {
-                    puts $ch [list set ${a}($i) $v]
+                    puts $ch [list set ::${a}($i) $v]
                 }
             }
         }
