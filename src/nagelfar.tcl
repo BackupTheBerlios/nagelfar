@@ -3,7 +3,7 @@
 # Syntax.tcl, a syntax checker for Tcl.
 # Copyright (c) 1999-2000, Peter Spjuth
 #
-# $Id$
+# $Revision$
 #--------------------------------------------------------------
 # the next line restarts using tclsh \
 exec tclsh "$0" "$@"
@@ -23,6 +23,7 @@ if {[file type $thisScript] == "link"} {
 }
 
 # TODO: Handle widgets -command options, bind code and other callbacks
+#       Handle e.g. -textvariable
 #       Handle namespaces and qualified vars
 #       Handle multiple files. Remember variables.
 #       Everything marked FIXA
@@ -74,6 +75,7 @@ proc timestamp {str} {
 }
 
 # A tool to collect profiling data
+##syntax profile x c
 proc profile {str script} {
     global profiledata
     if {![info exists profiledata($str)]} {
@@ -148,7 +150,8 @@ proc scanWord {str len index iName} {
 		set i $len
 		return
 	    }
-            if {[info complete [string range $str $si $i]]} {
+            set word [string range $str $si $i]
+            if {[info complete $word]} {
                 # Check for following whitespace
                 set j [expr {$i + 1}]
                 if {$j == $len || [string is space [string index $str $j]]} {
@@ -156,6 +159,8 @@ proc scanWord {str len index iName} {
                 }
                 errorMsg "Extra chars after closing brace or quote." \
                         [expr {$index + $i}]
+                errorMsg " Opening brace/quote of above was on this line."\
+                        [expr {$index + $si}]
                 # Switch over to scanning for whitespace
                 incr i
 		break
@@ -463,6 +468,10 @@ proc parseVar {str len index iName knownVarsName} {
     # varindex is the array index
     # varindexconst is 1 if the array index is a constant
 
+    if {$var == ""} {
+        return
+    }
+    
     if {[string match ::* $var]} {
 	# Skip qualified names until we handle namespace better. FIXA
 	return
@@ -507,7 +516,7 @@ proc parseSubst {str index knownVarsName} {
 		    }
 		}
 		if {$i == $len} {
-		    errorMsg "URGA:$si:$str:" $index
+		    errorMsg "URGA:$si\n:$str:\n:[string range $str $si end]:" $index
 		}
 		incr si
 		incr i -1
@@ -610,8 +619,8 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 		if {[lindex $wordstatus $i] == 0 && $Prefs(warnBraceExpr)} {
                     # Allow pure command substitution if warnBraceExpr == 1
                     if {$Prefs(warnBraceExpr) == 2 || \
-                            [string index [lindex $argv $i] 0] != {[} || \
-                            [string index [lindex $argv $i] end] != {]} } {
+                            [string index [lindex $argv $i] 0] != "\[" || \
+                            [string index [lindex $argv $i] end] != "\]" } {
                         errorMsg "Warning: No braces around expression in\
                                 $cmd statement." [lindex $indices $i]
                     }
@@ -1114,6 +1123,8 @@ proc parseStatement {statement index knownVarsName} {
     }
 
     # Check unmarked constants against known variables to detect missing $.
+    # FIXA: Maybe if the constant is within quotes the warning should
+    # be turned off.
     if {[lsearch $constantsDontCheck all] == -1} {
 	set i 0
 	foreach ws $wordstatus var $argv {
@@ -1156,7 +1167,9 @@ proc splitScript {script index statementsName indicesName} {
                 set closeBrace [wasIndented $closeBraceIx]
             }
 
-	    # Move everything up to the next semicolon, newline or eof to tryline
+	    # Move everything up to the next semicolon, newline or eof
+            # to tryline
+
 	    set i [string first ";" $line]
 	    if {$i != -1} {
 		append tryline [string range $line 0 $i]
@@ -1227,7 +1240,8 @@ proc splitScript {script index statementsName indicesName} {
                     set tmp [wasIndented $index]
                     if {$tmp != $closeBrace} {
                         errorMsg "Close brace not aligned with line\
-                                [calcLineNo $index] ($tmp $closeBrace)" $closeBraceIx
+                                [calcLineNo $index] ($tmp $closeBrace)" \
+                                $closeBraceIx
                     }
                 }
 		incr index [string length $tryline]
@@ -1288,8 +1302,12 @@ proc parseProc {argv indices} {
 
     foreach {name args body} $argv {break}
 
+    # FIXA, take care of namespace
+    set ns [namespace qualifiers $name]
+    set name [namespace tail $name]
+
     # Parse the arguments.
-    # Initalise a knownVars array with the arguments. 
+    # Initialise a knownVars array with the arguments. 
     # Build a syntax description for the procedure.
     set min 0
     set unlim 0
@@ -1351,14 +1369,8 @@ proc calcLineNo {i} {
 
 # Given an index in the original string, tell if that line was indented
 proc wasIndented {i} {
-    global newlineIx indentInfo
-
-    set n 0
-    foreach ni $newlineIx {
-        if {$ni > $i} break
-        incr n
-    }
-    lindex $indentInfo $n
+    global indentInfo
+    lindex $indentInfo [expr {[calcLineNo $i] - 1}]
 }
 
 # Length of initial whitespace
