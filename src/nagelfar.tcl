@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.0.2+ 2004-09-15"
+set version "Version 1.0.2+ 2004-12-21"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -41,6 +41,9 @@ while {[file type $tmplink] == "link"} {
     set thisDir [file dirname $tmplink]
 }
 unset tmplink
+
+# Search where the script is to be able to place e.g. ctext there.
+lappend auto_path $thisDir
 
 # A profiling tool
 proc _dumplogme {} {
@@ -258,15 +261,6 @@ proc checkPossibleComment {str lineNo} {
 # It allows syntax information to be stored in comments
 proc checkComment {str index knownVarsName} {
     upvar $knownVarsName knownVars
-
-    # The forms ##syntax and ##variable are deprecated
-    if {[string match "##syntax *" $str]} {
-        set ::syntax([lindex $str 1]) [lrange $str 2 end]
-    }
-    if {[string match "##variable *" $str]} {
-        set var [string trim [string range $str 11 end]]
-        markVariable $var 1 "" 1 $index knownVars ""
-    }
 
     if {[string match "##nagelfar *" $str]} {
         set rest [string range $str 11 end]
@@ -513,11 +507,11 @@ proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
                         errorMsg E "Bad option $arg to $cmd" $index
                         set item ""
                     } elseif {[llength $match] > 1} {
-                        errorMsg E "Ambigous option for $cmd,\
+                        errorMsg E "Ambigous option for \"$cmd\",\
                                 $arg -> [join $match /]" $index
                         set item ""
                     } else {
-                        errorMsg W "Shortened option for $cmd,\
+                        errorMsg W "Shortened option for \"$cmd\",\
                                 $arg -> [lindex $match 0]" $index
 
                         set item "$cmd [lindex $match 0]"
@@ -753,9 +747,10 @@ proc parseVar {str len index iName knownVarsName} {
     }
     if {![info exists knownVars(set,$var)]} {
         set knownVars(read,$var) 1
-        if {[info exists knownVars(local,$var)]} {
-            errorMsg E "Unknown variable \"$var\"" $index
-        }
+        # Why was this here?? FIXA
+        #if {[info exists knownVars(local,$var)]} {
+        #    errorMsg E "Unknown variable \"$var\"" $index
+        #}
     }
     if {$vararr && [info exists knownVars(type,$var\($varindex\))]} {
         return [set knownVars(type,$var\($varindex\))]
@@ -883,10 +878,6 @@ proc parseExpr {str index knownVarsName} {
                         incr i
                         append exp {$dummy}
                         continue
-                    } elseif {[string equal $c "\]"] && $i == ($len - 1)} {
-                        # Note unescaped bracket at end of word since it's
-                        # likely to mean it should not be there.
-                        errorMsg N "Unescaped end bracket" [expr {$index + $i}]
                     }
                 }
             } else {
@@ -1110,7 +1101,9 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                         errorMsg W "No braces around code in $cmd\
                                 statement." [lindex $indices $i]
                     }
-		}
+		} else {
+                    set ::instrumenting([lindex $indices $i]) 1
+                }
 		parseBody [lindex $argv $i] [lindex $indices $i] knownVars
 		incr i
 	    }
@@ -1136,13 +1129,14 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                                 set match [lsearch -all -inline -glob \
                                         $::subCmd($cmd) $arg*]
                                 if {[llength $match] > 1} {
-                                    errorMsg E "Ambigous subcommand for $cmd,\
-                                            $arg -> [join $match /]" \
+                                    errorMsg E "Ambigous subcommand for\
+                                            \"$cmd\", $arg ->\
+                                            [join $match /]" \
                                             [lindex $indices $i]
                                 } elseif {$::Prefs(warnShortSub)} {
                                     # Report shortened subcmd?
-                                    errorMsg W "Shortened subcommand for $cmd,\
-                                            $arg ->\
+                                    errorMsg W "Shortened subcommand for\
+                                            \"$cmd\", $arg ->\
                                             [lindex $match 0]" \
                                             [lindex $indices $i]
                                 }
@@ -1726,6 +1720,7 @@ proc parseStatement {statement index knownVarsName} {
                 errorMsg W "No braces around body in foreach\
                         statement." $index
 	    }
+            set ::instrumenting([lindex $indices end]) 1
 	    set type [parseBody [lindex $argv end] [lindex $indices end] \
                     knownVars]
             # Clean up
@@ -1868,6 +1863,7 @@ proc parseStatement {statement index knownVarsName} {
 		    errorMsg W "No braces around code in switch\
                             statement." $i2
 		}
+                set ::instrumenting($i2) 1
 		parseBody $body $i2 knownVars
 	    }
 	}
@@ -2318,6 +2314,7 @@ proc parseProc {argv indices} {
         parseBody $body [lindex $indices 2] knownVars
         popNamespace
     }
+    set ::instrumenting([lindex $indices 2]) 1
 
     #foreach item [array names knownVars upvar,*] {
     #    puts "upvar '$item' '$knownVars($item)'"
@@ -2551,7 +2548,7 @@ proc parseScript {script} {
 	set knownVars(type,$g)      ""
     }
     set script [buildLineDb $script]
-    #set ::instrumenting(script) $script
+    set ::instrumenting(script) $script
 
     pushNamespace {}
     set ::Nagelfar(firstpass) 0
@@ -2601,56 +2598,176 @@ proc parseFile {filename} {
     set script [read $ch]
     close $ch
 
-    #array unset ::instrument
+    array unset ::instrument
 
     initMsg
     parseScript $script
     flushMsg
     
-    return ;# Disable experimental instrumenting
     if {[info exists ::Nagelfar(instrument)] && \
-            $::Nagelfar(instrument) && \
-            [file extension $filename] ne ".syntax"} {
-        set tail [file tail $filename]
-        set ifile [file rootname $filename]_i[file extension $filename]
-        set iscript $::instrumenting(script)
-        set indices {}
-        foreach item [array names ::instrumenting] {
-            if {[string is digit $item]} {
-                lappend indices $item
-            }
-        }
-        set pre {}
-        foreach ix [lsort -decreasing -integer $indices] {
-            set line [calcLineNo $ix]
-            set item "$tail,$line"
-            set i 2
-            while {[info exists done($item)]} {
-                set item "$tail,$line,$i"
-                incr i
-            }
-            set done($item) 1
-            lappend pre [list set ::_instrument($item) 1]
-
-            set iscript [string range $iscript 0 [expr {$ix - 1}]][list unset -nocomplain ::_instrument($item)]\;[string range $iscript $ix end]
-        }
-        set ch [open $ifile w]
-        puts $ch [join $pre \n]
-        puts $ch $iscript
-
-        puts $ch {
-            proc _instrument_report {} {
-                parray ::_instrument
-            }
-        }
-        close $ch
+                $::Nagelfar(instrument) && \
+                [file extension $filename] ne ".syntax"} {
+        # Experimental instrumenting
+        dumpInstrumenting $filename
     }
 }
 
+# Experimental instrumenting
+proc dumpInstrumenting {filename} {
+
+    set tail [file tail $filename]
+    set ifile ${filename}_i
+    echo "Writing file $ifile"
+    set iscript $::instrumenting(script)
+    set indices {}
+    foreach item [array names ::instrumenting] {
+        if {[string is digit $item]} {
+            lappend indices $item
+        }
+    }
+    set init [list [list set current $tail]]
+    foreach ix [lsort -decreasing -integer $indices] {
+        if {$ix == 0} continue
+        set line [calcLineNo $ix]
+        set item "$tail,$line"
+        set i 2
+        while {[info exists done($item)]} {
+            set item "$tail,$line,$i"
+            incr i
+        }
+        set done($item) 1
+        set pre [string range $iscript 0 [expr {$ix - 1}]]
+        set post [string range $iscript $ix end]
+        set insert [list unset -nocomplain ::_instrument_::log($item)]\;
+        
+        set c [string index $pre end]
+        if {$c ne "\[" && $c ne "\{" && $c ne "\""} {
+            if {[regexp {^(\s*\w+)(\s.*)$} $post -> word rest]} {
+                append pre "\{"
+                set post "$word\}$rest"
+            } else {
+                echo "Not instrumenting line: $line\
+                  [string range $pre end-5 end]<>[string range $post 0 5]"
+                continue
+            }
+        }
+        set iscript $pre$insert$post
+        lappend init [list set log($item) 1]
+    }
+    set ch [open $ifile w]
+    # Create a prolog equal in all instrumented files
+    puts $ch {
+        namespace eval ::_instrument_ {}
+        if {[info procs ::_instrument_::source] == ""} {
+            rename ::source ::_instrument_::source
+            proc ::source {fileName} {
+                set newFileName $fileName
+                set altFileName ${fileName}_i
+                if {[file exists $altFileName]} {
+                    set newFileName $altFileName
+                }
+                uplevel 1 [list ::_instrument_::source $newFileName]
+            }
+            rename ::exit ::_instrument_::exit
+            proc ::exit {args} {
+                ::_instrument_::cleanup
+                uplevel 1 [linsert $args 0 ::_instrument_::exit]
+            }
+            proc ::_instrument_::cleanup {} {
+                variable log
+                variable all
+                variable dumpList
+                foreach {src logFile} $dumpList {
+                    set ch [open $logFile w]
+                    puts $ch [list array unset ::_instrument_::log $src,*]
+                    foreach item [lsort -dictionary [array names log $src,*]] {
+                        puts $ch [list set ::_instrument_::log($item) 1]
+                    }
+                    close $ch
+                }
+            }
+        }
+    }
+    # Insert file specific info
+    puts $ch "# Initialise list of lines"
+    puts $ch "namespace eval ::_instrument_ \{"
+    puts $ch [join $init \n]
+    puts $ch "\}"
+    # More common prolog
+    puts $ch {
+        # Check if there is a stored log
+        namespace eval ::_instrument_ {
+            set thisScript [file normalize [file join [pwd] [info script]]]
+            if {[string match "*_i" $thisScript]} {
+                set thisScript [string range $thisScript 0 end-2]
+            }
+            set logFile    ${thisScript}_log
+            if {[file exists $logFile]} {
+                ::_instrument_::source $logFile
+            }
+
+            lappend dumpList $current $logFile
+        }
+
+        #instrumented source goes here
+    }
+
+    puts $ch $iscript
+    close $ch
+}
+
+proc instrumentMarkup {filename} {
+    set tail [file tail $filename]
+    set logfile ${filename}_log
+    set mfile ${filename}_m
+
+    namespace eval ::_instrument_ {}
+    source $logfile
+    foreach item [array names ::_instrument_::log $tail,*] {
+        if {[regexp {,(\d+),\d+$} $item -> line]} {
+            set lines($line) 1
+        } elseif {[regexp {,(\d+)$} $item -> line]} {
+            set lines($line) 1
+        }
+    }
+    echo "Writing file $mfile"
+    if {[array size lines] == 0} {
+        echo "All lines covered in $tail"
+        file copy -force $filename $mfile
+        return
+    }
+
+    set chi [open $filename r]
+    set cho [open $mfile w]
+    set lineNo 1
+    while {[gets $chi line] >= 0} {
+        if {[info exists lines($lineNo)]} {
+            append line "*"
+        }
+        puts $cho $line
+        incr lineNo
+    }
+    close $chi
+    close $cho
+}
+
 # Add a message filter
-proc addFilter {pat} {
+proc addFilter {pat {reapply 0}} {
     if {[lsearch -exact $::Nagelfar(filter) $pat] < 0} {
         lappend ::Nagelfar(filter) $pat
+    }
+    if {$reapply} {
+        set w $::Nagelfar(resultWin)
+        set ln 1
+        while {1} {
+            set line [$w get $ln.0 $ln.end]
+            if {[string match $pat $line]} {
+                $w delete $ln.0 $ln.end
+            } else {
+                incr ln
+            }
+            if {[$w index end] <= $ln} break
+        }
     }
 }
 
@@ -3009,6 +3126,8 @@ proc showError {{lineNo {}}} {
         set lineNo [lindex [split [$w index current] .] 0]
     }
 
+    $w tag remove hl 1.0 end
+    $w tag add hl $lineNo.0 $lineNo.end
     set line [$w get $lineNo.0 $lineNo.end]
 
     if {[regexp {^(.*): Line\s+(\d+):} $line -> fileName fileLine]} {
@@ -3033,7 +3152,7 @@ proc resultPopup {x y X Y} {
     }
     if {[regexp {^(.*): Line\s+\d+:\s*(.*)$} $line -> pre post]} {
         .popup add command -label "Filter this message" \
-                -command [list addFilter "*$pre*$post*"]
+                -command [list addFilter "*$pre*$post*" 1]
     }
 
     tk_popup .popup $X $Y
@@ -3304,6 +3423,7 @@ proc makeWin {} {
     grid rowconfigure    .fr 1 -weight 1
 
     $::Nagelfar(resultWin) tag configure error -foreground red
+    $::Nagelfar(resultWin) tag configure hl -background yellow
     bind $::Nagelfar(resultWin) <Double-Button-1> "showError ; break"
     bind $::Nagelfar(resultWin) <Button-3> "resultPopup %x %y %X %Y ; break"
 
@@ -3385,6 +3505,9 @@ proc makeWin {} {
     .m.mo.me add radiobutton -label "System ([encoding system])" \
             -variable ::Nagelfar(encoding) -value system
 
+    .m.mo add separator
+    .m.mo add command -label "Save Defaults" -command saveOptions
+
     # Tools menu
 
     .m add cascade -label "Tools" -underline 0 -menu .m.mt
@@ -3423,8 +3546,8 @@ proc makeWin {} {
 
     .m add cascade -label "Help" -underline 0 -menu .m.help
     menu .m.help
-    foreach label {README Messages {Syntax Databases} {Inline Comments} {Call By Name} {Syntax Tokens}} \
-            file {README.txt messages.txt syntaxdatabases.txt inlinecomments.txt call-by-name.txt syntaxtokens.txt} {
+    foreach label {README Messages {Syntax Databases} {Inline Comments} {Call By Name} {Syntax Tokens} {Code Coverage}} \
+            file {README.txt messages.txt syntaxdatabases.txt inlinecomments.txt call-by-name.txt syntaxtokens.txt codecoverage.txt} {
         .m.help add command -label $label -command [list makeDocWin $file]
     }
     .m.help add separator
@@ -3446,8 +3569,14 @@ proc editFile {filename lineNo} {
         toplevel .fv
         wm title .fv "Nagelfar Editor"
 
-        set w [Scroll both text .fv.t \
-                       -width 80 -height 25 -font $::Prefs(editFileFont)]
+	if {$::Nagelfar(withCtext)} {
+	    set w [Scroll both ctext .fv.t -linemap 0 \
+                    -width 80 -height 25 -font $::Prefs(editFileFont)]
+	    ctext::setHighlightTcl $w
+	} else {
+            set w [Scroll both text .fv.t \
+                    -width 80 -height 25 -font $::Prefs(editFileFont)]
+        }
         set ::Nagelfar(editWin) $w
         frame .fv.f
         grid .fv.t -sticky news
@@ -3470,11 +3599,16 @@ proc editFile {filename lineNo} {
         .fv.m.me add command -label "Check" -underline 0 \
                 -command "checkEditWin"
 
-        .fv.m add cascade -label "Font" -underline 3 -menu .fv.m.mo
+        .fv.m add cascade -label "Options" -underline 0 -menu .fv.m.mo
         menu .fv.m.mo
+        .fv.m.mo add checkbutton -label "Backup" -underline 0 \
+                -variable ::Prefs(editFileBackup)
+
+        .fv.m.mo add cascade -label "Font" -underline 0 -menu .fv.m.mo.mf
+        menu .fv.m.mo.mf
         set cmd "[list $w] configure -font \$::Prefs(editFileFont)"
         foreach lab {Small Medium Large} size {8 10 12} {
-            .fv.m.mo add radiobutton -label $lab  -underline 0 \
+            .fv.m.mo.mf add radiobutton -label $lab  -underline 0 \
                     -variable ::Prefs(editFileFont) \
                     -value [list Courier $size] \
                     -command $cmd
@@ -3532,7 +3666,11 @@ proc editFile {filename lineNo} {
         set ch [open $filename r]
         set data [read $ch]
         close $ch
-        $w insert end $data
+	if {$::Nagelfar(withCtext)} {
+	    $w fastinsert end $data
+	} else {
+            $w insert end $data
+        }
     }
 
     $w tag remove hl 1.0 end
@@ -3543,6 +3681,9 @@ proc editFile {filename lineNo} {
     update
     $w see insert
     #after 1 {after idle {$::Nagelfar(editWin) see insert}}
+    if {$::Nagelfar(withCtext)} {
+        after idle [list $w highlight 1.0 end]
+    }
 }
 
 proc saveFile {} {
@@ -3551,9 +3692,12 @@ proc saveFile {} {
             -message "Save file\n$::Nagelfar(editFile)"] != "ok"} {
         return
     }
+    if {$::Prefs(editFileBackup)} {
+        file copy -force -- $::Nagelfar(editFile) $::Nagelfar(editFile)~
+    }
     set ch [open $::Nagelfar(editFile) w]
     fconfigure $ch -translation $::Nagelfar(editFileTranslation)
-    puts -nonewline $ch [.fv.t get 1.0 end-1char]
+    puts -nonewline $ch [$::Nagelfar(editWin) get 1.0 end-1char]
     close $ch
 }
 
@@ -3765,9 +3909,13 @@ proc makeDocWin {fileName} {
 # Options
 #########
 
-# FIXA This is not used yet
+# Save default options
 proc saveOptions {} {
-    set ch [open "~/.nagelfarrc" w]
+    if {[catch {set ch [open "~/.nagelfarrc" w]}]} {
+        tk_messageBox -icon error -title "Nagelfar error" -type ok -message \
+                "Could not create options file."
+        return
+    }
 
     foreach i [array names ::Prefs] {
         puts $ch [list set ::Prefs($i) $::Prefs($i)]
@@ -3783,6 +3931,7 @@ proc getOptions {} {
         forceElse 1
         noVar 0
         severity N
+        editFileBackup 0
         editFileFont {Courier 10}
         resultFont {Courier 10}
     }
@@ -3854,6 +4003,7 @@ if {![info exists gurka]} {
     set ::Nagelfar(2pass) 1
     set ::Nagelfar(encoding) system
     set ::Nagelfar(dbpicky) 0
+    set ::Nagelfar(withCtext) 0
 
     if {[info exists _nagelfar_test]} return
 
@@ -3918,6 +4068,20 @@ if {![info exists gurka]} {
             }
             -instrument {
                 set ::Nagelfar(instrument) 1
+                # Put checks down as much as possible
+                array set ::Prefs {
+                    warnBraceExpr 0
+                    warnShortSub 0
+                    strictAppend 0
+                    forceElse 0
+                    noVar 1
+                    severity E
+                }
+            }
+            -markup {
+                incr i
+                instrumentMarkup [lindex $argv $i]
+                exit
             }
             -novar {
                 set ::Prefs(noVar) 1
@@ -3978,6 +4142,14 @@ if {![info exists gurka]} {
                 exit 1
             }
         }
+        # use ctext if available
+        if {![catch {package require ctext}]} {
+            if {![catch {package require ctext_tcl}]} {
+                set ::Nagelfar(withCtext) 1
+                proc ctext::update {} {::update}
+            }
+        }
+
         set ::Nagelfar(gui) 1
         makeWin
         vwait forever
