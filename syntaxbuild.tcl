@@ -222,8 +222,8 @@ proc buildDb {ch} {
 
     # Some special Tcl commands
     set syntax(dde)             "o? s x*"
-    set syntax(history)         "r 0"
-    set syntax(parray)          "v"
+    set syntax(history)         "s x*"
+    set syntax(parray)          "v x?"
 
     # Syntax for Tk commands
 
