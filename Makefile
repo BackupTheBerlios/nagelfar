@@ -11,6 +11,7 @@ TKDND   = /home/peter/tkdnd/lib/tkdnd1.0
 # Path to the interpreter used for generating the syntax database
 TCLSHDB = ~/tcl/install/bin/wish8.4
 TCLSHDB2 = ~/tcl/install/bin/wish8.5
+TCLSH85 = ~/tcl/install/bin/tclsh8.5
 
 all: setup misctest db
 
@@ -47,6 +48,9 @@ selftest:
 test:
 	@./tests/all.tcl
 
+test85:
+	@$(TCLSH85) ./tests/all.tcl
+
 #----------------------------------------------------------------
 # Generating test examples
 #----------------------------------------------------------------
@@ -64,10 +68,10 @@ misctest: misctests/test.result misctests/test.html
 # Generating database
 #----------------------------------------------------------------
 
-syntaxdb.tcl: syntaxbuild.tcl
+syntaxdb.tcl: syntaxbuild.tcl $(TCLSHDB)
 	@$(TCLSHDB) syntaxbuild.tcl syntaxdb.tcl
 
-syntaxdb85.tcl: syntaxbuild.tcl
+syntaxdb85.tcl: syntaxbuild.tcl $(TCLSHDB2)
 	@$(TCLSHDB2) syntaxbuild.tcl syntaxdb85.tcl
 
 db: syntaxdb.tcl syntaxdb85.tcl
