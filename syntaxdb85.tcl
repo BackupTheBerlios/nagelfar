@@ -3,7 +3,7 @@
 
 lappend ::dbInfo {Tcl 8.5a2 unix, Tk 8.5a2 x11}
 set ::dbTclVersion 8.5
-set ::knownGlobals {argc argv argv0 auto_index auto_oldpath auto_path env errorCode errorInfo tcl_interactive tcl_libPath tcl_library tcl_nonwordchars tcl_patchLevel tcl_pkgPath tcl_platform tcl_rcFileName tcl_version tcl_wordchars tk_library tk_patchLevel tk_strictMotif tk_version}
+set ::knownGlobals {argc argv argv0 auto_index auto_oldpath auto_path env errorCode errorInfo tcl_interactive tcl_library tcl_nonwordchars tcl_patchLevel tcl_pkgPath tcl_platform tcl_rcFileName tcl_version tcl_wordchars tk_library tk_patchLevel tk_strictMotif tk_version}
 set ::knownCommands {. after append array auto_execok auto_import auto_load auto_load_index auto_mkindex auto_mkindex_old auto_qualify auto_reset bell binary bind bindtags break button canvas case catch cd checkbutton clipboard clock close concat continue destroy dict encoding entry eof error eval event exec exit expr fblocked fconfigure fcopy file fileevent flush focus font for foreach format frame gets glob global grab grid history if image incr info interp join label labelframe lappend lassign lindex linsert list listbox llength load lower lrange lrepeat lreplace lsearch lset lsort menu menubutton message namespace open option pack package panedwindow parray pid pkg_compareExtension pkg_mkIndex place proc puts pwd radiobutton raise read regexp regsub rename return scale scan scrollbar seek selection send set socket source spinbox split string subst switch tclLdAout tclLog tclPkgSetup tclPkgUnknown tcl_endOfWord tcl_findLibrary tcl_startOfNextWord tcl_startOfPreviousWord tcl_wordBreakAfter tcl_wordBreakBefore tell text time tk tk_chooseColor tk_chooseDirectory tk_getOpenFile tk_getSaveFile tk_menuSetFocus tk_messageBox tk_popup tk_textCopy tk_textCut tk_textPaste tkwait toplevel trace unknown unload unset update uplevel upvar variable vwait while winfo wm}
 set ::syntax(_obj,button) {s x*}
 set {::syntax(_obj,button cget)} o
@@ -240,7 +240,7 @@ set ::subCmd(file) {atime attributes channels copy delete dirname executable exi
 set ::subCmd(history) {add change clear event info keep nextid redo}
 set ::subCmd(image) {create delete height inuse names type types width}
 set ::subCmd(info) {args body cmdcount commands complete default exists functions globals hostname level library loaded locals nameofexecutable patchlevel procs script sharedlibextension tclversion vars}
-set ::subCmd(interp) {alias aliases create delete eval exists expose hide hidden issafe invokehidden marktrusted recursionlimit slaves share target transfer}
+set ::subCmd(interp) {alias aliases create delete eval exists expose hide hidden issafe invokehidden limit marktrusted recursionlimit slaves share target transfer}
 set ::subCmd(namespace) {children code current delete ensemble eval exists export forget import inscope origin parent qualifiers tail which}
 set ::subCmd(package) {forget ifneeded names present provide require unknown vcompare versions vsatisfies}
 set ::subCmd(string) {bytelength compare equal first index is last length map match range repeat replace tolower toupper totitle trim trimleft trimright wordend wordstart}
