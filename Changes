@@ -1,3 +1,10 @@
+Version 1.1.1
+
+2005-01-01
+ Fixed a bug in instrumenting which prevented instrumenting multiple files.
+ Preserve header and permissions in instrumented file to allow an executable
+ file to remain executable after instrumentation.
+
 Version 1.1
 
 2004-12-21
