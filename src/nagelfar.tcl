@@ -25,29 +25,23 @@
 exec tclsh "$0" "$@"
 
 set debug 0
-set version "Version 0.6 2003-07-08"
-set thisScript [file join [pwd] [info script]]
-set thisDir    [file dirname $thisScript]
-set ::Nagelfar(tcl84) [expr {[info tclversion] >= 8.4}]
+package require Tcl 8.4
 
-# Support for FreeWrap 5.5
-if {[info procs ::freewrap::unpack] != ""} {
-    set debug 0
-    set thisDir [file dirname [info nameofexecutable]]
-    set thisScript ""
-    if {[file exists $thisDir/tkdnd]} {
-        lappend ::auto_path $thisDir/tkdnd
-    }
-} else {
-    # Follow any link
-    set tmplink $thisScript
-    while {[file type $tmplink] == "link"} {
-        set tmplink [file readlink $tmplink]
-        set tmplink [file join $thisDir $tmplink]
-        set thisDir [file dirname $tmplink]
-    }
-    unset tmplink
+package provide app-nagelfar 0.6
+set version "Version 0.6+ 2003-07-09"
+
+set thisScript [file normalize [file join [pwd] [info script]]]
+set thisDir    [file dirname $thisScript]
+
+# Follow any link
+set tmplink $thisScript
+while {[file type $tmplink] == "link"} {
+    set tmplink [file readlink $tmplink]
+    set tmplink [file normalize [file join $thisDir $tmplink]]
+    set thisDir [file dirname $tmplink]
 }
+unset tmplink
+
 
 #####################
 # Syntax check engine
@@ -197,7 +191,7 @@ proc profile {str script} {
 
 # Test for comments with unmatched braces.
 proc checkPossibleComment {str lineNo} {
-
+    # Count braces
     set n1 [llength [split $str \{]]
     set n2 [llength [split $str \}]]
     if {$n1 != $n2} {
@@ -351,7 +345,7 @@ proc splitStatement {statement index indicesName} {
 
 # Look for options in a command's arguments.
 # Check them against the list in the option database, if any.
-# Returns the number of arguments "used".
+# Returns a syntax string corresponding to the number of arguments "used".
 # If 'pair' is set, all options should take a value.
 proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
     global option
@@ -360,10 +354,14 @@ proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
     set i 0
     set used 0
     set skip 0
+    set skipSyn x
+    set replaceSyn {}
     # Since in most cases startI is 0, I believe foreach is faster.
     foreach arg $argv ws $wordstatus index $indices {
 	if {$skip} {
 	    set skip 0
+            lappend replaceSyn $skipSyn
+            set skipSyn x
 	    incr used
 	    continue
 	}
@@ -373,26 +371,34 @@ proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
 	}
 	if {[string equal [string index $arg 0] "-"]} {
 	    incr used
+            lappend replaceSyn x
 	    set skip $pair
 	    if {$ws != 0  && $check} {
                 set ix [lsearch $option($cmd) $arg]
 		if {$ix == -1} {
-                    set ix [lsearch -glob $option($cmd) $arg*]
-                    if {$ix == -1} {
+                    # Check ambiguity.
+                    set match [lsearch -all -inline -glob $option($cmd) $arg*]
+                    if {[llength $match] == 0} {
                         errorMsg "Bad option $arg to $cmd" $index
+                    } elseif {[llength $match] > 1} {
+                        errorMsg "Ambigous option for $cmd,\
+                                $arg -> [join $match /]" $index
                     } else {
                         errorMsg "Shortened option for $cmd,\
-                                $arg ->\
-                                [lindex $option($cmd) $ix]" \
-                                [lindex $indices $i]
+                                $arg -> [lindex $match 0]" $index
                     }
-		}
-                if {$ix != -1 && \
-                     [info exists "option($cmd [lindex $option($cmd) $ix])"]} {
-                    set skip 1
+		} else {
+                    set item "$cmd [lindex $option($cmd) $ix]"
+                    if {[info exists option($item)]} {
+                        set skip 1
+                        if {[regexp {^[lnvc]$} $option($item)]} {
+                            set skipSyn $option($item)
+                        }
+                    }
                 }
 	    }
 	    if {[string equal $arg "--"]} {
+                set skip 0
 		break
 	    }
 	} else {
@@ -402,7 +408,11 @@ proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
 	    break
 	}
     }
-    return $used
+    if {$skip} {
+        errorMsg "Missing value for last option." $index
+    }
+    #decho "options to $cmd : $replaceSyn"
+    return $replaceSyn
 }
 
 ##syntax splitList x x n
@@ -497,11 +507,12 @@ proc splitList {str index iName} {
 
     if {[llength $indices] != $n} {
 	# This should never happen.
-	errorMsg "Length mismatch in splitList." $index
-        echo "nindices: [llength $indices]  nwords: $n"
-#        echo :$str:
+        decho "Internal error: Length mismatch in splitList.\
+                Line [calcLineNo $index]."
+        decho "nindices: [llength $indices]  nwords: $n"
+#        decho :$str:
         foreach l $lstr ix $indices {
-            echo :$ix:[string range $l 0 10]:
+            decho :$ix:[string range $l 0 10]:
         }
     }
     return $lstr
@@ -734,8 +745,14 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 	return
     }
 
+    # Treat syn as a stack. That way a token can replace itself without
+    # increasing i and thus hand over checking to another token.
+
     set i $firsti
-    foreach token $syn {
+    while {[llength $syn] > 0} {
+        set token [lindex $syn 0]
+        set syn [lrange $syn 1 end]
+
 	set tok [string index $token 0]
 	set mod [string index $token 1]
 	# Basic checks for modifiers
@@ -797,7 +814,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
                     # Special case: [list ...]
                     set arg [lindex $argv $i]
                     if {[string match {\[list*} $arg]} {
-                        echo "(List code)"
+                        #echo "(List code)"
                     } else {
                         errorMsg "Warning: No braces around code in $cmd\
                                 statement." [lindex $indices $i]
@@ -824,13 +841,8 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
                                         [lindex $indices $i]
                             } else {
                                 # Check ambiguity.
-                                # Just do it if 8.4 is available since
-                                # its simple.
-                                set match [list [lindex $::subCmd($cmd) $ix]]
-                                if {$::Nagelfar(tcl84)} {
-                                    set match [lsearch -all -inline -glob \
-                                            $::subCmd($cmd) $arg*]
-                                }
+                                set match [lsearch -all -inline -glob \
+                                        $::subCmd($cmd) $arg*]
                                 if {[llength $match] > 1} {
                                     errorMsg "Ambigous subcommand for $cmd,\
                                             $arg -> [join $match /]" \
@@ -898,21 +910,30 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 		if {![string equal $mod "*"]} {
 		    set max 1
 		}
-		set used [checkOptions $cmd $argv $wordstatus $indices $i $max]
+		set oSyn [checkOptions $cmd $argv $wordstatus $indices $i $max]
+                set used [llength $oSyn]
 		if {$used == 0 && ($mod == "" || $mod == ".")} {
 		    errorMsg "Expected an option as argument $i to \"$cmd\"" \
                             [lindex $indices $i]
 		    return
 		}
-		incr i $used
+                
+                if {[lsearch -not $oSyn "x"] >= 0} {
+                    # Feed the syntax back into the check loop
+                    set syn [concat $oSyn $syn]
+                } else {
+                    incr i $used
+                }
 	    }
 	    p {
 		set max 0
 		if {![string equal $mod "*"]} {
 		    set max 2
 		}
+                # FIXA: like o
 		set used [checkOptions $cmd $argv $wordstatus $indices $i \
                         $max 1]
+                set used [llength $used]
 		if {$used == 0 && ($mod == "" || $mod == ".")} {
 		    errorMsg "Expected an option as argument $i to \"$cmd\"" \
 			    [lindex $indices $i]
@@ -1277,7 +1298,7 @@ proc parseStatement {statement index knownVarsName} {
 		WA
 		return
 	    }
-	    set i [checkOptions $cmd $argv $wordstatus $indices]
+	    set i [llength [checkOptions $cmd $argv $wordstatus $indices]]
 	    incr i
 	    set left [expr {$argc - $i}]
 
@@ -1830,6 +1851,7 @@ proc addDbFile {} {
 
     lappend ::Nagelfar(db) $apa
     lappend ::Nagelfar(allDb) $apa
+    lappend ::Nagelfar(allDbView) $apa
     updateDbSelection 1
 }
 
@@ -1838,6 +1860,7 @@ proc fileDropDb {files} {
     foreach file $files {
         lappend ::Nagelfar(db) $file
         lappend ::Nagelfar(allDb) $file
+        lappend ::Nagelfar(allDbView) $file
     }
     updateDbSelection 1
 }
@@ -1901,7 +1924,7 @@ proc doCheck {} {
     set ::knownProcs {}
     catch {unset ::syntax}
     catch {unset ::subCmd}
-    catch {unset ::options}
+    catch {unset ::option}
 
     foreach f $::Nagelfar(db) {
         uplevel #0 [list source $f]
@@ -1917,6 +1940,7 @@ proc doCheck {} {
             echo "Parsing file $syntaxfile"
             parseFile $syntaxfile
         }
+        if {$f == $syntaxfile} continue
         if {[file exists $f]} {
             echo "Checking file $f"
             parseFile $f
@@ -1983,7 +2007,8 @@ proc makeWin {} {
     frame .fs
     label .fs.l -text "Syntax database files"
     button .fs.b -text "Add" -width 7 -command addDbFile
-    listbox .fs.lb -yscrollcommand ".fs.sby set" -listvariable ::Nagelfar(allDb) \
+    listbox .fs.lb -yscrollcommand ".fs.sby set" \
+            -listvariable ::Nagelfar(allDbView) \
             -height 4 -width 40 -selectmode extended
     updateDbSelection 1
     bind .fs.lb <<ListboxSelect>> updateDbSelection
@@ -2079,14 +2104,14 @@ proc makeWin {} {
     menu .m
     . configure -menu .m
 
-    .m add cascade -label "File" -menu .m.mf
+    .m add cascade -label "File" -underline 0 -menu .m.mf
     menu .m.mf
-    .m.mf add command -label "Add File" -command addFile
-    .m.mf add command -label "Add Database" -command addDbFile
+    .m.mf add command -label "Add File" -underline 4 -command addFile
+    .m.mf add command -label "Add Database" -underline 4 -command addDbFile
     .m.mf add separator
-    .m.mf add command -label "Quit" -command exitApp
+    .m.mf add command -label "Quit" -underline 0 -command exitApp
 
-    .m add cascade -label "Options" -menu .m.mo
+    .m add cascade -label "Options" -underline 0 -menu .m.mo
     menu .m.mo
     .m.mo add checkbutton -label "Warn about shortened subcommands" \
             -variable ::Prefs(warnShortSub)
@@ -2104,7 +2129,7 @@ proc makeWin {} {
     # Debug menu
 
     if {$::debug == 1} {
-        .m add cascade -label "Debug" -menu .m.md
+        .m add cascade -label "Debug" -underline 0 -menu .m.md
         menu .m.md
         if {$::tcl_platform(platform) == "windows"} {
             .m.md add checkbutton -label Console -variable consolestate \
@@ -2121,7 +2146,7 @@ proc makeWin {} {
 
     # Help menu is last
 
-    .m add cascade -label "Help" -menu .m.mh
+    .m add cascade -label "Help" -underline 0 -menu .m.mh
     menu .m.mh
     .m.mh add command -label About -command makeAboutWin
 
@@ -2268,8 +2293,8 @@ proc makeAboutWin {} {
     destroy .ab
 
     toplevel .ab
-    wm title .ab "About syntax checker"
-    text .ab.t -width 45 -height 7 -wrap word
+    wm title .ab "About Nagelfar"
+    text .ab.t -width 45 -height 7 -wrap word -relief flat
     button .ab.b -text "Close" -command "destroy .ab"
     pack .ab.b -side bottom
     pack .ab.t -side top -expand y -fill both
@@ -2277,7 +2302,14 @@ proc makeAboutWin {} {
     .ab.t insert end "A syntax checker for Tcl\n\n"
     .ab.t insert end "$version\n\n"
     .ab.t insert end "Made by Peter Spjuth\n"
-    .ab.t insert end "E-Mail: peter.spjuth@space.se"
+    .ab.t insert end "E-Mail: peter.spjuth@space.se\n"
+    .ab.t insert end "\nTcl version: [info patchlevel]"
+    set d [package provide tkdnd]
+    if {$d != ""} {
+        .ab.t insert end "\nTkDnd version: $d"
+    }
+    set last [lindex [split [.ab.t index end] "."] 0]
+    .ab.t configure -height $last
 }
 
 #########
@@ -2306,6 +2338,29 @@ proc getOptions {} {
     }
 }
 
+# Generate a file path relative to a dir
+proc fileRelative {dir file} {
+    set dirpath [file split $dir]
+    set filepath [file split $file]
+    set newpath {}
+    
+    set dl [llength $dirpath]
+    set fl [llength $filepath]
+    for {set t 0} {$t < $dl && $t < $fl} {incr t} {
+        set f [lindex $filepath $t]
+        set d [lindex $dirpath $t]
+        if {![string equal $f $d]} break
+    }
+    # Return file if too unequal
+    if {$t <= 2 || ($dl - $t) > 3} {
+        return $file
+    }
+    for {set u $t} {$u < $dl} {incr u} {
+        lappend newpath ".."
+    }
+    return [eval file join $newpath [lrange $filepath $t end]]
+}
+
 ################################
 # End of procs, global code here
 ################################
@@ -2321,23 +2376,22 @@ if {![info exists gurka]} {
 
     # Locate default syntax database(s)
     set ::Nagelfar(allDb) {}
+    set ::Nagelfar(allDbView) {}
     set apa {}
     lappend apa [file join [pwd] syntaxdb.tcl]
     eval lappend apa [glob -nocomplain [file join [pwd] syntaxdb*.tcl]]
-    while {$thisDir != "." && [file tail $thisDir] == "."} {
-	set thisDir [file dirname $thisDir]
-    }
+
     lappend apa [file join $thisDir syntaxdb.tcl]
     eval lappend apa [glob -nocomplain [file join $thisDir syntaxdb*.tcl]]
-    # Support a wrapped database in FreeWrap
-    if {[info procs ::freewrap::unpack] != ""} {
-        lappend apa /syntaxdb.tcl
-        eval lappend apa [glob -nocomplain /syntaxdb*.tcl]
-    }
 
     foreach file $apa {
         if {[file exists $file] && [lsearch $::Nagelfar(allDb) $file] == -1} {
             lappend ::Nagelfar(allDb) $file
+            if {[file dirname $file] == $::thisDir} {
+                lappend ::Nagelfar(allDbView) "[file tail $file] (app)"
+            } else {
+                lappend ::Nagelfar(allDbView) [fileRelative [pwd] $file]
+            }
         }
     }
     
@@ -2353,6 +2407,7 @@ if {![info exists gurka]} {
                 incr i
                 lappend ::Nagelfar(db) [lindex $argv $i]
                 lappend ::Nagelfar(allDb) [lindex $argv $i]
+                lappend ::Nagelfar(allDbView) [lindex $argv $i]
             }
             -gui {
                 set ::Nagelfar(gui) 1
