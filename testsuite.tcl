@@ -59,6 +59,23 @@ test nagelfar-2.2 {
     execTestFile -filter *Unknown*
 } -result {Checking file _testfile_} -match glob
 
+test nagelfar-2.3 {
+    Basic functionality
+} -setup {
+    createTestFile {
+        proc apa {w} {
+            variable Priv
+            global Torv
+
+            after cancel $Torv(afterId)
+            puts $Priv(repeated)
+            incr Priv(repeated)
+        }
+    }
+} -body {
+    execTestFile
+} -result {Checking file _testfile_} -match glob
+
 
 test nagelfar-3.1 {
     Basic errors
@@ -103,6 +120,21 @@ test nagelfar-3.4 {
 } -body {
     execTestFile
 } -result {*Suspicious variable name "$apa"*} -match glob
+
+test nagelfar-3.5 {
+    Basic errors
+} -setup {
+    createTestFile {
+        proc apa {w} {
+            set Miffo(gurka) 1
+            
+            incr Miffo(hampa)
+            incr Miffo(gurka)
+        }
+    }
+} -body {
+    execTestFile
+} -result {*Unknown variable "Miffo(hampa)"} -match glob
 
 test nagelfar-4.1 {
     Options checking
