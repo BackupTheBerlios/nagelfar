@@ -1,0 +1,53 @@
+Nagelfar supports having comments inlined to help it check a file.
+
+Whenever <file>.tcl is checked, any <file>.syntax is run through
+the syntax checker first.  Thus you can put your comments in such
+a separate file instead of your source if that is not suitable.
+
+A comment should start with "##nagelfar" to be recognised as special.
+The comment must be a valid Tcl list.
+
+
+##nagelfar ignore ?string?
+##nagelfar filter ?string?
+
+These two are equivalent and adds a message filter rule for the line
+following it. The string argument will be part of the filter pattern,
+which is a glob pattern built like this: "*Line *$line:*$string*"
+
+Examples:
+##nagelfar ignore 
+set apa [Miffo a b c]
+##nagelfar ignore Unknown variable
+set apa [lindex $Gurka 1]
+##nagelfar ignore Expr without braces
+set apa [expr 1 + 2]
+
+
+##nagelfar variable name ?type?
+
+This will make "name" a known variable and optionally set its type.
+Types are still experimental in Nagelfar. The type "varName" can
+be used to tell Nagelfar that a variable contains a variable name,
+which suppresses som warnings.
+
+Example:
+##nagelfar variable apaName varName
+set hejsan [set $apaName]
+
+
+##nagelfar syntax cmd tokens
+##nagelfar subcmd cmd subcmds
+##nagelfar option cmd options
+##nagelfar return cmd type
+
+All these provides access directly into the syntax database that
+usually is loaded from syntaxdb.tcl.
+Check syntaxbuild.tcl for more info.
+
+Examples:
+##nagelfar syntax binary s x*
+##nagelfar subcmd binary format scan
+##nagelfar syntax binary\ scan x x n n*
+##nagelfar syntax fcopy x x p*
+##nagelfar option fcopy -size -command
