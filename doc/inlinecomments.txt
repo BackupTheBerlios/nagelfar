@@ -7,6 +7,7 @@ a separate file instead of your source if that is not suitable.
 A comment should start with "##nagelfar" to be recognised as special.
 The comment must be a valid Tcl list.
 
+<ul>Ignoring messages</ul>
 
 ##nagelfar ignore ?string?
 ##nagelfar filter ?string?
@@ -23,6 +24,7 @@ set apa [lindex $Gurka 1]
 ##nagelfar ignore Expr without braces
 set apa [expr 1 + 2]
 
+<ul>Specifying variables</ul>
 
 ##nagelfar variable name ?type?
 
@@ -35,6 +37,7 @@ Example:
 ##nagelfar variable apaName varName
 set hejsan [set $apaName]
 
+<ul>Syntax database</ul>
 
 ##nagelfar syntax cmd tokens
 ##nagelfar subcmd cmd subcmds
@@ -48,6 +51,9 @@ Check syntaxbuild.tcl for more info.
 Examples:
 ##nagelfar syntax binary s x*
 ##nagelfar subcmd binary format scan
-##nagelfar syntax binary\ scan x x n n*
+##nagelfar syntax binary\\ scan x x n n*
 ##nagelfar syntax fcopy x x p*
 ##nagelfar option fcopy -size -command
+
+For more examples, use the database browser to see how the comments
+would look like for the commands known in the database.
