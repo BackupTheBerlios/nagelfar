@@ -31,6 +31,25 @@ test nagelfar-1.3 {
     execTestFile -encoding ascii
 } -returnCodes 0 -result {%%}
 
+test nagelfar-1.4 {
+    Command line checks
+} -body {
+    createTestFile {
+        set apa bepa
+    }
+    execTestFile -flags -quiet
+} -returnCodes 0 -result {}
+
+test nagelfar-1.5 {
+    Command line checks
+} -body {
+    createTestFile {
+        set apa bepa
+    }
+    execTestFile -glob {_test*}
+} -returnCodes 0 -result {%%Checking file _testfile_}
+
+
 test nagelfar-2.1 {
     Basic functionality
 } -body {
