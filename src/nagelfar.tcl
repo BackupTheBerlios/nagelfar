@@ -1,7 +1,7 @@
 #!/bin/sh
 #----------------------------------------------------------------------
 #  Syntax.tcl, a syntax checker for Tcl.
-#  Copyright (c) 1999-2002, Peter Spjuth  (peter.spjuth@space.se)
+#  Copyright (c) 1999-2003, Peter Spjuth  (peter.spjuth@space.se)
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -24,8 +24,8 @@
 # the next line restarts using tclsh \
 exec tclsh "$0" "$@"
 
-set debug 0
-set version "Version 0.5 2003-02-14"
+set debug 1
+set version "Version 0.5+ 2003-07-08"
 set thisScript [file join [pwd] [info script]]
 set thisDir    [file dirname $thisScript]
 set ::Syntax(tcl84) [expr {[info tclversion] >= 8.4}]
@@ -118,6 +118,7 @@ proc contMsg {msg {i {}}} {
 proc initMsg {} {
     set ::Syntax(messages) {}
     set ::Syntax(currentMessage) ""
+    set ::Syntax(commentbrace) {}
 }
 
 # Called after a file has been parsed, to flush messages
@@ -129,8 +130,34 @@ proc flushMsg {} {
     }
     set msgs [lsort -integer -index 0 $::Syntax(messages)]
     foreach msg $msgs {
-        echo [lindex $msg 1]
+        set text [lindex $msg 1]
+        set print 1
+        foreach filter $::Syntax(filter) {
+            if {[string match $filter $text]} {
+                set print 0
+                break
+            }
+        }
+        if {$print} {
+            echo [lindex $msg 1]
+        }
     }
+}
+
+# Report any unbalanced braces in comments that have been noticed
+proc reportCommentBrace {fromIx toIx} {
+    set fromLn [calcLineNo $fromIx]
+    set toLn   [calcLineNo $toIx]
+    set new {}
+    foreach {n lineNo} $::Syntax(commentbrace) {
+        if {$fromLn <= $lineNo && $lineNo <= $toLn} {
+            contMsg "Unbalanced brace in comment in line $lineNo."
+        } else {
+            lappend new $n $lineNo
+        }
+    }
+    # Only report it once
+    set ::Syntax(commentbrace) $new
 }
 
 # Trim a string to fit within a length.
@@ -168,13 +195,13 @@ proc profile {str script} {
     incr profiledata($str,n)
 }
 
-# Experimental test for comments with unmatched braces.
+# Test for comments with unmatched braces.
 proc checkPossibleComment {str lineNo} {
 
     set n1 [llength [split $str \{]]
     set n2 [llength [split $str \}]]
     if {$n1 != $n2} {
-	echo "Experimental comment check: Unbalanced brace in comment. Line $lineNo."
+        lappend ::Syntax(commentbrace) [expr {$n1 - $n2}] $lineNo
     }
 }
 
@@ -184,11 +211,6 @@ proc checkComment {str index} {
     if {[string match "##syntax *" $str]} {
 	set ::syntax([lindex $str 1]) [lrange $str 2 end]
     }
-    # FIXA
-    # I would also like some check for unmatched braces.
-    # That can't be done here since this is called after the
-    # script is split, and the split will fail on an unmatched brace
-    # Maybe splitScript can take care of it? Or buildLineDb?
 }
 
 # Handle a stack of current namespaces.
@@ -944,9 +966,20 @@ proc markVariable {var ws check index knownVarsName} {
     # If the base contains substitutions it can't be checked.
     if {$varBaseWs == 0} {
 	if {$check != 2} {
+            # Experimental foreach check FIXA
+            if {[string match {$*} $var]} {
+                set name [string range $var 1 end]
+                if {[info exists ::foreachVar($name)]} {
+                    # Mark them as known instead
+                    foreach name $::foreachVar($name) {
+                        markVariable $name 1 $check $index knownVars
+                    }
+                    #return 1
+                }
+            }
 	    errorMsg "Suspicious variable name \"$var\"" $index
-	}
-	return 1;
+        }
+	return 1
     }
 
     if {$check == 2} {
@@ -1034,7 +1067,7 @@ proc parseStatement {statement index knownVarsName} {
     }
 
 
-    # If the command contains substitutions, then we can not determine
+    # If the command contains substitutions we can not determine
     # which command it is, so we skip it.
     # FIXA. A command with a variable may be a widget command.
     if {[lindex $wordstatus 0] == 0} {
@@ -1142,11 +1175,35 @@ proc parseStatement {statement index knownVarsName} {
 		    markVariable $var 1 0 $index knownVars
 		}
 	    }
-	    if {[lindex $wordstatus end] == 0} {
-		errorMsg "Warning: No braces around body in foreach\
+            # FIXA: Experimental foreach check...
+            # A special case for looping over constant lists
+            set varsAdded {}
+            foreach {varList valList} [lrange $argv 0 end-1] \
+                    {varWS valWS} [lrange $wordstatus 0 end-1] {
+                if {$varWS != 0 && $valWS != 0} {
+                    set fVars {}
+                    foreach fVar $varList {
+                        set ::foreachVar($fVar) {}
+                        lappend fVars apaV($fVar)
+                        lappend varsAdded $fVar
+                    }
+                    foreach $fVars $valList {
+                        foreach fVar $varList {
+                            lappend ::foreachVar($fVar) $apaV($fVar)
+                        }
+                    }
+                }
+            }
+            
+            if {[lindex $wordstatus end] == 0} {
+                errorMsg "Warning: No braces around body in foreach\
                         statement." $index
 	    }
 	    parseBody [lindex $argv end] [lindex $indices end] knownVars
+            # Clean up
+            foreach fVar $varsAdded {
+                unset -nocomplain ::foreachVar($fVar)
+            }
 	}
 	if {
 	    if {$argc < 2} {
@@ -1374,6 +1431,7 @@ proc splitScript {script index statementsName indicesName} {
                 set closeBraceIx [expr {[string length $tryline] + $index}]
                 if {$newstatement} {
                     errorMsg "Close brace first in statement." $closeBraceIx
+                    reportCommentBrace 0 $closeBraceIx
                 }
                 set closeBrace [wasIndented $closeBraceIx]
             }
@@ -1462,7 +1520,7 @@ proc splitScript {script index statementsName indicesName} {
                     ![string match "namespace eval*" $tryline]} {
                 # A close brace that is not indented is typically the end of
                 # a global statement, like "proc".
-                # If it does not end the statement, there are probably a
+                # If it does not end the statement, there is probably a
                 # brace mismatch.
                 # When inside a namespace eval block, this is probably ok.
                 errorMsg "Found non indented close brace that did not end\
@@ -1478,8 +1536,10 @@ proc splitScript {script index statementsName indicesName} {
         # Experiment a little to give more info.
         if {[info complete $firstline\}]} {
             contMsg "One close brace would complete the first line"
+            reportCommentBrace $index $index
         } elseif {[info complete $firstline\}\}]} {
             contMsg "Two close braces would complete the first line"
+            reportCommentBrace $index $index
         }
         if {[info complete $firstline\"]} {
             contMsg "One double quote would complete the first line"
@@ -1488,16 +1548,18 @@ proc splitScript {script index statementsName indicesName} {
             contMsg "One close bracket would complete the first line"
         }
 
-        set txt "the script body at line\
-                [calcLineNo [expr {$index + [string length $tryline] - 1}]]."
+        set endIx [expr {$index + [string length $tryline] - 1}]
+        set txt "the script body at line [calcLineNo $endIx]."
         if {[info complete $tryline\}]} {
             contMsg "One close brace would complete $txt"
             contMsg "Assuming completeness for further processing."
+            reportCommentBrace $index $endIx
             lappend statements $tryline\}
             lappend indices $index
         } elseif {[info complete $tryline\}\}]} {
             contMsg "Two close braces would complete $txt"
             contMsg "Assuming completeness for further processing."
+            reportCommentBrace $index $endIx
             lappend statements $tryline\}\}
             lappend indices $index
         }
@@ -1729,6 +1791,7 @@ proc usage {} {
     puts { -h        : Show usage.}
     puts { -gui      : Start with GUI even when files are specified.}
     puts { -s dbfile : Include a database file. (More than one is allowed.)}
+    puts { -filter p : Any message that matches the glob pattern is suppressed}
     puts { -WexprN   : Sets expression warning level.}
     puts {   2 (def) = Warn about any unbraced expression.}
     puts {   1       = Don't warn on single commands. "if [apa] {...}" is ok.}
@@ -1990,7 +2053,7 @@ proc makeWin {} {
         .pw add .fr   -sticky news
         pack .pw -fill both -expand 1
         # Make sure the "ghost sash" below follows resize of window
-        bind .pw <Configure> {.pw sash place 1 2 %h}
+        #bind .pw <Configure> {.pw sash place 1 2 %h}
     } else {
         grid .fs .ff -sticky news
         grid .fr -   -sticky news
@@ -2240,6 +2303,7 @@ if {![info exists gurka]} {
     set ::Syntax(db) {}
     set ::Syntax(files) {}
     set ::Syntax(gui) 0
+    set ::Syntax(filter) {}
     getOptions
 
     # Locate default syntax database(s)
@@ -2291,6 +2355,10 @@ if {![info exists gurka]} {
             }
             -Welse* {
                 set ::Prefs(forceElse) [string range $arg 6 end]
+            }
+            -filter {
+                incr i
+                lappend ::Syntax(filter) [lindex $argv $i]
             }
             -* {
                 puts "Unknown option $arg."
