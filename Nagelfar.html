@@ -9,9 +9,9 @@
 <body>
  
 <h1>Nagelfar - A Tcl Syntax checker</h1>
-<a href="#SyntaxDownload">Download</a>
-<a href="#SyntaxFeatures">Features</a>
-<a href="#SyntaxChanges">Changes</a>
+<a href="#NagelfarDownload">Download</a>
+<a href="#NagelfarFeatures">Features</a>
+<a href="#NagelfarChanges">Changes</a>
 <p>
 A couple of years ago I wrote a Tcl syntax checker in pure Tcl which
 had mostly been collecting dust since then.
@@ -21,7 +21,7 @@ I have started to dust it off and I'll try to work some on it.
 The tool have finally got a name, Nagelfar, and it works rather well and
 can catch a lot of common errors.
 <br>
-It has reached version 0.8 and is available under GPL. It requires Tcl/Tk 8.4
+It has reached version 0.9 and is available under GPL. It requires Tcl/Tk 8.4
 to run.
 <p>
 Any feedback, good or bad, can be sent to
@@ -30,17 +30,17 @@ Any feedback, good or bad, can be sent to
 <a href="http://wiki.tcl.tk/StaticSyntaxAnalysis">See also this page for other syntax checkers.</a>
 <br>
 
-<a name="SyntaxDownload"></a><h3>Download</h3>
+<a name="NagelfarDownload"></a><h3>Download</h3>
 
 Nagelfar requires Tcl/Tk 8.4 to run.<br>
-Version 0.8:<br>
-<a href="nagelfar08.tar.gz">Main distribution</a><br>
+Version 0.9:<br>
+<a href="nagelfar09.tar.gz">Main distribution</a><br>
 <a href="nagelfar.kit">Starkit</a><br>
 <a href="nagelfar">Starpack for Linux (x86)</a><br>
 <a href="nagelfar.solaris">Starpack for Solaris (sparc)</a><br>
 <a href="nagelfar.exe">Starpack for Windows</a><br>
 
-<a name="SyntaxFeatures"></a><h3>Features</h3>
+<a name="NagelfarFeatures"></a><h3>Features</h3>
 <ul>
   <li>Written in pure Tcl.</li>
   <li>It's picky. It prefers to warn if it is uncertain.</li>
@@ -183,7 +183,15 @@ Line  83: N Found non indented close brace that did not end statement.
 Line  83: N Close brace not aligned with line 80 (4 0)
 </pre>
 
-<a name="SyntaxChanges"></a><h3>Changes</h3>
+<a name="NagelfarChanges"></a><h3>Changes</h3>
+Changes in v0.9 (2003-12-11):<br>
+<ul>
+  <li> Improved expression checking.</li>
+  <li> Added upvar detection to handle call-by-name better.</li>
+  <li> Added a check in the edit window to simplify checking of clips
+       that are not in files.</li>
+</ul>
+<br>
 Changes in v0.8 (2003-08-14):<br>
 <ul>
   <li> Bugfixes in options checking and proc checking.</li>
