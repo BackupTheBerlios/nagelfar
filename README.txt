@@ -8,7 +8,7 @@ syntax.tcl <tcl-file>
 For a usage summary:
 syntax.tcl -h
 
-Multiple files can be check in one command. In that case the tool
+Multiple files can be checked in one command. In that case the tool
 will remember procedures from previous files when checking a file.
 
 
@@ -79,6 +79,8 @@ Explanations of some error messages.
   This is also a common source for false errors. Typically with commands
   that use call-by-name, and when using simple variable names.
   For example, this will give such a message: $w configure -anchor w
+  If the constant is within quotes no warning is issued so in the example
+  above you can get rid of it by doing -anchor "w".
 
 "Could not complete statement."
 
@@ -116,3 +118,5 @@ Everything marked FIXA
 Give this program a silly name. (maybe Psyche, Peter's SYntax CHEcker)
 Optimise. Always optimise.
 Tidy up messages. Tidy up code structure. Things are getting messy.
+
+Handle when some options take a value (p) and some don't (o).
