@@ -9,7 +9,7 @@ Line  13: Wrong number of arguments (3) to "set"
 Line  13: Found constant "bepa" which is also a variable.
 Line  13: Found constant "cepa" which is also a variable.
 Line  18: Badly formed if statement
-          Found argument '$bepa =...' after supposed last body.
+          Found argument 'elsif' where else/elseif was expected.
 Line  24: Unknown subcommand "gurka" to "info"
 Line  31: Warning: Switch pattern starting with #. This could be a bad comment.
 Line  31: Unknown command "This"
