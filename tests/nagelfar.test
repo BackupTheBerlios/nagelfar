@@ -68,6 +68,30 @@ test nagelfar-2.3 {
     execTestFile
 } -result {%%}
 
+test nagelfar-2.4 {
+    Basic functionality
+} -body {
+    createTestFile {
+        # A test to just excersise parsing
+        proc apa {w} {
+            set apa 1
+            set bepa(x) 1
+            set ::cepa 3
+            # Expression
+            set apa [expr {[pid] + 1 + $apa}]
+            set apa [expr {"a\nb\\c" eq " [pid] $apa "}]
+            # Misc, empty script
+            lindex $apa 0 ;;list [] [lindex $apa 1]
+            # Variables
+            list $apa ${apa} $bepa(x) ${bepa(x)} $bepa($apa) $::cepa ${}
+            # Backslashes
+            list apa\nbepa\\xy\tsdkj\$urga\[moos\]skj
+            # Write more here
+        }
+    }
+    execTestFile
+} -result {%%}
+
 
 test nagelfar-3.1 {
     Basic errors
@@ -123,6 +147,29 @@ test nagelfar-3.5 {
     execTestFile
 } -result {%%Line   5: E Unknown variable "Miffo(hampa)"}
 
+test nagelfar-3.6 {
+    Basic errors
+} -body {
+    createTestFile "
+        proc hej {a b c} { }
+        set apa \[hej a \\\n b]
+    "
+    execTestFile
+} -result {%%Line   3: E Wrong number of arguments (2) to "hej"*Argument 2 at line 4} -match glob
+
+test nagelfar-3.7 {
+   Move this somewhere FIXA
+} -body {
+    createTestFile {
+        proc apa {x} {
+            if {[info exists y]} {
+                list $y
+            }
+        }
+    }
+    execTestFile
+} -result {%%}
+
 test nagelfar-4.1 {
     Options checking
 } -body {
@@ -140,7 +187,7 @@ test nagelfar-4.2 {
         lsort -d [list 1 2 3]
     }
     execTestFile
-} -result {%%Line   2: E Ambigous option for lsort, -d -> -decreasing/-dictionary}
+} -result {%%Line   2: E Ambigous option for "lsort", -d -> -decreasing/-dictionary}
 
 test nagelfar-4.3 {
     Options checking
@@ -203,112 +250,7 @@ test nagelfar-4.8 {
         string equal -len    2 apa bepa
     }
     execTestFile
-} -result {%%Line   4: W Shortened option for string equal, -len -> -length}
-
-test nagelfar-5.1 {
-    Procedure checking
-} -body {
-    createTestFile {
-        proc info {apa} {
-            return $apa
-        }
-        info hejsan
-    }
-    execTestFile
-} -result {%%Line   2: W Procedure "info" does not match previous definition*}\
-        -match glob
-
-test nagelfar-5.2 {
-    Procedure checking
-} -body {
-    createTestFile {
-        proc hej {a b c} {
-            return $a
-        }
-        set x 1
-        set y 2
-        set z 3
-        hej $x $y $z
-    }
-    execTestFile
-} -result {%%}
-
-test nagelfar-5.3 {
-    Procedure checking, detecting upvar
-} -body {
-    createTestFile {
-        proc hej {a b c} {
-            upvar $b apa
-            return $apa
-        }
-        set x 1
-        set y 2
-        set z 3
-        hej $x $y $z
-    }
-    execTestFile
-} -result {%%Line   9: N Suspicious variable name "$y"}
-
-test nagelfar-5.4 {
-    Procedure checking, detecting upvar
-} -body {
-    createTestFile {
-        proc hej {a b c} {
-            upvar $a apa
-            return $apa
-        }
-        set y 2
-        set z 3
-        hej x $y $z
-    }
-    execTestFile
-} -result {%%Line   8: E Unknown variable "x"}
-
-test nagelfar-5.5 {
-    Procedure checking, detecting upvar
-} -body {
-    createTestFile {
-        proc hej {a b c} {
-            upvar $c apa
-            set apa 1
-        }
-        set y 2
-        set z 3
-        hej $y $z x
-        list $x
-    }
-    execTestFile
-} -result {%%}
-
-test nagelfar-5.6 {
-    Procedure checking, "wrong order"
-} -body {
-    createTestFile {
-        proc hej {a b c} {
-            return [hopp apa bepa cepa]
-        }
-        proc hopp {a b} {
-            return $a
-        }
-    }
-    execTestFile -flags -2pass
-} -result {%%Line   3: E Wrong number of arguments (3) to "hopp"}
-
-test nagelfar-5.7 {
-    Procedure checking, detecting upvar
-} -body {
-    createTestFile {
-        proc hej {a b c} {
-            upvar "#0" $a apa $b bepa
-            set cepa $apa
-            set depa $bepa
-        }
-        set y 2
-        #set z 3
-        hej y z x
-    }
-    execTestFile
-} -result {%%}
+} -result {%%Line   4: W Shortened option for "string equal", -len -> -length}
 
 test nagelfar-6.1 {
     Expression checking
@@ -569,7 +511,7 @@ test nagelfar-13.2 {
     Syntax database, v token
 } -body {
     createTestFile "
-        ##syntax Miffo v
+        ##nagelfar syntax Miffo v
 
         set apa \[Miffo \\
                 hej\]
@@ -581,7 +523,7 @@ test nagelfar-13.3 {
     Syntax database, n token
 } -body {
     createTestFile "
-        ##syntax Miffo n
+        ##nagelfar syntax Miffo n
         set hej 1
         set apa \[Miffo \\
                 \$hej\]
@@ -630,7 +572,7 @@ test nagelfar-19.1 {
         interp alia
     }
     execTestFile
-} -result {%%Line   3: E Ambigous subcommand for interp, alia -> alias/aliases}
+} -result {%%Line   3: E Ambigous subcommand for "interp", alia -> alias/aliases}
 
 test nagelfar-19.2 {
     interp alias, recognise

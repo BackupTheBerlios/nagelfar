@@ -8,12 +8,17 @@ test inline-1.1 {
     Basic syntax
 } -body {
     createTestFile {
+        ##nagelfar
+        ##nagelfar "aaka
+        ##nagelfar hubert
         ##nagelfar syntax Miffo x x
 
         Miffo a b c
     }
     execTestFile
-} -result {%%Line   4: E Wrong number of arguments (3) to "Miffo"}
+} -result {%%Line   3: N Bad list in ##nagelfar comment
+Line   4: N Bad type in ##nagelfar comment
+Line   7: E Wrong number of arguments (3) to "Miffo"}
 
 test inline-1.2 {
     Subcommand syntax
@@ -40,7 +45,7 @@ test inline-2.1 {
     }
     execTestFile
 } -result {%%Line   5: E Wrong number of arguments (3) to "Miffo"
-Line   6: E Ambigous subcommand for Miffo, be -> bepa/beepa}
+Line   6: E Ambigous subcommand for "Miffo", be -> bepa/beepa}
 
 test inline-3.1 {
     Options
@@ -53,7 +58,7 @@ test inline-3.1 {
         Miffo -be b
     }
     execTestFile
-} -result {%%Line   6: E Ambigous option for Miffo, -be -> -bepa/-beepa}
+} -result {%%Line   6: E Ambigous option for "Miffo", -be -> -bepa/-beepa}
 
 test inline-3.2 {
     Option type

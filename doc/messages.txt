@@ -16,11 +16,11 @@ Explanations of some error messages.
   The message may be followed by extra info that can help figure out
   what happened.
 
-"Close brace not aligned with line <l> (<i1> <i2>)"
+"Close brace not aligned with line \u003cl\u003e (\u003ci1\u003e \u003ci2\u003e)"
 
   It is assumed that a close brace is indented equally to the line
-  where its corresponding open brace is (line <l>).
-  The open brace's indent level is <i1> and the close brace's <i2>.
+  where its corresponding open brace is (line \u003cl\u003e).
+  The open brace's indent level is \u003ci1\u003e and the close brace's \u003ci2\u003e.
   This error may indicate a brace mismatch, an indentation slip
   or just that you have a different indentation style.
 

@@ -94,3 +94,29 @@ test namespace-4.2 {
     }
     execTestFile
 } -result {%%Line   4: E Wrong number of arguments (3) to "apa::bepa"}
+
+test namespace-5.1 {
+    Namespaces, variable
+} -body {
+    createTestFile {
+        proc apa::bepa {ns} {
+            variable hej
+            variable ${ns}::hopp
+            set x $hej
+            set y $hopp
+        }
+    }
+    execTestFile
+} -result {%%}
+
+test namespace-5.2 {
+    Namespaces, variable
+} -body {
+    createTestFile {
+        proc apa::bepa {ns} {
+            variable $ns
+            set x 1
+        }
+    }
+    execTestFile
+} -result {%%Line   3: N Non constant argument to variable: $ns}

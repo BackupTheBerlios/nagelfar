@@ -60,3 +60,95 @@ test tokens-3.1 {
     }
     execTestFile
 } -result {%%}
+
+test tokens-4.1 {
+    Token error
+} -body {
+    createTestFile {
+        ##nagelfar syntax gurka y*
+        gurka x
+    }
+    execTestFile
+} -result {%%Unsupported token y* in syntax for gurka*} -match glob
+
+test tokens-4.2 {
+    Token error
+} -body {
+    createTestFile {
+        ##nagelfar syntax gurka 1:
+        gurka x
+    }
+    execTestFile
+} -result {%%Can't parse syntax definition for "gurka": "1:"}
+
+test tokens-5.1 {
+   Range tokens
+} -body {
+    createTestFile {
+        ##nagelfar syntax gurka r 1 2
+        gurka
+        gurka hej
+        gurka hej hopp
+        gurka hej hopp apa
+    }
+    execTestFile
+} -result {%%Line   3: E Wrong number of arguments (0) to "gurka"
+Line   6: E Wrong number of arguments (3) to "gurka"}
+
+test tokens-6.1 {
+    Expression token
+} -body {
+    createTestFile {
+        set apa 1
+        ##nagelfar syntax gurka x e? e E
+        gurka hej {$apa} {$apa} {$apa}
+        ##nagelfar syntax hopp x e e E
+        hopp hej {$apa} {$apa} $apa
+        hopp hej {$apa} $apa {$apa}
+    }
+    execTestFile -flags -Wexpr0
+} -result {%%Modifier "?" is not supported for "e" in syntax for gurka.
+Line   6: W No braces around expression in hopp statement.}
+
+test tokens-6.2 {
+    Expression token
+} -body {
+    createTestFile {
+        set apa 1
+        ##nagelfar syntax hopp x e 
+        hopp hej {$apa}
+        hopp hej $apa
+    }
+    execTestFile -flags -Wexpr2
+} -result {%%Line   5: W No braces around expression in hopp statement.}
+
+test tokens-7.1 {
+    Code token
+} -body {
+    createTestFile {
+        set apa 1
+        ##nagelfar syntax gurka x c? c
+        gurka hej {list $apa} [list hej hopp]
+        ##nagelfar syntax hopp x c c
+        hopp hej $apa {list $apa}
+    }
+    execTestFile
+} -result {%%Modifier "?" is not supported for "c" in syntax for gurka.
+Line   6: W No braces around code in hopp statement.}
+
+test tokens-8.1 {
+    Subcommand token
+} -body {
+    createTestFile {
+        set apa 1
+        ##nagelfar syntax gurka x s?
+        gurka hej [list hej hopp]
+        ##nagelfar syntax hopp x s
+        ##nagelfar subcmd hopp qwerty hipp happ hopp
+        hopp hej qwe
+    }
+    execTestFile
+} -result {%%Modifier "?" is not supported for "s" in syntax for gurka.
+Line   4: N Non static subcommand to "gurka"
+Line   7: W Shortened subcommand for "hopp", qwe -> qwerty}
+

@@ -1,6 +1,6 @@
 Nagelfar supports having comments inlined to help it check a file.
 
-Whenever <file>.tcl is checked, any <file>.syntax is run through
+Whenever \u003cfile\u003e.tcl is checked, any \u003cfile\u003e.syntax is run through
 the syntax checker first.  Thus you can put your comments in such
 a separate file instead of your source if that is not suitable.
 

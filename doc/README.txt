@@ -23,7 +23,7 @@ USAGE
 This tool is both a command line tool and a GUI tool.
 
 Typical usage:
-nagelfar.tcl <tcl-file>
+nagelfar.tcl \u003ctcl-file\u003e
 
 For a usage summary:
 nagelfar.tcl -h

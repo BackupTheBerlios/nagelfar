@@ -30,7 +30,7 @@ tclsh82
 % exit
 
 Then use it:
-nagelfar.tcl -s syntaxdb82.tcl <tcl-file>
+nagelfar.tcl -s syntaxdb82.tcl \u003ctcl-file\u003e
 
 
 On Windows it is usually just to double click on syntaxbuild.tcl
