@@ -152,3 +152,24 @@ test tokens-8.1 {
 Line   4: N Non static subcommand to "gurka"
 Line   7: W Shortened subcommand for "hopp", qwe -> qwerty}
 
+test tokens-9.1 {
+    Optional tokens
+} -body {
+    createTestFile {
+        # Here, -apa cannot be an option
+        string match -apa gurka
+        string equal -nocase -apa gurka
+
+        ##nagelfar syntax hojj p* x x
+        ##nagelfar option hojj -apa -bepa
+        hojj -apa x -cepa y
+
+        # The * should not eat the last arg
+        ##nagelfar syntax myset n* x
+        set apa 1
+        myset hej hopp $apa
+        list $hej $hopp
+    }
+    execTestFile
+} -result {%%}
+
