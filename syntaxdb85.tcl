@@ -1,9 +1,9 @@
 # Automatically generated syntax database.
-# Generated with syntaxbuild Revision: 1.21 
+# Generated with syntaxbuild Revision: 1.23 
 
 lappend ::dbInfo {Tcl 8.5a2 unix, Tk 8.5a2 x11}
 set ::dbTclVersion 8.5
-set ::knownGlobals {argc argv argv0 auto_index auto_oldpath auto_path env errorCode errorInfo tcl_interactive tcl_library tcl_nonwordchars tcl_patchLevel tcl_pkgPath tcl_platform tcl_rcFileName tcl_version tcl_wordchars tk_library tk_patchLevel tk_strictMotif tk_version}
+set ::knownGlobals {argc argv argv0 auto_index auto_path env errorCode errorInfo tcl_interactive tcl_library tcl_nonwordchars tcl_patchLevel tcl_pkgPath tcl_platform tcl_rcFileName tcl_version tcl_wordchars tk_library tk_patchLevel tk_strictMotif tk_version}
 set ::knownCommands {. after append array auto_execok auto_import auto_load auto_load_index auto_mkindex auto_mkindex_old auto_qualify auto_reset bell binary bind bindtags break button canvas case catch cd checkbutton clipboard clock close concat continue destroy dict encoding entry eof error eval event exec exit expr fblocked fconfigure fcopy file fileevent flush focus font for foreach format frame gets glob global grab grid history if image incr info interp join label labelframe lappend lassign lindex linsert list listbox llength load lower lrange lrepeat lreplace lsearch lset lsort menu menubutton message namespace open option pack package panedwindow parray pid pkg_compareExtension pkg_mkIndex place proc puts pwd radiobutton raise read regexp regsub rename return scale scan scrollbar seek selection send set socket source spinbox split string subst switch tclLdAout tclLog tclPkgSetup tclPkgUnknown tcl_endOfWord tcl_findLibrary tcl_startOfNextWord tcl_startOfPreviousWord tcl_wordBreakAfter tcl_wordBreakBefore tell text time tk tk_chooseColor tk_chooseDirectory tk_getOpenFile tk_getSaveFile tk_menuSetFocus tk_messageBox tk_popup tk_textCopy tk_textCut tk_textPaste tkwait toplevel trace unknown unload unset update uplevel upvar variable vwait while winfo wm}
 set ::syntax(_obj,button) {s x*}
 set {::syntax(_obj,button cget)} o
@@ -75,12 +75,14 @@ set ::syntax(auto_qualify) 2
 set ::syntax(auto_reset) 0
 set ::syntax(binary) {s x*}
 set {::syntax(binary scan)} {x x n n*}
+set ::syntax(bindtags) {x x?}
 set ::syntax(break) 0
 set ::syntax(button) {x p*}
 set ::syntax(canvas) {x p*}
 set ::syntax(catch) {c n?}
 set ::syntax(cd) {r 0 1}
 set ::syntax(checkbutton) {x p*}
+set ::syntax(clipboard) {s x*}
 set ::syntax(clock) {s x*}
 set {::syntax(clock clicks)} o?
 set {::syntax(clock format)} {x p*}
@@ -117,6 +119,7 @@ set ::syntax(format) {r 1}
 set ::syntax(frame) {x p*}
 set ::syntax(gets) {x n?}
 set ::syntax(glob) {o* x x*}
+set ::syntax(grab) {x x*}
 set ::syntax(grid) {x x*}
 set ::syntax(history) {s x*}
 set ::syntax(image) {s x*}
@@ -168,6 +171,7 @@ set ::syntax(scan) {x x n*}
 set ::syntax(scrollbar) {x p*}
 set ::syntax(seek) {r 2 3}
 set ::syntax(selection) {s x*}
+set ::syntax(send) {o* x x x*}
 set ::syntax(set) {1: v : n x}
 set ::syntax(socket) {r 2}
 set ::syntax(source) 1
@@ -210,12 +214,12 @@ set ::syntax(tell) 1
 set ::syntax(text) {x p*}
 set ::syntax(time) {r 1 2}
 set ::syntax(tk) {s x*}
-set ::syntax(tk_chooseColor) {r 0}
-set ::syntax(tk_chooseDirectory) {r 0}
-set ::syntax(tk_getOpenFile) {r 0}
-set ::syntax(tk_getSaveFile) {r 0}
+set ::syntax(tk_chooseColor) p*
+set ::syntax(tk_chooseDirectory) p*
+set ::syntax(tk_getOpenFile) p*
+set ::syntax(tk_getSaveFile) p*
 set ::syntax(tk_menuSetFocus) 1
-set ::syntax(tk_messageBox) {r 0}
+set ::syntax(tk_messageBox) p*
 set ::syntax(tk_popup) {r 3 4}
 set ::syntax(tk_textCopy) 1
 set ::syntax(tk_textCut) 1
@@ -288,6 +292,7 @@ set ::subCmd(_obj,text) {bbox cget compare configure count debug delete dlineinf
 set ::subCmd(_obj,toplevel) {cget configure}
 set ::subCmd(array) {anymore donesearch exists get names nextelement set size startsearch statistics unset}
 set ::subCmd(binary) {format scan}
+set ::subCmd(clipboard) {append clear get}
 set ::subCmd(clock) {clicks format scan seconds}
 set ::subCmd(encoding) {convertfrom convertto names system}
 set ::subCmd(event) {add delete generate info}
@@ -390,6 +395,7 @@ set ::option(menu) {-activebackground -activeborderwidth -activeforeground -back
 set ::option(menubutton) {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -cursor -direction -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -indicatoron -justify -menu -padx -pady -relief -compound -state -takefocus -text -textvariable -underline -width -wraplength}
 set {::option(menubutton -textvariable)} n
 set ::option(panedwindow) {-background -bd -bg -borderwidth -cursor -handlepad -handlesize -height -opaqueresize -orient -relief -sashcursor -sashpad -sashrelief -sashwidth -showhandle -width}
+set ::option(puts) -nonewline
 set ::option(radiobutton) {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -indicatoron -justify -offrelief -overrelief -padx -pady -relief -selectcolor -selectimage -state -takefocus -text -textvariable -tristateimage -tristatevalue -underline -value -variable -width -wraplength}
 set {::option(radiobutton -textvariable)} n
 set {::option(radiobutton -variable)} n
@@ -400,6 +406,8 @@ set {::option(regsub -start)} 1
 set ::option(scale) {-activebackground -background -bigincrement -bd -bg -borderwidth -command -cursor -digits -fg -font -foreground -from -highlightbackground -highlightcolor -highlightthickness -label -length -orient -relief -repeatdelay -repeatinterval -resolution -showvalue -sliderlength -sliderrelief -state -takefocus -tickinterval -to -troughcolor -variable -width}
 set {::option(scale -variable)} n
 set ::option(scrollbar) {-activebackground -activerelief -background -bd -bg -borderwidth -command -cursor -elementborderwidth -highlightbackground -highlightcolor -highlightthickness -jump -orient -relief -repeatdelay -repeatinterval -takefocus -troughcolor -width}
+set ::option(send) {-async -displayof --}
+set {::option(send -displayof)} 1
 set ::option(spinbox) {-activebackground -background -bd -bg -borderwidth -buttonbackground -buttoncursor -buttondownrelief -buttonuprelief -command -cursor -disabledbackground -disabledforeground -exportselection -fg -font -foreground -format -from -highlightbackground -highlightcolor -highlightthickness -increment -insertbackground -insertborderwidth -insertofftime -insertontime -insertwidth -invalidcommand -invcmd -justify -relief -readonlybackground -repeatdelay -repeatinterval -selectbackground -selectborderwidth -selectforeground -state -takefocus -textvariable -to -validate -validatecommand -values -vcmd -width -wrap -xscrollcommand}
 set {::option(spinbox -textvariable)} n
 set {::option(string compare)} {-nocase -length}
@@ -413,5 +421,11 @@ set {::option(string match)} -nocase
 set ::option(subst) {-nobackslashes -nocommands -novariables}
 set ::option(switch) {-exact -glob -indexvar -matchvar -regexp --}
 set ::option(text) {-autoseparators -background -bd -bg -blockcursor -borderwidth -cursor -exportselection -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -insertbackground -insertborderwidth -insertofftime -insertontime -insertwidth -maxundo -padx -pady -relief -selectbackground -selectborderwidth -selectforeground -setgrid -spacing1 -spacing2 -spacing3 -state -tabs -takefocus -undo -width -wrap -xscrollcommand -yscrollcommand}
+set ::option(tk_chooseColor) {-initialcolor -parent -title}
+set ::option(tk_chooseDirectory) {-initialdir -mustexist -parent -title}
+set ::option(tk_getOpenFile) {-defaultextension -filetypes -initialdir -initialfile -multiple -parent -title}
+set ::option(tk_getSaveFile) {-defaultextension -filetypes -initialdir -initialfile -parent -title}
+set ::option(tk_messageBox) {-default -detail -icon -message -parent -title -type}
 set ::option(toplevel) {-bd -borderwidth -class -menu -relief -screen -use -background -bg -colormap -container -cursor -height -highlightbackground -highlightcolor -highlightthickness -padx -pady -takefocus -visual -width}
+set ::option(unset) {-nocomplain --}
 
