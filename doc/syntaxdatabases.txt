@@ -5,15 +5,15 @@ are used. This file is typically called syntaxdb.tcl, and is just a Tcl
 file defining variables.
 
 Any file called syntaxdb*.tcl in your current directory or in the
-directory where nagelfar.tcl is located are detected and possibly used as
+directory where Nagelfar is located are detected and possibly used as
 default database unless you specify one on the command line.
 The search order for default database is:
  syntaxdb.tcl in current directory
  syntaxdb*.tcl in current directory (if more than one it is unspecified which)
- syntaxdb.tcl where nagelfar.tcl is located
- syntaxdb*.tcl where nagelfar.tcl is located
+ syntaxdb.tcl where Nagelfar is located
+ syntaxdb*.tcl where Nagelfar is located
 
-In the GUI, all database found are listed, and those found where nagelfar.tcl
+In the GUI, all databases found are listed, and those found where Nagelfar
 is located are marked "(app)".
 
 A syntax database is created by syntaxbuild.tcl which makes

@@ -4,7 +4,7 @@ Explanations of some error messages.
 
   This is the error for detecting missing $.
   This is also a common source for false errors. Typically with commands
-  that use call-by-name, and when using simple variable names.
+  that use call-by-name, or when using simple variable names.
   For example, this will give such a message: $w configure -anchor w
   If the constant is within quotes no warning is issued so in the example
   above you can get rid of it by doing -anchor "w".
