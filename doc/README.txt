@@ -56,12 +56,15 @@ peter.spjuth@space.se
 tool so I get encouraged to work on it.)
 
 
-SOME INFO
+GENERATE HEADERS
 
-A common source of false warnings have to do with call-by-name.
-The syntax checker can be told about procedures using call-by-name using
-inline comments or separate info files.  Read doc/inlinecomments.txt and
-see nagelfar.syntax and tests/test.syntax for examples.
+You can generate a header file to help checking multiple files.
+
+nagelfar.tcl -header \u003cout-file\u003e \u003cfile1\u003e \u003cfile2\u003e
+
+You can then check file1 and get it to recognise procs from file2 too:
+
+nagelfar.tcl \u003cout-file\u003e \u003cfile1\u003e
 
 
 TODO
