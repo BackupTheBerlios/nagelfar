@@ -21,7 +21,23 @@ unset gurkmeja
 
 set ::kG [lsort [info globals]]
 set ::kC [lsort [info commands]]
-set ::kP [lsort [info procs]]
+
+# Collect exported namespace commands
+if 0 { # Not working yet
+    set todo [namespace children ::]
+    while {[llength $todo] > 0} {
+        set ns [lindex $todo 0]
+        set todo [lrange $todo 1 end]
+        eval lappend todo [namespace children $ns]
+
+        set exports [namespace eval $ns {namespace export}]
+        foreach pat $exports {
+            foreach p [info commands ${ns}::$pat] {
+                lappend ::kC $p
+            }
+        }
+    }
+}
 
 # Function to get an option or subcommand list from an error message.
 proc getSubCmds {args} {
@@ -76,7 +92,7 @@ proc buildDb {ch} {
 
     puts $ch "# Automatically generated syntax database."
     puts -nonewline $ch "# Generated with syntaxbuild "
-    puts $ch {$Revision$}
+    puts $ch [string trim {$Revision$} \$]
 
     set useTk [expr {![catch {package present Tk}]}]
     if {!$useTk} {
@@ -86,7 +102,6 @@ proc buildDb {ch} {
     }
     puts $ch [list set ::knownGlobals $::kG]
     puts $ch [list set ::knownCommands $::kC]
-    puts $ch [list set ::knownProcs $::kP]
 
     # Below is the hardcoded syntax for many core commands.
     # It is defined using the "language" below.
@@ -138,6 +153,7 @@ proc buildDb {ch} {
     set syntax(array\ set)      "n x"
     set syntax(array\ size)     "v"
     set syntax(array\ statistics) "v"
+    set syntax(array\ unset)    "l x?"
     set syntax(binary)          "s x*"
     set syntax(binary\ scan)    "x x n n*"
     set syntax(break)            0
@@ -193,6 +209,7 @@ proc buildDb {ch} {
     # "namespace" is handled specially
     set syntax(namespace)       "s x*"
     set syntax(open)            "r 1 3"
+    # "package" is handled specially
     set syntax(package)         "s x*"
     set syntax(pid)             "r 0 1"
     # "proc" is handled specially
@@ -333,9 +350,12 @@ proc buildDb {ch} {
     set option(glob\ -types)     1
 
     # Build syntax info for procs
-    foreach apa $::kP {
-        if {![info exists syntax($apa)]} {
-            set syntax($apa) [createSyntax $apa]
+    foreach apa $::kC {
+        # Is it a proc?
+        if {[info procs $apa] != ""} {
+            if {![info exists syntax($apa)]} {
+                set syntax($apa) [createSyntax $apa]
+            }
         }
     }
 
