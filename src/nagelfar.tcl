@@ -24,11 +24,11 @@
 # the next line restarts using tclsh \
 exec tclsh "$0" "$@"
 
-set debug 0
+set debug 1
 package require Tcl 8.4
 
 package provide app-nagelfar 0.8
-set version "Version 0.8+ 2003-09-24"
+set version "Version 0.8+ 2003-11-20"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -643,7 +643,7 @@ proc parseVar {str len index iName knownVarsName} {
 	# Skip qualified names until we handle namespace better. FIXA
 	return
     }
-    if {![info exists knownVars($var)]} {
+    if {![info exists knownVars(known,$var)]} {
 	errorMsg E "Unknown variable \"$var\"" $index
     }
     # Make use of markVariable. FIXA
@@ -1102,29 +1102,35 @@ proc markVariable {var ws check index knownVarsName} {
     }
 
     if {$check == 2} {
-	if {![info exists knownVars($varBase)]} {
+	if {![info exists knownVars(known,$varBase)]} {
 	    return 1
 	}
 	if {$varArray && $varIndexWs != 0 && \
-                ($knownVars($varBase) & 8) != 8} {
-	    if {![info exists knownVars($var)]} {
+                [info exists knownVars(local,$varBase)]} {
+	    if {![info exists knownVars(known,$var)]} {
 		return 1
 	    }
 	}
 	return 0
     } else {
-	set bit [expr {$check == 1 ? 4 : 0}]
-	if {[info exists knownVars($varBase)]} {
-	    set knownVars($varBase) [expr {$knownVars($varBase) | $bit}]
-	} else {
-	    set knownVars($varBase) [expr {1 | $bit}]
-	}
+	if {![info exists knownVars(known,$varBase)]} {
+            set knownVars(known,$varBase) 1
+            set knownVars(local,$varBase) 1
+        }
+        if {$check == 1} {
+            set knownVars(set,$varBase) 1
+        }
+        # If the array index is constant, mark the whole name
 	if {$varArray && $varIndexWs != 0} {
-	    if {[info exists knownVars($var)]} {
-		set knownVars($var) [expr {$knownVars($var) | $bit}]
-	    } else {
-		set knownVars($var) $knownVars($varBase)
+	    if {![info exists knownVars(known,$var)]} {
+		set knownVars(known,$var) 1
+                if {[info exists knownVars(local,$varBase)]} {
+                    set knownVars(local,$var) 1
+                }
 	    }
+            if {$check == 1} {
+                set knownVars(set,$var) 1
+            }
 	}
     }
 }
@@ -1243,8 +1249,8 @@ proc parseStatement {statement index knownVarsName} {
 	    # FIXA, update the globals database
 	    foreach var $argv ws $wordstatus {
 		if {$ws} {
-		    # 2 means it is a global, 8 non-local
-		    set knownVars($var) 10
+                    set knownVars(known,$var) 1
+                    set knownVars(namespace,$var) ""
 		} else {
 		    errorMsg N "Non constant argument to $cmd: $var" $index
 		}
@@ -1258,10 +1264,10 @@ proc parseStatement {statement index knownVarsName} {
 	    foreach {var val} $argv {ws1 ws2} $wordstatus {
 		regexp {::([^:]+)$} $var -> var
 		if {$ws1} {
-		    if {$i >= $argc - 1} {
-			set knownVars($var) 8
-		    } else {
-			set knownVars($var) 12
+                    set knownVars(known,$var) 1
+                    #set knownVars(namespace,$var) FIXA???
+		    if {$i < $argc - 1} {
+                        set knownVars(set,$var) 1
 		    }
 		    lappend constantsDontCheck $i
 		} else {
@@ -1271,16 +1277,55 @@ proc parseStatement {statement index knownVarsName} {
 	    }
 	}
 	upvar {
-	    if {$argc % 2 == 1} {
-		set tmp [lrange $argv 1 end]
-		set i 2
-	    } else {
-		set tmp $argv
-		set i 1
-	    }
-	    foreach {other var} $tmp {
-		set knownVars($var) 8
-		lappend constantsDontCheck $i
+            if {$argc < 2} {
+                WA
+                return
+            }
+            set level [lindex $argv 0]
+            set oddA [expr {$argc % 2 == 1}]
+            set hasLevel 0
+            if {[lindex $wordstatus 0]} {
+                # Is it a level ?
+                if {[regexp {^[\#0-9]} $level]} {
+                    if {!$oddA} {
+                        WA
+                        return
+                    }
+                    set hasLevel 1
+                } else {
+                    if {$oddA} {
+                        WA
+                        return
+                    }
+                    set level 1
+                }
+            } else {
+                # Assume it is not a level unless odd number of args.
+                if {$oddA} {
+                    # Warn here? FIXA
+                    errorMsg N "Non constant level to $cmd: $level" $index
+                    set hasLevel 1
+                }
+                set level ""
+            }
+            if {$hasLevel} {
+                set tmp [lrange $argv 1 end]
+                set tmpWS [lrange $wordstatus 1 end]
+                set i 2
+            } else {
+                set tmp $argv
+                set tmpWS $wordstatus
+                set i 1
+            }
+            #miffo
+	    foreach {other var} $tmp {wsO wsV} $tmpWS {
+                if {$wsV == 0} {
+                    # The variable name contains substitutions
+                    errorMsg N "Suspicious upvar variable \"$var\"" $index
+                } else {
+                    set knownVars(known,$var) 1
+                    lappend constantsDontCheck $i
+                }
 		incr i 2
 	    }
 	}
@@ -1522,7 +1567,7 @@ proc parseStatement {statement index knownVarsName} {
     # The constant is considered ok if within quotes (i.e. ws=2).
     set i 0
     foreach ws $wordstatus var $argv {
-        if {[info exists knownVars($var)]} {
+        if {[info exists knownVars(known,$var)]} {
             if {$ws == 1 && [lsearch $constantsDontCheck $i] == -1} {
                 errorMsg W "Found constant \"$var\" which is also a\
                         variable." [lindex $indices $i]
@@ -1748,7 +1793,8 @@ proc parseProc {argv indices} {
     array set knownVars {}
     foreach a $args {
 	if {[llength $a] != 1} {
-	    set knownVars([lindex $a 0]) 5
+	    set knownVars(known,[lindex $a 0]) 1
+	    set knownVars(local,[lindex $a 0]) 1
 	    continue
 	}
 	if {[string equal $a "args"]} {
@@ -1756,7 +1802,8 @@ proc parseProc {argv indices} {
 	} else {
             incr min
         }
-	set knownVars($a) 5
+	set knownVars(known,$a) 1
+	set knownVars(local,$a) 1
     }
 
     if {$unlim} {
@@ -1816,14 +1863,12 @@ proc parseProc {argv indices} {
     popNamespace
 
     # Update known globals with those that were set in the proc.
-    # Values in knownVars:
-    # 1: local
-    # 2: global
-    # 4: Has been set.
-    # 8: nonlocal
-    # I.e. anyone marked 6 should be added to known globals.
-    foreach var [array names knownVars] {
-	if {($knownVars($var) & 6) == 6} {
+    # I.e. anyone with set == 1 and namespace == "" should be
+    # added to known globals.
+    foreach item [array names knownVars namespace,*] {
+        if {$knownVars($item) != ""} continue
+        set var [string range $item 10 end]
+	if {[info exists knownVars(set,$var)]} {
 #	    decho "Set global $var in proc $name."
 	    if {[lsearch $knownGlobals $var] == -1} {
 		lappend knownGlobals $var
@@ -1919,7 +1964,9 @@ proc parseScript {script} {
     set unknownCommands {}
     array set knownVars {}
     foreach g $knownGlobals {
-	set knownVars($g) 14
+	set knownVars(known,$g) 1
+	set knownVars(set,$g) 1
+	set knownVars(namespace,$g) ""
     }
     set script [buildLineDb $script]
     pushNamespace {}
@@ -1937,9 +1984,11 @@ proc parseScript {script} {
         }
     }
     # Update known globals.
-    foreach var [array names knownVars] {
+    foreach item [array names knownVars namespace,*] {
+        if {$knownVars($item) != ""} continue
+        set var [string range $item 10 end]
 	# Check if it has been set.
-	if {($knownVars($var) & 4) == 4} {
+	if {[info exists knownVars(set,$var)]} {
 	    if {[lsearch $knownGlobals $var] == -1} {
 		lappend knownGlobals $var
 	    }
