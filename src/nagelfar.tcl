@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.0b3+ 2004-04-13"
+set version "Version 1.0b3+ 2004-05-01"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -315,6 +315,18 @@ proc scanWord {str len index iName} {
 
     set si $i
     set c [string index $str $i]
+
+    if {$::Nagelfar(allowExpand) && $c eq "\{"} {
+        if {[string range $str $i [expr {$i + 7}]] eq "{expand}"} {
+            set ni [expr {$i + 8}]
+            set nc [string index $str $ni]
+            if {![string is space $nc]} {
+                # Non-space detected, it is expansion
+                set c $nc
+                set i $ni
+            }
+        }
+    }
 
     if {[string equal $c "\{"]} {
         set closeChar \}
@@ -855,6 +867,12 @@ proc parseExpr {str index knownVarsName} {
     # substitution in the expression by "$dummy"
     set dummy 1
 
+    # This uses [expr] to do the checking which means that the checking
+    # can't recognise anything that differs from the Tcl version Nagelfar
+    # is run with. For example, the new operators in 8.4 "eq" and "ne"
+    # will be accepted even if the database was generated using an older
+    # Tcl version.  A small problem and hard to fix, so I'm ignoring it.
+
     if {[catch [list expr $exp] msg]} {
         regsub {syntax error in expression.*:\s+} $msg {} msg
         if {[string match "*divide by zero*" $msg]} return
@@ -866,7 +884,7 @@ proc parseExpr {str index knownVarsName} {
 # This will cause messages if there are comments in blocks
 # that are not recognised as code.
 proc checkForComment {word index} {
-    # Check for #
+    # Check for "#"
     set si 0
     while {[set si [string first \# $word $si]] >= 0} {
         # Is it first in a line?
@@ -1345,6 +1363,7 @@ proc parseStatement {statement index knownVarsName} {
         }
     }
 
+    # FIXA: handle {expand} here
     set type ""
     set words2 {}
     set wordstatus {}
@@ -2567,6 +2586,65 @@ proc fileDropFile {files} {
 ##nagelfar syntax _ipset    v
 ##nagelfar syntax _iparray  s v
 
+# Load syntax database using safe interpreter
+proc loadDatabases {} {
+    interp create -safe loadinterp
+    interp expose loadinterp source
+    interp alias {} _ipsource loadinterp source
+    interp alias {} _ipexists loadinterp info exists
+    interp alias {} _ipset    loadinterp set
+    interp alias {} _iparray  loadinterp array
+
+    foreach f $::Nagelfar(db) {
+        _ipsource $f
+    }
+
+    if {[_ipexists ::knownGlobals]} {
+        set ::knownGlobals [_ipset ::knownGlobals]
+    } else {
+        set ::knownGlobals {}
+    }
+    if {[_ipexists ::knownCommands]} {
+        set ::knownCommands [_ipset ::knownCommands]
+    } else {
+        set ::knownCommands {}
+    }
+    if {[_ipexists ::dbInfo]} {
+        set ::Nagelfar(dbInfo) [join [_ipset ::dbInfo] \n]
+    } else {
+        set ::Nagelfar(dbInfo) {}
+    }
+    if {[_ipexists ::dbTclVersion]} {
+        set ::Nagelfar(dbTclVersion) [_ipset ::dbTclVersion]
+    } else {
+        set ::Nagelfar(dbTclVersion) [package present Tcl]
+    }
+    if {[package vcompare $::Nagelfar(dbTclVersion) 8.5] >= 0} {
+        set ::Nagelfar(allowExpand) 1
+    } else {
+        set ::Nagelfar(allowExpand) 0
+    }
+
+    catch {unset ::syntax}
+    catch {unset ::return}
+    catch {unset ::subCmd}
+    catch {unset ::option}
+    if {[_iparray exists ::syntax]} {
+        array set ::syntax [_iparray get ::syntax]
+    }
+    if {[_iparray exists ::return]} {
+        array set ::return [_iparray get ::return]
+    }
+    if {[_iparray exists ::subCmd]} {
+        array set ::subCmd [_iparray get ::subCmd]
+    }
+    if {[_iparray exists ::option]} {
+        array set ::option [_iparray get ::option]
+    }
+
+    interp delete loadinterp
+}
+
 # Execute the checks
 proc doCheck {} {
     if {[llength $::Nagelfar(db)] == 0} {
@@ -2600,48 +2678,8 @@ proc doCheck {} {
         $::Nagelfar(resultWin) delete 1.0 end
     }
 
-    # Load syntax database using safe interpreter
-
-    interp create -safe loadinterp
-    interp expose loadinterp source
-    interp alias {} _ipsource loadinterp source
-    interp alias {} _ipexists loadinterp info exists
-    interp alias {} _ipset    loadinterp set
-    interp alias {} _iparray  loadinterp array
-
-    foreach f $::Nagelfar(db) {
-        _ipsource $f
-    }
-
-    if {[_ipexists ::knownGlobals]} {
-        set ::knownGlobals [_ipset ::knownGlobals]
-    } else {
-        set ::knownGlobals {}
-    }
-    if {[_ipexists ::knownCommands]} {
-        set ::knownCommands [_ipset ::knownCommands]
-    } else {
-        set ::knownCommands {}
-    }
-
-    catch {unset ::syntax}
-    catch {unset ::return}
-    catch {unset ::subCmd}
-    catch {unset ::option}
-    if {[_iparray exists ::syntax]} {
-        array set ::syntax [_iparray get ::syntax]
-    }
-    if {[_iparray exists ::return]} {
-        array set ::return [_iparray get ::return]
-    }
-    if {[_iparray exists ::subCmd]} {
-        array set ::subCmd [_iparray get ::subCmd]
-    }
-    if {[_iparray exists ::option]} {
-        array set ::option [_iparray get ::option]
-    }
-
-    interp delete loadinterp
+    # Load syntax databases
+    loadDatabases
 
     # Do the checking
 
@@ -3098,8 +3136,8 @@ proc makeWin {} {
 
     .m add cascade -label "Help" -underline 0 -menu .m.help
     menu .m.help
-    foreach label {Messages {Syntax Databases}} \
-            file {messages.txt syntaxdatabases.txt} {
+    foreach label {README Messages {Syntax Databases}} \
+            file {README.txt messages.txt syntaxdatabases.txt} {
         .m.help add command -label $label -command [list makeDocWin $file]
     }
     .m.help add separator
@@ -3303,6 +3341,10 @@ proc makeAboutWin {} {
     set d [package provide tkdnd]
     if {$d != ""} {
         $w.t insert end "\nTkDnd version: $d"
+    }
+    catch {loadDatabases}
+    if {[info exists ::Nagelfar(dbInfo)] &&  $::Nagelfar(dbInfo) != ""} {
+        $w.t insert end "\nSyntax database: $::Nagelfar(dbInfo)"
     }
     set last [lindex [split [$w.t index end] "."] 0]
     $w.t configure -height $last
