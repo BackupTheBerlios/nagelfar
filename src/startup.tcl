@@ -43,7 +43,9 @@ proc usage {} {
  -strictappend     : Enforce having an initialised variable in (l)append.
  -header <file>    : Create a "header" file with syntax info for scriptfiles.
  -instrument       : Instrument source file for code coverage.
- -markup           : Markup source file with code coverage result.}
+ -markup           : Markup source file with code coverage result.
+ -quiet            : Suppress non-syntax output.
+ -glob <pattern>   : Add matching files to scriptfiles to check.}
     exit
 }
 
@@ -53,6 +55,7 @@ if {![info exists gurka]} {
     set ::Nagelfar(db) {}
     set ::Nagelfar(files) {}
     set ::Nagelfar(gui) 0
+    set ::Nagelfar(quiet) 0
     set ::Nagelfar(filter) {}
     set ::Nagelfar(2pass) 1
     set ::Nagelfar(encoding) system
@@ -133,6 +136,9 @@ if {![info exists gurka]} {
             -gui {
                 set ::Nagelfar(gui) 1
             }
+            -quiet {
+                set ::Nagelfar(quiet) 1
+            }
             -header {
                 incr i
                 set arg [lindex $argv $i]
@@ -194,7 +200,12 @@ if {![info exists gurka]} {
                     exit
                 }
             }
-            -* {
+            -glob {
+                incr i
+                set files [glob -nocomplain [lindex $argv $i]]
+                set ::Nagelfar(files) [concat $::Nagelfar(files) $files]
+            }
+             -* {
                 puts "Unknown option $arg."
                 usage
             }
