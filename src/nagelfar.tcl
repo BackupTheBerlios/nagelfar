@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 0.9
-set version "Version 0.9+ 2003-12-16"
+set version "Version 0.9+ 2003-12-20"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -201,9 +201,23 @@ proc profile {str script} {
         set profiledata($str,n) 0
     }
     set apa [clock clicks]
-    uplevel 1 $script
+    set res [uplevel 1 $script]
     incr profiledata($str) [expr {[clock clicks] - $apa}]
     incr profiledata($str,n)
+    return $res
+}
+
+proc dumpProfileData {} {
+    global profiledata
+    set maxl 0
+    foreach name [array names profiledata] {
+	if {[string length $name] > $maxl} {
+	    set maxl [string length $name]
+	}
+    }
+    foreach name [lsort -dictionary [array names profiledata]] {
+	puts stdout [format "%-*s = %s" $maxl $name $profiledata($name)]
+    }
 }
 
 # Test for comments with unmatched braces.
@@ -1177,6 +1191,11 @@ proc parseStatement {statement index knownVarsName} {
     upvar $knownVarsName knownVars
     set words [splitStatement $statement $index indices]
     if {[llength $words] == 0} {return}
+    if {$::Nagelfar(onlyproc)} {
+        if {[lindex $words 0] != "proc"} {
+            return
+        }
+    }
 
     set words2 {}
     set wordstatus {}
@@ -1233,6 +1252,7 @@ proc parseStatement {statement index knownVarsName} {
 		return
 	    }
 	    # Skip the proc if any part of it is not constant
+            # FIXA: Maybe accept substitutions as part of namespace?
 	    if {[lsearch $wordstatus 0] >= 0} {
 		errorMsg N "Non constant argument to proc \"[lindex $argv 0]\".\
                         Skipping." $index
@@ -1631,7 +1651,7 @@ proc splitScript {script index statementsName indicesName knownVarsName} {
             # Some extra checking on close braces to help finding
             # brace mismatches
             set closeBrace -1
-            if {[regexp "^\}\\s*$" $line]} {
+            if {[string equal "\}" [string trim $line]]} {
                 set closeBraceIx [expr {[string length $tryline] + $index}]
                 if {$newstatement} {
                     errorMsg E "Close brace first in statement." $closeBraceIx
@@ -1831,9 +1851,11 @@ proc parseProc {argv indices} {
     lappend knownCommands $name
 
 #    decho "Note: parsing procedure $name"
-    pushNamespace $ns
-    parseBody $body [lindex $indices 2] knownVars
-    popNamespace
+    if {!$::Nagelfar(onlyproc)} {
+        pushNamespace $ns
+        parseBody $body [lindex $indices 2] knownVars
+        popNamespace
+    }
 
     #foreach item [array names knownVars upvar,*] {
     #    puts "upvar '$item' '$knownVars($item)'"
@@ -1883,7 +1905,7 @@ proc parseProc {argv indices} {
     }
 
     if {[info exists syntax($name)]} {
-        #decho "Prev: '$syntax($name)'  New: '$newsyntax'"
+        #decho "$name : Prev: '$syntax($name)'  New: '$newsyntax'"
         # Check if it matches previously defined syntax
         set prevmin 0
         set prevmax 0
@@ -1919,6 +1941,14 @@ proc parseProc {argv indices} {
             errorMsg W "Procedure \"$name\" does not match previous definition" \
                     [lindex $indices 0]
             contMsg "Previous '$syntax($name)'  New '$newsyntax'"
+        } else {
+            # It matched.  Does the new one seem better?
+            if {[regexp {^(?:r )?\d+(?: \d+)?$} $syntax($name)]} {
+                #if {$syntax($name) != $newsyntax} {
+                #    decho "$name : Prev: '$syntax($name)'  New: '$newsyntax'"
+                #}
+                set syntax($name) $newsyntax
+            }
         }
     } else {
         #decho "Syntax for '$name' : '$newsyntax'"
@@ -1944,6 +1974,13 @@ proc parseProc {argv indices} {
 proc calcLineNo {i} {
     global newlineIx
 
+    # Shortcut for exact match, which happens when the index is first
+    # in a line. This is common when called from wasIndented.
+    set i [lsearch -integer -sorted $newlineIx $i]
+    if {$i >= 0} {
+        return [expr {$i + 2}]
+    }
+
     set n 1
     foreach ni $newlineIx {
         if {$ni > $i} {
@@ -1955,6 +1992,8 @@ proc calcLineNo {i} {
 }
 
 # Given an index in the original string, tell if that line was indented
+# This should preferably be called with the index to the first char of
+# the line since that case is much more efficient in calcLineNo.
 proc wasIndented {i} {
     global indentInfo
     lindex $indentInfo [expr {[calcLineNo $i] - 1}]
@@ -2033,6 +2072,14 @@ proc parseScript {script} {
     }
     set script [buildLineDb $script]
     pushNamespace {}
+    set ::Nagelfar(onlyproc) 0
+    if {$::Nagelfar(2pass)} {
+        # First do one round with proc checking
+        set ::Nagelfar(onlyproc) 1
+        parseBody $script 0 knownVars
+        echo "Second pass"
+        set ::Nagelfar(onlyproc) 0
+    }
     parseBody $script 0 knownVars
     popNamespace
 
@@ -2988,6 +3035,7 @@ if {![info exists gurka]} {
     set ::Nagelfar(files) {}
     set ::Nagelfar(gui) 0
     set ::Nagelfar(filter) {}
+    set ::Nagelfar(2pass) 0
     getOptions
 
     # Locate default syntax database(s)
@@ -3024,6 +3072,9 @@ if {![info exists gurka]} {
                 lappend ::Nagelfar(db) [lindex $argv $i]
                 lappend ::Nagelfar(allDb) [lindex $argv $i]
                 lappend ::Nagelfar(allDbView) [lindex $argv $i]
+            }
+            -2pass {
+                set ::Nagelfar(2pass) 1
             }
             -gui {
                 set ::Nagelfar(gui) 1
