@@ -21,7 +21,9 @@ TCLSHDB2 = ~/tcl/install/bin/wish8.5
 DB2NAME  = syntaxdb85.tcl
 TCLSH85  = ~/tcl/install/bin/tclsh8.5
 
-all: setup misctest db
+all: base
+
+base: nagelfar.tcl setup misctest db
 
 #----------------------------------------------------------------
 # Setup symbolic links from the VFS to the real files
@@ -48,6 +50,17 @@ links: nagelfar.vfs/lib/app-nagelfar/nagelfar.tcl \
 	nagelfar.vfs/lib/ctext
 
 setup: links
+
+#----------------------------------------------------------------
+# Concatening source
+#----------------------------------------------------------------
+
+CATFILES = src/nagelfar.tcl src/startup.tcl
+
+
+nagelfar.tcl: $(CATFILES)
+	cat $(CATFILES) > nagelfar.tcl
+	@chmod 775 nagelfar.tcl
 
 #----------------------------------------------------------------
 # Testing
@@ -146,4 +159,4 @@ distrib:
 		nagelfar/misctests/test.tcl nagelfar/misctests/test.syntax \
 		nagelfar/doc --exclude CVS
 
-release: setup misctest db distrib wrap wrapexe
+release: base distrib wrap wrapexe
