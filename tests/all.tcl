@@ -12,7 +12,8 @@ package require tcltest 2.2
 namespace import tcltest::*
 tcltest::configure -verbose "body error"
 #testConstraint knownbug 1
-#tcltest::configure -match nagelfar-1\[5678\].*
+#tcltest::configure -match nagelfar-\[5\].*
+#tcltest::configure -match tk-*
 
 proc createTestFile {scr} {
     set ch [open _testfile_ w]
@@ -38,6 +39,10 @@ proc execTestFile {args} {
 
 proc cleanupTestFile {} {
     file delete -force _testfile_
+}
+
+foreach test [glob -nocomplain $thisDir/*.test] {
+    source $test
 }
 
 test nagelfar-1.1 {
@@ -318,6 +323,22 @@ test nagelfar-5.6 {
     }
     execTestFile -flags -2pass
 } -result {%%Line   3: E Wrong number of arguments (3) to "hopp"}
+
+test nagelfar-5.7 {
+    Procedure checking, detecting upvar
+} -body {
+    createTestFile {
+        proc hej {a b c} {
+            upvar "#0" $a apa $b bepa
+            set cepa $apa
+            set depa $bepa
+        }
+        set y 2
+        #set z 3
+        hej y z x
+    }
+    execTestFile
+} -result {%%}
 
 test nagelfar-6.1 {
     Expression checking
@@ -633,39 +654,6 @@ test nagelfar-14.3 {
         proc cepa {hej hopp} {
             set apa [bepa $hej $hopp]
         }
-    }
-    execTestFile
-} -result {%%}
-
-test nagelfar-15.1 {
-    Tk, object tracking
-} -body {
-    createTestFile {
-        set apa [frame .f -padx 3 -pady 3]
-        $apa configure -padx 2 -miffo 3
-        $apa gurka hejsan
-    }
-    execTestFile
-} -result {%%Line   3: E Bad option -miffo*Line   4: E Unknown subcommand "gurka"*} -match glob
-
-test nagelfar-15.2 {
-    Tk, options
-} -body {
-    createTestFile {
-        set bepa hej
-        set cepa hopp
-        set apa [entry .e -textvariable bepa]
-        $apa configure -textvariable cepa
-    }
-    execTestFile
-} -result {%%}
-
-test nagelfar-16.1 {
-    Types checking
-} -body {
-    createTestFile {
-        set apa [list x y z]
-        llength $apa
     }
     execTestFile
 } -result {%%}

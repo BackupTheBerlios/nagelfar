@@ -1,0 +1,118 @@
+#!/bin/sh
+#----------------------------------------------------------------------
+# Tests for inlining information in comments.
+#----------------------------------------------------------------------
+# $Revision$
+#----------------------------------------------------------------------
+
+test inline-1.1 {
+    Basic syntax
+} -body {
+    createTestFile {
+        ##nagelfar syntax Miffo x x
+        
+        Miffo a b c
+    }
+    execTestFile
+} -result {%%Line   4: E Wrong number of arguments (3) to "Miffo"}
+
+test inline-1.2 {
+    Subcommand syntax
+} -body {
+    createTestFile {
+        ##nagelfar syntax Miffo s x
+        ##nagelfar syntax Miffo\ subc2 x x
+
+        Miffo subc1 a
+        Miffo subc2 b c
+    }
+    execTestFile
+} -result {%%}
+
+test inline-2.1 {
+    Subcommands
+} -body {
+    createTestFile {
+        ##nagelfar syntax Miffo s x
+        ##nagelfar subcmd Miffo apa bepa beepa cepa
+
+        Miffo apa a b
+        Miffo be b
+    }
+    execTestFile
+} -result {%%Line   5: E Wrong number of arguments (3) to "Miffo"
+Line   6: E Ambigous subcommand for Miffo, be -> bepa/beepa}
+
+test inline-3.1 {
+    Options
+} -body {
+    createTestFile {
+        ##nagelfar syntax Miffo o* x
+        ##nagelfar option Miffo -apa -bepa -beepa -cepa
+
+        Miffo -apa -cepa a
+        Miffo -be b
+    }
+    execTestFile
+} -result {%%Line   6: E Ambigous option for Miffo, -be -> -bepa/-beepa}
+
+test inline-3.2 {
+    Option type
+} -body {
+    createTestFile {
+        ##nagelfar syntax Miffo o* x
+        ##nagelfar option Miffo -apa -cepa
+        ##nagelfar option Miffo\ -apa n
+
+        Miffo -apa xx -cepa a
+        set bepa $xx
+    }
+    execTestFile
+} -result {%%}
+
+test inline-4.1 {
+    Return
+} -body {
+    createTestFile {
+        ##nagelfar syntax Miffo x x
+        ##nagelfar return Miffo varName
+        
+        set apa [Miffo a b]
+        set $apa
+    }
+    execTestFile
+} -result {%%}
+
+test inline-5.1 {
+    variable
+} -body {
+    createTestFile {
+        ##nagelfar variable Gurka
+        set apa [lindex $Gurka 1]
+    }
+    execTestFile
+} -result {%%}
+
+test inline-5.2 {
+    variable, with type
+} -body {
+    createTestFile {
+        ##nagelfar variable Gurka varName
+        button .b -textvariable $Gurka
+    }
+    execTestFile
+} -result {%%}
+
+test inline-6.1 {
+    ignore/filter
+} -body {
+    createTestFile {
+        ##nagelfar ignore
+        set apa [Miffo a b c]
+        ##nagelfar filter Unknown variable
+        set apa [lindex $Gurka 1]
+        ##nagelfar filter Unknown variable
+        set apa [Miffo a b c]
+    }
+    execTestFile
+} -result {%%Line   7: W Unknown command "Miffo"}

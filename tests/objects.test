@@ -1,0 +1,17 @@
+#!/bin/sh
+#----------------------------------------------------------------------
+# Tests for object tracking
+#----------------------------------------------------------------------
+# $Revision$
+#----------------------------------------------------------------------
+
+test objects-1.1 {
+    Tk, object tracking
+} -body {
+    createTestFile {
+        set apa [frame .f -padx 3 -pady 3]
+        $apa configure -padx 2 -miffo 3
+        $apa gurka hejsan
+    }
+    execTestFile
+} -result {%%Line   3: E Bad option -miffo*Line   4: E Unknown subcommand "gurka"*} -match glob
