@@ -64,15 +64,19 @@ Handle e.g. -textvariable
 Handle namespaces and qualified vars better
 Everything marked FIXA
 Tidy up code structure. Things are getting messy.
-
+A standardized way to handle databases for packages, and loading
+them when package require is seen.
+Handle namespace import if the namespace is known e.g. from a package db.
 Maybe places where a constant list is expected (e.g. foreach {a b} ...)
 should be able to recognise [list a b] as a constant list.
 
 Recognise the idiom [list cmd arg arg] as code.
 Recognise the idiom [set $var] for double dereferencing.
 Option to enforce switch --.
+Option to enforce not using "then".
 
-Make a GUI to help working with the database builder.
+Make a GUI to help working with the database builder.  It should
+be possible to add packages that should be included in the db.
 
 
 BUGS
