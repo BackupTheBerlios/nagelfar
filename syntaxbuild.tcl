@@ -16,11 +16,11 @@ set ::kP [lsort [info procs]]
 # Function to get an option or subcommand list from an error message.
 proc getSubCmds {args} {
     catch {eval $args} err
-    
+
     lappend res {option .* must be (.*)$}
     lappend res {option .* should be one of (.*)$}
     lappend res {bad .* must be (.*)$}
-    
+
     foreach re $res {
 	if {[regexp $re $err -> apa]} {
 	    regsub -all {( or )|(, or )|(, )} $apa " " apa
@@ -62,7 +62,7 @@ proc createSyntax {procName} {
 # Build a syntax database and write it to a channel
 proc buildDb {ch} {
     set ver [info patchlevel]
-    
+
     puts $ch "# Automatically generated syntax database."
     set useTk [expr {![catch {package present Tk}]}]
     if {!$useTk} {
@@ -73,28 +73,33 @@ proc buildDb {ch} {
     puts $ch [list set knownGlobals $::kG]
     puts $ch [list set knownCommands $::kC]
     puts $ch [list set knownProcs $::kP]
-    
+
     # Build a database of options and subcommands
     # TODO: Add all such commands
-    foreach cmd {info string file image} {
+    foreach cmd {info string file image interp namespace winfo} {
         set subCmd($cmd) [getSubCmds $cmd gurkmeja]
     }
-    
+
     set subCmd(wm) [getSubCmds wm gurkmeja .]
     set subCmd(array) [getSubCmds array gurkmeja apa]
     set subCmd(binary) [getSubCmds binary gurkmeja]
-    
+
+    foreach cmd {glob switch} {
+        set option($cmd) [getSubCmds $cmd -gurkmeja]
+    }
+    foreach cmd {lsort subst} {
+        set option($cmd) [getSubCmds $cmd -gurkmeja g]
+    }
     set option(fconfigure) [getSubCmds fconfigure stdin -gurkmeja]
-    set option(switch) [getSubCmds switch -gurkmeja]
     set option(lsearch) [getSubCmds lsearch -gurkmeja g g]
 
     # Below is the hardcoded syntax for many core commands.
     # It is defined using the "language" below.
     # TODO: Add all core commands.
-    
+
     # If syntax is an integer, just check the number of arguments agains it.
     # r min ?max?  Specify a range for number of arguments
-    
+
     # x Any
     # o Option, i.e anything starting with -
     # p Option+Any (p as in option Pair)
@@ -122,23 +127,30 @@ proc buildDb {ch} {
     # expr, proc, bind, eval
 
     # Commands with a set number of arguments that are not checked.
-    set syntax(break) 0
+    set syntax(break)    0
     set syntax(continue) 0
-    set syntax(pwd) 0
-    set syntax(close) 1
-    set syntax(llength) 1
-    set syntax(source) 1
-    set syntax(lindex) 2
-    set syntax(lrange) 3
+    set syntax(pwd)      0
+    set syntax(close)    1
+    set syntax(llength)  1
+    set syntax(source)   1
+    set syntax(lindex)   2
+    set syntax(rename)   2 ;# Maybe treat rename specially?
+    set syntax(lrange)   3
 
     # Commands with a varying number of arguments that are not checked.
-    set syntax(list) "r 0"
-    set syntax(console) "r 1"
-    set syntax(join) "r 1 2"
-    set syntax(read) "r 1 2"
-    set syntax(split) "r 1 2"
-    set syntax(time) "r 1 2"
-    set syntax(open) "r 1 3"
+    set syntax(list)     "r 0"
+    set syntax(concat)   "r 0"
+    set syntax(console)  "r 1"
+    set syntax(format)   "r 1"
+    set syntax(lreplace) "r 3"
+    set syntax(cd)       "r 0 1"
+    set syntax(exit)     "r 0 1"
+    set syntax(join)     "r 1 2"
+    set syntax(read)     "r 1 2"
+    set syntax(split)    "r 1 2"
+    set syntax(time)     "r 1 2"
+    set syntax(error)    "r 1 3"
+    set syntax(open)     "r 1 3"
 
     # Commands with code
     set syntax(for) "c e c c"
@@ -147,30 +159,39 @@ proc buildDb {ch} {
 
     # Commands with subcommands
     # If a syntax for a subcommand is defined, it is used to check the rest
-    set syntax(package) "s x*"
-    set syntax(clock) "s x*"
-    set syntax(info) "s x*"
+    set syntax(package)      "s x*"
+    set syntax(clock)        "s x*"
+    set syntax(info)         "s x*"
     set syntax(info\ exists) "l"
-    set syntax(file) "s x x*"
-    set syntax(file\ lstat) "x n"
-    set syntax(string) "s x x*"
-    set syntax(array) "s n x*"
+    set syntax(interp)       "s x*"
+    set syntax(file)         "s x x*"
+    set syntax(file\ lstat)  "x n"
+    set syntax(file\ stat)   "x n"
+    set syntax(namespace)    "s x*"
+    set syntax(package)      "s x*"
+    set syntax(string)       "s x x*"
+    set syntax(array)        "s n x*"
     set syntax(array\ names) "v x?"
-    set syntax(file) "s x*"
-    set syntax(file\ stat) "x n"
-    set syntax(update) "s."
-    set syntax(binary) "s x*"
+    set syntax(update)       "s."
+    set syntax(binary)       "s x*"
     set syntax(binary\ scan) "x x n n*"
+    set syntax(trace)        "s x x*"
+    set syntax(trace\ variable) "n x x"
+
     if {$useTk} {
-        set syntax(wm) "s x x*"
+	set syntax(winfo) "s x x*"
+        set syntax(wm)    "s x x*"
     }
 
     # General commands
     set syntax(fconfigure) "x o. x. p*"
+    set syntax(glob)       "o* x x*"
     set syntax(lsearch) "o? x x"
+    set syntax(lsort)      "o* x"
     set syntax(puts) "o? x x?"
     set syntax(return) "p* x?"
     set syntax(regsub) "o* x x x n"
+    set syntax(subst)      "o* x"
 
     set syntax(gets) "x n?"
 
