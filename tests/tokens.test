@@ -1,0 +1,20 @@
+#------------------------------------------------------------*- tcl -*-
+# Tests for syntax database tokens
+#----------------------------------------------------------------------
+# $Revision$
+#----------------------------------------------------------------------
+
+test tokens-1.1 {
+    Modifier ?
+} -body {
+    createTestFile {
+        set apa x
+        ##nagelfar syntax gurka o? x?
+        ##nagelfar option gurka -flag -wiggle
+        gurka
+        gurka hej
+        gurka $apa
+        gurka -flag hopp
+    }
+    execTestFile
+} -result {%%}

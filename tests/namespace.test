@@ -1,0 +1,54 @@
+#------------------------------------------------------------*- tcl -*-
+# Tests for namespaces
+#----------------------------------------------------------------------
+# $Revision$
+#----------------------------------------------------------------------
+
+test nagelfar-14.1 {
+    Namespaces, procs in namespace
+} -body {
+    createTestFile {
+        namespace eval apa {}
+        proc apa::bepa {hej hopp} {
+            set apa $hej
+        }
+        proc apa::cepa {hej hopp} {
+            set apa [bepa $hej $hopp]
+        }
+    }
+    execTestFile
+} -result {%%}
+
+test nagelfar-14.2 {
+    Namespaces, procs in namespace
+} -body {
+    createTestFile {
+        namespace eval apa {
+            proc bepa {hej hopp} {
+                set apa $hej
+            }
+        }
+        proc apa::cepa {hej hopp} {
+            set apa [bepa $hej $hopp]
+        }
+    }
+    execTestFile
+} -result {%%}
+
+test nagelfar-14.3 {
+    Namespaces, imported procs
+} -constraints {
+    knownbug
+} -body {
+    createTestFile {
+        namespace eval apa {}
+        proc apa::bepa {hej hopp} {
+            set apa $hej
+        }
+        namespace import apa::bepa
+        proc cepa {hej hopp} {
+            set apa [bepa $hej $hopp]
+        }
+    }
+    execTestFile
+} -result {%%}
