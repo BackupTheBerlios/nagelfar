@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.0.1+ 2004-08-13"
+set version "Version 1.0.1+ 2004-09-02"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -910,6 +910,7 @@ proc checkForComment {word index} {
     }
 }
 
+# List version of checkForComment
 proc checkForCommentL {words wordstatus indices} {
     foreach word $words ws $wordstatus i $indices {
         if {$ws & 2} { # Braced
@@ -1383,7 +1384,7 @@ proc parseStatement {statement index knownVarsName} {
     set words [splitStatement $statement $index indices]
     if {[llength $words] == 0} {return}
 
-    if {$::Nagelfar(onlyproc)} {
+    if {$::Nagelfar(firstpass)} {
         if {[lindex $words 0] eq "proc"} {
             # OK
         } elseif {[lindex $words 0] eq "namespace" && \
@@ -1493,7 +1494,7 @@ proc parseStatement {statement index knownVarsName} {
     switch -glob -- $cmd {
 	proc {
 	    if {$argc != 3} {
-                if {!$::Nagelfar(onlyproc)} { # Messages in second pass
+                if {!$::Nagelfar(firstpass)} { # Messages in second pass
                     WA
                 }
 		return
@@ -1605,6 +1606,9 @@ proc parseStatement {statement index knownVarsName} {
                     set knownVars(known,$var) 1
                     set knownVars(type,$var)  ""
                     lappend constantsDontCheck $i
+                    if {$other eq $var} { # Allow "upvar xx xx" construct
+                        lappend constantsDontCheck [expr {$i - 1}]
+                    }                        
                     if {($wsO & 1) == 0} {
                         # Is the other name a simple var subst?
                         if {[regexp {^\$[\w()]+} $other]} {
@@ -1866,7 +1870,7 @@ proc parseStatement {statement index knownVarsName} {
             if {([lindex $wordstatus 0] & 1) && \
                     [string match "ev*" [lindex $argv 0]]} {
                 if {$argc < 3} {
-                    if {!$::Nagelfar(onlyproc)} { # Messages in second pass
+                    if {!$::Nagelfar(firstpass)} { # Messages in second pass
                         WA
                     }
                     return
@@ -1876,7 +1880,7 @@ proc parseStatement {statement index knownVarsName} {
                     # Empty body, do nothing
                 } elseif {!([lindex $wordstatus 1] & 1) || \
                         !([lindex $wordstatus 2] & 1)} {
-                    if {!$::Nagelfar(onlyproc)} { # Messages in second pass
+                    if {!$::Nagelfar(firstpass)} { # Messages in second pass
                         errorMsg N "Only braced namespace evals are checked." \
                                 [lindex $indices 0]
                     }
@@ -2171,7 +2175,7 @@ proc parseBody {body index knownVarsName} {
     foreach statement $statements index $indices {
 	set type [parseStatement $statement $index knownVars]
     }
-    if {$::Nagelfar(onlyproc)} {
+    if {$::Nagelfar(firstpass)} {
         set ::Nagelfar(cacheBody) 1
         set ::Nagelfar(cacheBody,$body) 1
         set ::Nagelfar(cacheStatements,$body) $statements
@@ -2226,7 +2230,7 @@ proc parseProc {argv indices} {
     lappend knownCommands $name
 
 #    decho "Note: parsing procedure $name"
-    if {!$::Nagelfar(onlyproc)} {
+    if {!$::Nagelfar(firstpass)} {
         pushNamespace $ns
         parseBody $body [lindex $indices 2] knownVars
         popNamespace
@@ -2465,13 +2469,13 @@ proc parseScript {script} {
     set script [buildLineDb $script]
 
     pushNamespace {}
-    set ::Nagelfar(onlyproc) 0
+    set ::Nagelfar(firstpass) 0
     if {$::Nagelfar(2pass)} {
         # First do one round with proc checking
-        set ::Nagelfar(onlyproc) 1
+        set ::Nagelfar(firstpass) 1
         parseBody $script 0 knownVars
         #echo "Second pass"
-        set ::Nagelfar(onlyproc) 0
+        set ::Nagelfar(firstpass) 0
     }
     parseBody $script 0 knownVars
     popNamespace
@@ -2483,7 +2487,9 @@ proc parseScript {script} {
                 [lsearch $knownCommands $cmd1] == -1 && \
                 ![info exists syntax($cmd2)] && \
                 [lsearch $knownCommands $cmd2] == -1} {
-            errorMsg W "Unknown command \"$cmd\"" $index
+            if {$cmd ne "\}"} {
+                errorMsg W "Unknown command \"$cmd\"" $index
+            }
         }
     }
     # Update known globals.
@@ -3251,6 +3257,8 @@ proc makeWin {} {
     menu .m.mt
     .m.mt add command -label "Edit Window" -underline 0 \
             -command {editFile "" 0}
+    .m.mt add command -label "Browse Database" -underline 0 \
+            -command makeDbBrowserWin
     if {$::tcl_platform(platform) eq "windows"} {
         if {![catch {package require registry}]} {
             .m.mt add separator
@@ -3445,6 +3453,80 @@ proc checkEditWin {} {
     set ::Nagelfar(checkEdit) $script
     doCheck
     unset ::Nagelfar(checkEdit)
+}
+
+#############################
+# Database browser
+#############################
+
+proc makeDbBrowserWin {} {
+    if {[winfo exists .db]} {
+        wm deiconify .db
+        raise .db
+        set w $::Nagelfar(dbBrowserWin)
+    } else {
+        toplevel .db
+        wm title .db "Nagelfar Database"
+
+        set w [Scroll y text .db.t -wrap word \
+                       -width 80 -height 15 -font $::Prefs(editFileFont)]
+        set ::Nagelfar(dbBrowserWin) $w
+        $w tag configure all -lmargin2 2c
+        set f [frame .db.f -padx 3 -pady 3]
+        grid .db.f -sticky we
+        grid .db.t -sticky news
+        grid columnconfigure .db 0 -weight 1
+        grid rowconfigure .db 1 -weight 1
+
+        label $f.l -text "Command"
+        entry $f.e -textvariable ::Nagelfar(dbBrowserCommand) -width 15
+        button $f.b -text "Search" -command dbBrowserSearch -default active
+
+        grid $f.l $f.e $f.b -sticky ew -padx 3
+        grid columnconfigure $f 1 -weight 1
+
+        bind .db <Key-Return> dbBrowserSearch
+    }
+}
+
+proc dbBrowserSearch {} {
+    set cmd $::Nagelfar(dbBrowserCommand)
+    set w $::Nagelfar(dbBrowserWin)
+
+    loadDatabases
+    $w delete 1.0 end
+
+    # Must be at least one word char in the pattern
+    set pat $cmd*
+    if {![regexp {\w} $pat]} {
+        set pat ""
+    }
+
+    foreach item [lsort -dictionary [array names ::syntax $pat]] {
+        $w insert end [list \#\#nagelfar syntax $item]
+        $w insert end " "
+        $w insert end $::syntax($item)\n
+    }
+    foreach item [lsort -dictionary [array names ::subCmd $pat]] {
+        $w insert end [list \#\#nagelfar subcmd $item]
+        $w insert end " "
+        $w insert end $::subCmd($item)\n
+    }
+    foreach item [lsort -dictionary [array names ::option $pat]] {
+        $w insert end [list \#\#nagelfar option $item]
+        $w insert end " "
+        $w insert end $::option($item)\n
+    }
+    foreach item [lsort -dictionary [array names ::return $pat]] {
+        $w insert end [list \#\#nagelfar return $item]
+        $w insert end " "
+        $w insert end $::return($item)\n
+    }
+
+    if {[$w index end] eq "2.0"} {
+        $w insert end "No match!"
+    }
+    $w tag add all 1.0 end
 }
 
 ######
