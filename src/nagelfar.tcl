@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.1.1+ 2005-01-14"
+set version "Version 1.1.1+ 2005-01-29"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -89,6 +89,16 @@ proc decho {str} {
         puts stderr $str
     }
     update
+}
+
+# Error message from program, not from syntax check
+proc errEcho {msg} {
+    if {$::Nagelfar(gui)} {
+        tk_messageBox -title "Nagelfar Error" -type ok -icon error \
+                -message $msg
+    } else {
+        puts stderr $msg
+    }
 }
 
 # Standard error message.
@@ -392,8 +402,9 @@ proc splitStatement {statement index indicesName} {
 proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
     global option
 
-    # How many is the limit imposed by the number of argument?
+    # How many is the limit imposed by the number of arguments?
     set maxa [expr {[llength $argv] - $startI}]
+    # Pairs swallow an even number of args.
     if {$pair && ($maxa % 2) == 1} {
         incr maxa -1
     }
@@ -948,13 +959,23 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
     # This prevents e.g. options checking on arguments that cannot be
     # options due to their placement.
 
-    set minargs 0
-    foreach token $syn {
-        if {[string length $token] <= 1} {
-            incr minargs
+    if {![info exists ::cacheMinArgs($syn)]} {
+        set minargs 0
+        set i 0
+        set last [llength $syn]
+        foreach token $syn {
+            incr i
+            if {[string length $token] <= 1} {
+                incr minargs
+            } else {
+                set last $i
+            }
         }
+        set ::cacheEndArgs($syn) [expr {[llength $syn] - $last}]
+        set ::cacheMinArgs($syn) $minargs
     }
-    set anyOptional [expr {($argc - $firsti) > $minargs}]
+    set anyOptional  [expr {($argc - $firsti) > $::cacheMinArgs($syn)}]
+    set lastOptional [expr {$argc - $::cacheEndArgs($syn)}]
 
     # Treat syn as a stack. That way a token can replace itself without
     # increasing i and thus hand over checking to another token.
@@ -981,6 +1002,10 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
 		}
 	    }
 	}
+        # Is it optional and there can't be any optional?
+        if {$mod ne "" && !$anyOptional} {
+            continue
+        }
 	switch -- $tok {
 	    x - X {
 		# x* matches anything up to the end.
@@ -1106,7 +1131,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
 	    l -
 	    v -
 	    n { # A call by name
-		if {[string equal $mod "?"]} {
+                if {[string equal $mod "?"]} {
 		    if {$i >= $argc} {
 			set i $argc
 			break
@@ -1114,7 +1139,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
 		}
 		set ei [expr {$i + 1}]
 		if {[string equal $mod "*"]} {
-		    set ei $argc
+		    set ei $lastOptional
 		}
 		while {$i < $ei} {
 		    if {[string equal $tok "v"]} {
@@ -1144,47 +1169,43 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
 		}
 	    }
 	    o {
-                if {$mod eq "" || $anyOptional} {
-                    set max 0
-                    if {![string equal $mod "*"]} {
-                        set max 1
-                    }
-                    set oSyn [checkOptions $cmd $argv $wordstatus $indices $i $max]
-                    set used [llength $oSyn]
-                    if {$used == 0 && ($mod == "" || $mod == ".")} {
-                        errorMsg E "Expected an option as argument $i to \"$cmd\"" \
-                                [lindex $indices $i]
-                        return $type
-                    }
-
-                    if {[lsearch -not $oSyn "x"] >= 0} {
-                        # Feed the syntax back into the check loop
-                        set syn [concat $oSyn $syn]
-                    } else {
-                        incr i $used
-                    }
+                set max [expr {$lastOptional - $i}]
+                if {![string equal $mod "*"]} {
+                    set max 1
                 }
-	    }
+                set oSyn [checkOptions $cmd $argv $wordstatus $indices $i $max]
+                set used [llength $oSyn]
+                if {$used == 0 && ($mod == "" || $mod == ".")} {
+                    errorMsg E "Expected an option as argument $i to \"$cmd\"" \
+                            [lindex $indices $i]
+                    return $type
+                }
+
+                if {[lsearch -not $oSyn "x"] >= 0} {
+                    # Feed the syntax back into the check loop
+                    set syn [concat $oSyn $syn]
+                } else {
+                    incr i $used
+                }
+            }
 	    p {
-                if {$mod eq "" || $anyOptional} {
-                    set max 0
-                    if {![string equal $mod "*"]} {
-                        set max 2
-                    }
-                    set oSyn [checkOptions $cmd $argv $wordstatus $indices $i \
-                            $max 1]
-                    set used [llength $oSyn]
-                    if {$used == 0 && ($mod == "" || $mod == ".")} {
-                        errorMsg E "Expected an option as argument $i to \"$cmd\"" \
-                                [lindex $indices $i]
-                        return $type
-                    }
-                    if {[lsearch -not $oSyn "x"] >= 0} {
-                        # Feed the syntax back into the check loop
-                        set syn [concat $oSyn $syn]
-                    } else {
-                        incr i $used
-                    }
+                set max [expr {$lastOptional - $i}]
+                if {![string equal $mod "*"]} {
+                    set max 2
+                }
+                set oSyn [checkOptions $cmd $argv $wordstatus $indices $i \
+                        $max 1]
+                set used [llength $oSyn]
+                if {$used == 0 && ($mod == "" || $mod == ".")} {
+                    errorMsg E "Expected an option as argument $i to \"$cmd\"" \
+                            [lindex $indices $i]
+                    return $type
+                }
+                if {[lsearch -not $oSyn "x"] >= 0} {
+                    # Feed the syntax back into the check loop
+                    set syn [concat $oSyn $syn]
+                } else {
+                    incr i $used
                 }
 	    }
 	    default {
@@ -2833,8 +2854,7 @@ proc doCheck {} {
     set int [info exists ::Nagelfar(checkEdit)]
 
     if {!$int && [llength $::Nagelfar(files)] == 0} {
-        tk_messageBox -title "Nagelfar Error" -type ok -icon error \
-                -message "No files to check"
+        errEcho "No files to check"
         return
     }
 
@@ -2875,20 +2895,19 @@ proc doCheck {} {
             }
             set syntaxfile [file rootname $f].syntax
             if {[file exists $syntaxfile]} {
-                echo "Parsing file $syntaxfile"
+                if {!$::Nagelfar(quiet)} {
+                    echo "Parsing file $syntaxfile"
+                }
                 parseFile $syntaxfile
             }
             if {$f == $syntaxfile} continue
             if {[file isfile $f] && [file readable $f]} {
-                echo "Checking file $f"
+                if {!$::Nagelfar(quiet)} {
+                    echo "Checking file $f"
+                }
                 parseFile $f
             } else {
-                if {$::Nagelfar(gui)} {
-                    tk_messageBox -title "Nagelfar Error" -type ok -icon error \
-                            -message "Could not find file '$f'"
-                } else {
-                    puts stderr "Could not find file '$f'"
-                }
+                errEcho "Could not find file '$f'"
             }
         }
     }
@@ -2904,16 +2923,16 @@ proc doCheck {} {
         } else {
             echo "Writing \"$::Nagelfar(header)\""
             foreach item [lsort -dictionary [array names ::syntax]] {
-                puts $ch "[list \#\#nagelfar syntax $item] $::syntax($item)"
+                puts $ch "\#\#nagelfar [list syntax $item] $::syntax($item)"
             }
             foreach item [lsort -dictionary [array names ::subCmd]] {
-                puts $ch "[list \#\#nagelfar subcmd $item] $::subCmd($item)"
+                puts $ch "\#\#nagelfar [list subcmd $item] $::subCmd($item)"
             }
             foreach item [lsort -dictionary [array names ::option]] {
-                puts $ch "[list \#\#nagelfar option $item] $::option($item)"
+                puts $ch "\#\#nagelfar [list option $item] $::option($item)"
             }
             foreach item [lsort -dictionary [array names ::return]] {
-                puts $ch "[list \#\#nagelfar return $item] $::return($item)"
+                puts $ch "\#\#nagelfar [list return $item] $::return($item)"
             }
             close $ch
         }
