@@ -48,7 +48,6 @@ if {[info exists ::starkit::topdir]} {
 } else {
     lappend auto_path $thisDir
 }
-puts $auto_path
 
 # A profiling tool
 proc _dumplogme {} {
@@ -3938,7 +3937,7 @@ proc getOptions {} {
         forceElse 1
         noVar 0
         severity N
-        editFileBackup 0
+        editFileBackup 1
         editFileFont {Courier 10}
         resultFont {Courier 10}
     }
@@ -4152,8 +4151,10 @@ if {![info exists gurka]} {
         # use ctext if available
         if {![catch {package require ctext}]} {
             if {![catch {package require ctext_tcl}]} {
-                set ::Nagelfar(withCtext) 1
-                proc ctext::update {} {::update}
+                if {[info procs ctext::setHighlightTcl] ne ""} {
+                    set ::Nagelfar(withCtext) 1
+                    proc ctext::update {} {::update}
+                }
             }
         }
 
