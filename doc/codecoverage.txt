@@ -9,13 +9,15 @@ nagelfar.tcl -instrument apa.tcl
 That creates apa.tcl_i
 
 Make your tests run the instrumented file.  If a file is sourced from an
-instrumented file, an instrumented version will be read.  Thus only the
-top file called from the test needs to be adjusted.
+instrumented file, an instrumented version will be read if it exists.  Thus
+you only need to adjust the top file being called from the test.
 
-The source under test must terminate using the "exit" command.
+The source under test must terminate using the "exit" command.  The
+instrumentation uses the exit command to produce the result, thus it needs
+to be called to work as expected.
 
 Running tests creates apa.tcl_log.
-Coverage data is accumulated in the log file so multple tests can
+Coverage data is accumulated in the log file so multiple tests can
 be run.  Make sure the log file is deleted before a rerun.
 
 Create a markup file for displaying result:
@@ -40,22 +42,32 @@ instrumented file:
 
 Below is the makefile lines used by Nagelfar to test itself.
 
+# Source files for code coverage
+SRCFILES = nagelfar.tcl
+IFILES   = $(SRCFILES:.tcl=.tcl_i)
+LOGFILES = $(SRCFILES:.tcl=.tcl_log)
+MFILES   = $(SRCFILES:.tcl=.tcl_m)
+
 # Instrument source file for code coverage
-nagelfar.tcl_i: nagelfar.tcl
-	@./nagelfar.tcl -instrument nagelfar.tcl
+%.tcl_i: %.tcl
+	@./nagelfar.tcl -instrument $<
 
 # Target to prepare for code coverage run. Makes sure log file is clear.
-instrument: nagelfar.tcl_i
-	@rm -f nagelfar.tcl_log
+instrument: $(IFILES)
+	@rm -f $(LOGFILES)
 
 # Run tests to create log file.
-nagelfar.tcl_log: nagelfar.tcl_i
+$(LOGFILES): $(IFILES)
 	@./tests/all.tcl $(TESTFLAGS)
 
 # Create markup file for better view of result
-nagelfar.tcl_m: nagelfar.tcl_log
-	@./nagelfar.tcl -markup nagelfar.tcl
+%.tcl_m: %.tcl_log 
+	@./nagelfar.tcl -markup $*.tcl
 
 # View code coverage result
-icheck: nagelfar.tcl_m
-	@eskil -noparse ./nagelfar.tcl ./nagelfar.tcl_m &
+icheck: $(MFILES)
+	@for i in $(SRCFILES) ; do eskil -noparse $$i $${i}_m & done
+
+# Remove code coverage files
+clean:
+	@rm -f $(LOGFILES) $(IFILES) $(MFILES)
