@@ -18,3 +18,34 @@ test tokens-1.1 {
     }
     execTestFile
 } -result {%%}
+
+test tokens-2.1 {
+    Token p*
+} -body {
+    createTestFile {
+        ##nagelfar syntax gurka p*
+        ##nagelfar option gurka -flag -miffo
+        gurka
+        gurka -flag 1
+        gurka -miffo 0 -flag hejsan
+        # FIXA?
+        # This should preferably give a bad option rather than wrong # args.
+        gurka -miffo 1 hejsan
+    }
+    execTestFile
+} -result {%%Line   9: E Wrong number of arguments (3) to "gurka"}
+
+test tokens-3.1 {
+    Modifier .
+} -body {
+    # Test that comparison with previous syntax works
+    createTestFile {
+        ##nagelfar syntax apa n x x. x.
+        proc apa {mName arg1 {arg2 0} {arg3 0}} {
+            upvar $mName m
+            
+            set m 1
+        }
+    }
+    execTestFile
+} -result {%%}
