@@ -19,7 +19,8 @@ proc execTestFile {args} {
     array set xx $args
     set fn $xx(-fn)
     array unset xx -fn
-    eval [list exec [info nameofexecutable] nagelfar.tcl $fn] [array get xx] 
+    eval [list exec [info nameofexecutable] nagelfar.tcl $fn] [array get xx] \
+            ;#2>@ stderr
 }    
 
 test nagelfar-1.1 {
@@ -63,5 +64,57 @@ test nagelfar-3.1 {
     execTestFile
 } -result {*Unknown variable "bepa"*} -match glob
 
+test nagelfar-4.1 {
+    Options checking
+} -setup {
+    createTestFile {
+        lsort -ascii -command xxx -decreasing -dictionary -increasing \
+                -index 0 -integer -real -unique [list 1 2 3]
+    }
+} -body {
+    execTestFile
+} -result {Checking file _testfile_} -match glob
+
+test nagelfar-4.2 {
+    Options checking
+} -setup {
+    createTestFile {
+        lsort -d [list 1 2 3]
+    }
+} -body {
+    execTestFile
+} -result {*Ambigous option*-d *-dictionary*} -match glob
+
+test nagelfar-4.3 {
+    Options checking
+} -setup {
+    createTestFile {
+        lsort -dictionary -index [list 1 2 3]
+    }
+} -body {
+    execTestFile
+} -result {*Wrong number of arguments*} -match glob
+
+test nagelfar-4.4 {
+    Options checking
+} -setup {
+    createTestFile {
+        fconfigure xx -blocking 1 -encoding 0 -mode
+    }
+} -body {
+    execTestFile
+} -result {*Missing value for last option*} -match glob
+
+test nagelfar-4.5 {
+    Options checking
+} -setup {
+    createTestFile {
+        # This should see that i is set
+        string is integer -strict -failindex i 789
+        puts $i
+    }
+} -body {
+    execTestFile
+} -result {Checking file _testfile_} -match glob
 
 file delete _testfile_
