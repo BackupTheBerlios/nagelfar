@@ -150,6 +150,7 @@ proc buildDb {ch} {
     # Syntax for Tcl core commands
 
     set syntax(after)           "r 1"
+    # FIXA: handle after's id/subcommand thing.
     set syntax(append)          "n x*"
     set syntax(array)           "s v x?"
     set syntax(array\ exists)   "l"
@@ -158,16 +159,26 @@ proc buildDb {ch} {
     set syntax(array\ size)     "v"
     set syntax(array\ statistics) "v"
     set syntax(array\ unset)    "l x?"
+    set syntax(bgerror)          1
     set syntax(binary)          "s x*"
     set syntax(binary\ scan)    "x x n n*"
     set syntax(break)            0
     set syntax(catch)           "c n?"
     set syntax(cd)              "r 0 1"
+    set syntax(clock)           "s x*"
+    set syntax(clock\ clicks)   "o?"
+    set syntax(clock\ format)   "x p*"
+    set syntax(clock\ scan)     "x p*"
+    set syntax(clock\ seconds)   0
     set syntax(close)            1
     set syntax(concat)          "r 0"
     set syntax(continue)         0
-    set syntax(clock)           "s x*"
+    # FIXA: 8.5 "dict"
     set syntax(encoding)        "s x*"
+    set syntax(encoding\ convertfrom) "r 1 2"
+    set syntax(encoding\ convertto)   "r 1 2"
+    set syntax(encoding\ names)  0
+    set syntax(encoding\ system) "r 0 1"
     set syntax(eof)              1
     set syntax(error)           "r 1 3"
     # "eval" is handled specially
@@ -177,7 +188,8 @@ proc buildDb {ch} {
     set syntax(fblocked)         1
     set syntax(fconfigure)      "x o. x. p*"
     set syntax(fcopy)           "x x p*"
-    set syntax(file)            "s x*"
+    set syntax(file)            "s x*"   ;# FIXA: All subcommands
+    set syntax(file\ attributes) "x o. x. p*"
     set syntax(file\ lstat)     "x n"
     set syntax(file\ stat)      "x n"
     set syntax(fileevent)       "x x x?"
@@ -190,13 +202,14 @@ proc buildDb {ch} {
     # "global" is handled specially
     # "if" is handled specially
     set syntax(incr)            "v x?"
-    set syntax(info)            "s x*"
+    set syntax(info)            "s x*"  ;# FIXA: All subcommands
     set syntax(info\ exists)    "l"
     set syntax(info\ default)   "x x n"
     # "interp" is handled specially
     set syntax(interp)          "s x*"
     set syntax(join)            "r 1 2"
     set syntax(lappend)         "n x*"
+    # FIXA: 8.5 lassign
     if {[catch {lindex apa 0 0}]} {
         set syntax(lindex)       2        ;# Pre 8.4
     } else {
@@ -207,19 +220,20 @@ proc buildDb {ch} {
     set syntax(llength)          1
     set syntax(load)            "r 1 3"
     set syntax(lrange)           3
+    # FIXA: 8.5 lrepeat
     set syntax(lreplace)        "r 3"
     if {[catch {lsearch -all -glob apa bepa}]} {
         set syntax(lsearch)     "o? x x"  ;# Pre 8.4
     } else {
         set syntax(lsearch)     "o* x x"
     }
-    set syntax(lsort)           "o* x"
     set syntax(lset)            "n x x x*"
+    set syntax(lsort)           "o* x"
     # "namespace" is handled specially
-    set syntax(namespace)       "s x*"
+    set syntax(namespace)       "s x*" ;# FIXA: All subcommands
     set syntax(open)            "r 1 3"
     # "package" is handled specially
-    set syntax(package)         "s x*"
+    set syntax(package)         "s x*" ;# FIXA: All subcommands
     set syntax(pid)             "r 0 1"
     # "proc" is handled specially
     set syntax(puts)            "1: x : o? x x?"
@@ -261,20 +275,33 @@ proc buildDb {ch} {
     # "switch" is handled specially
     set syntax(tell)             1
     set syntax(time)            "r 1 2"
-    # "variable" is handled specially
-    set syntax(vwait)           "n"
-    set syntax(while)           "E c"
     set syntax(trace)           "s x x*"
+    set syntax(trace\ add)      "s x x x"
+    set syntax(trace\ add\ command)   "x x x"
+    set syntax(trace\ add\ execution) "x x x"
+    set syntax(trace\ add\ variable)  "v x x"
+    set syntax(trace\ remove)      "s x x x"
+    set syntax(trace\ remove\ command)   "x x x"
+    set syntax(trace\ remove\ execution) "x x x"
+    set syntax(trace\ remove\ variable)  "v x x"
+    set syntax(trace\ info)      "s x x x"
+    set syntax(trace\ info\ command)   "x"
+    set syntax(trace\ info\ execution) "x"
+    set syntax(trace\ info\ variable)  "v"
     set syntax(trace\ variable) "n x x"
     set syntax(trace\ vinfo)    "l"
-    set syntax(trace\ vdelete)  "v x*"
-    set syntax(unset)           "l l*"
+    set syntax(trace\ vdelete)  "v x x"
+    # FIXA: 8.5 unload
+    set syntax(unset)           "o* l l*"
     set syntax(update)          "s."
     # "uplevel" is handled specially
     # "upvar" is handled specially
+    # "variable" is handled specially
+    set syntax(vwait)           "n"
+    set syntax(while)           "E c"
 
     # Some special Tcl commands
-    set syntax(dde)             "o? s x*"
+    set syntax(dde)             "o? s x*"  ;# FIXA: is this correct?
     set syntax(history)         "s x*"
     set syntax(parray)          "v x?"
 
@@ -295,20 +322,26 @@ proc buildDb {ch} {
 	set syntax(winfo)    "s x x*"
         set syntax(wm)       "s x x*"
         # FIXA: Starting on better Tk support
-        foreach class {frame button checkbutton} {
+        foreach class {frame entry label button checkbutton radiobutton \
+                listbox labelframe spinbox panedwindow} {
             destroy .w
             if {[catch {$class .w}]} continue
             set syntax($class) "x p*"
             set return($class) _obj,$class
             set option($class) {}
             foreach opt [.w configure] {
-                lappend option($class) [lindex $opt 0]
+                set opt [lindex $opt 0]
+                lappend option($class) $opt
+                if {[string match *variable $opt]} {
+                    set option($class\ $opt) n
+                    set option(_obj,$class\ configure\ $opt) n
+                }
             }
             set syntax(_obj,$class) "s x*"
             set subCmd(_obj,$class) [getSubCmds .w gurkmeja]
             set syntax(_obj,$class\ configure) "o. x. p*"
             set option(_obj,$class\ configure) $option($class)
-            set syntax(_obj,$class\ cget "o"
+            set syntax(_obj,$class\ cget) "o"
             set option(_obj,$class\ cget) $option($class)
         }
     }
