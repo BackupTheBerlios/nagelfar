@@ -1,0 +1,80 @@
+#------------------------------------------------------------*- tcl -*-
+# Tests for code coverage instrumentation
+#----------------------------------------------------------------------
+# $Revision$
+#----------------------------------------------------------------------
+
+test coverage-1.1 {
+    Simple test case
+} -body {
+    createTestFile {
+        set apa [list hej hopp]
+        proc x {y z} {
+            set apa [list hej hopp]
+            if {$y} {
+                puts $z
+                set apa [list hej hopp]
+            }
+            if {$z} break
+        }
+    }
+    set res [list [execTestFile -flags -instrument]]
+    set ch [open _testfile__i r]
+    set data [read $ch]
+    close $ch
+    file delete _testfile__i
+    foreach {item lineNo} [regexp -inline -all {_testfile_,(\d+)} $data] {
+        lappend res $lineNo
+    }
+    set res
+} -result [list {%%Writing file _testfile__i} 9 5 3 3 5 9]
+
+test coverage-2.1 {
+    Multiple files
+} -body {
+    createTestFile {
+        proc x1 {y z} {
+            if {$y} {
+                set hej 1
+            }
+            if {$z} {
+                set hej 1
+            }
+        }
+    }
+    file rename _testfile_ _testfile_1
+    createTestFile {
+        proc x2 {y z} {
+            if {$y} {
+                set hej 1
+            } 
+            if {$z} {
+                set hej 1
+            }
+       }
+    }
+    file rename _testfile_ _testfile_2
+    execTestFile -flags -instrument -fn _testfile_1
+    execTestFile -flags -instrument -fn _testfile_2
+
+    interp create apa
+    apa eval source _testfile_1_i
+    apa eval source _testfile_2_i
+    apa eval x1 1 0
+    apa eval x2 0 1
+    apa eval ::_instrument_::cleanup
+    interp delete apa
+
+    interp create apa
+    apa eval [list namespace eval ::_instrument_ {}]
+    apa eval source _testfile_1_log
+    apa eval source _testfile_2_log
+    set res [apa eval array names ::_instrument_::log]
+    interp delete apa
+
+    lsort -dictionary $res
+} -result {_testfile_1,6 _testfile_2,3} -cleanup {
+    file delete _testfile_1_i _testfile_1
+    file delete _testfile_2_i _testfile_2
+    file delete _testfile_1_log _testfile_2_log
+}
