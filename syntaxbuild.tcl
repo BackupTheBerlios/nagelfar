@@ -396,11 +396,17 @@ proc buildDb {ch} {
     set option(switch)     [getSubCmds switch -gurkmeja]
     set option(fconfigure) [getSubCmds fconfigure stdin -gurkmeja]
     set option(fcopy)      [getSubCmds fcopy stdin stdout -gurkmeja x]
+    set option(unset)      [list -nocomplain --]
 
     # Get options for any commands defining "o" or "p"
     foreach cmd [array names syntax] {
         if {[info exists option($cmd)]} continue
         set syn $syntax($cmd)
+        if {[set i [lsearch -exact $syn ":"]] >= 0} {
+            # Handle a syn like "1: x : o? x x?"
+            # Just do the it the simple way of ignoring all but the last
+            set syn [lrange $syn [expr {$i + 1}] end]
+        }
         set oi [lsearch -glob $syn "o*"]
         if {$oi >= 0} {
             set syn [lreplace $syn $oi $oi -gurkmeja]
@@ -416,6 +422,11 @@ proc buildDb {ch} {
                 #puts "Autoopt: $cmd $option($cmd)"
             }
         }
+    }
+
+    # A fix since puts still gives an unhelpful error
+    if {![info exists option(puts)]} {
+        set option(puts) [list -nonewline]
     }
 
     # The default for options is not to take a value unless 'p' is
