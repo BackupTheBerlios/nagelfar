@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.1.2 2005-01-31"
+set version "Version 1.1.2+ 2005-02-20"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -1736,7 +1736,7 @@ proc parseStatement {statement index knownVarsName} {
 		switch -- $state {
 		    expr {
                         # Handle if 0 { ... } as a comment
-                        if {[string equal $arg "0"]} {
+                        if {[string is integer $arg] && $arg == 0} {
                             lappend ifsyntax x
                             set state skip
                         } else {
@@ -1760,12 +1760,16 @@ proc parseStatement {statement index knownVarsName} {
 		    }
 		}
 	    }
-	    if {![string equal $state "else"] \
-                    && ![string equal $state "illegal"]} {
+            # State should be "else" if there was no else clause or
+            # "illegal" if there was one.
+	    if {$state ne "else" && $state ne "illegal"} {
 		errorMsg E "Badly formed if statement" $index
 		contMsg "Missing one body."
 		return
-	    }
+	    } elseif {$state eq "else"} {
+                # Mark the missing else for instrumenting
+                set ::instrumenting([expr {$index + [string length $arg]}]) 2
+            }
 #            decho "if syntax \"$ifsyntax\""
 	    set ::syntax(if) $ifsyntax
 	    checkCommand $cmd $index $argv $wordstatus $wordtype $indices
@@ -2615,22 +2619,36 @@ proc dumpInstrumenting {filename} {
             incr i
         }
         set done($item) 1
-        set pre [string range $iscript 0 [expr {$ix - 1}]]
-        set post [string range $iscript $ix end]
-        set insert [list unset -nocomplain ::_instrument_::log($item)]\;
+
+        if {$::instrumenting($ix) == 2} {
+            # Missing else clause
+            if {[string index $iscript $ix] eq "\}"} {
+                incr ix
+            }
+            set insert [list unset -nocomplain ::_instrument_::log($item)]
+            set insert " [list else $insert]"
+            set pre [string range $iscript 0 [expr {$ix - 1}]]
+            set post [string range $iscript $ix end]
+        } else {
+            # Normal
+            set insert [list unset -nocomplain ::_instrument_::log($item)]\;
+            set pre [string range $iscript 0 [expr {$ix - 1}]]
+            set post [string range $iscript $ix end]
         
-        set c [string index $pre end]
-        if {$c ne "\[" && $c ne "\{" && $c ne "\""} {
-            if {[regexp {^(\s*\w+)(\s.*)$} $post -> word rest]} {
-                append pre "\{"
-                set post "$word\}$rest"
-            } else {
-                echo "Not instrumenting line: $line\
-                  [string range $pre end-5 end]<>[string range $post 0 5]"
-                continue
+            set c [string index $pre end]
+            if {$c ne "\[" && $c ne "\{" && $c ne "\""} {
+                if {[regexp {^(\s*\w+)(\s.*)$} $post -> word rest]} {
+                    append pre "\{"
+                    set post "$word\}$rest"
+                } else {
+                    echo "Not instrumenting line: $line\
+                            [string range $pre end-5 end]<>[string range $post 0 5]"
+                    continue
+                }
             }
         }
         set iscript $pre$insert$post
+
         lappend init [list set log($item) 1]
     }
     set ch [open $ifile w]
