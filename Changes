@@ -1,3 +1,12 @@
+Version 0.6
+
+2003-07-08
+ Changed name of application to 'Nagelfar'
+
+2003-07-08
+ Added -filter option to suppress messages.
+ Changed how unbalanced braces in comments are reported.
+
 Version 0.5
 
 2003-02-14
