@@ -9,6 +9,7 @@
 exec wish "$0" "$@"
 
 # Collect default syntax data
+# This must be done first, before we start to pollute.
 set defknownGlobals  [info globals]
 set defknownCommands [info commands]
 set defknownProcs    [info procs]
@@ -21,7 +22,8 @@ set thisdir    [file dirname $thisscript]
 #       Handle multiple files. Remember variables.
 #       Everything marked FIXA
 #       Give this program a silly name. (maybe Psyche, Peter's SYntax CHEcker)
-#       Optimise. It's still slow.
+#       Optimise. Always optimse.
+#       Tidy up messages. Tidy up code structure. Things are getting messy.
 
 # Arguments to many procedures:
 # index     : Index of the start of a string or command.
@@ -67,6 +69,16 @@ proc profile {str script} {
     incr profiledata($str,n)
 }
 
+# Experimental test for comments with unmatched braces.
+proc checkPossibleComment {str lineNo} {
+    
+    set n1 [llength [split $str \{]]
+    set n2 [llength [split $str \}]]
+    if {$n1 != $n2} {
+	echo "Unbalanced brace in comment. Line $lineNo."
+    }
+}
+
 # This is called when a comment is encountered.
 # It allows syntax information to be stored in comments
 proc checkComment {str index} {
@@ -77,23 +89,11 @@ proc checkComment {str index} {
     # I would also like some check for unmatched braces.
     # That can't be done here since this is called after the
     # script is split, and the split will fail on an unmatched brace
-    # Maybe splitScript can take care of it?
+    # Maybe splitScript can take care of it? Or buildLineDb?
 }
 
 ##syntax skipWS x x n
 # Move "i" forward to the first non whitespace char
-proc skipWSOld {str len iName} {
-    upvar $iName i
-
-    for {} {$i < $len} {incr i} {
-	set c [string index $str $i]
-	if {![string is space $c]} {
-            break
-        }   
-    }
-}
-
-#Version 2, almost twice as fast, shaves off 3-4% of total execution time
 proc skipWS {str len iName} {
     upvar $iName i
 
@@ -105,75 +105,6 @@ proc skipWS {str len iName} {
 # Scan the string until the end of one word is found.
 # When entered, i points to the start of the word.
 # When returning, i points to the last char of the word.
-proc scanWordOld {str len index iName} {
-    upvar $iName i
-
-    set si $i
-    set c [string index $str $i]
-    if {$c == "\{"} {
-        set closeChar \}
-    } elseif {$c == "\""} {
-        set closeChar \"
-    } else {
-        set closeChar ""
-    }
-
-    set escape 0
-
-    if {$closeChar != ""} {
-	for {} {$i < $len} {incr i} {
-            # Speedup search for closeChar
-            set i [string first $closeChar $str $i]
-            if {$i == -1} {
-                # This should never happen since no incomplete lines should
-                # reach this function.
-		decho "PANIC! Did not find close char in scanWord.\
-                        Line [calcLineNo $index]."
-		set i $len
-		return
-	    }
-            if {[info complete [string range $str $si $i]]} {
-                #Check for following whitespace
-                set j [expr {$i + 1}]
-                if {$j == $len || [string is space [string index $str $j]]} {
-                    return
-                }
-                echo "Extra chars after closing brace or quote.\
-                        Line [calcLineNo [expr {$index + $i}]]."
-                # Switch over to scanning for whitespace
-                incr i
-		break
-            }
-	}
-    }
-    for {} {$i < $len} {incr i} {
-	# Slow search for unescaped whitespace
-	set c [string index $str $i]
-	if {$c == "\\"} {
-	    set escape [expr {!$escape}]
-	} else {
-	    if {!$escape} {
-		if {[string is space $c] && \
-			[info complete [string range $str $si $i]]} {
-		    incr i -1
-		    return
-		}
-	    } else {
-		set escape 0
-	    }
-	}
-    }
-    
-    # Theoretically, no incomplete string should come to this function,
-    # but some precaution is never bad.
-    if {![info complete [string range $str $si end]]} {
-        decho "PANIC! in scanWord: String not complete."
-        decho $str
-	return -code break
-    }
-    incr i -1
-}
-
 proc scanWord {str len index iName} {
     upvar $iName i
 
@@ -256,14 +187,17 @@ proc splitStatement {statement index indicesName} {
     }
     set words {}
     set i 0
+    # There should not be any leading whitespace in the string that
+    # reaches this function. Check just in case.
     skipWS $statement $len i
     if {$i != 0 && $i < $len} {
-        # This should not happen
-	decho "Whitespace in splitStatement. [calcLineNo $index]"
+	decho "Internal error:"
+	decho " Whitespace in splitStatement. [calcLineNo $index]"
     }
+    # Comments should be descarded earlier
     if {[string index $statement $i] == "#"} {
-        # This should not happen
-	decho "A comment slipped through to splitStatement. [calcLineNo $index]"
+	decho "Internal error:"
+	decho " A comment slipped through to splitStatement. [calcLineNo $index]"
 	return {}
     }
     while {$i < $len} {
@@ -513,8 +447,9 @@ proc parseVar {str len index iName knownVarsName} {
 	return
     }
     if {![info exists knownVars($var)]} {
-	echo "xUnknown variable $var in line [calcLineNo $index]"
+	echo "Unknown variable \"$var\" in line [calcLineNo $index]"
     }
+    # Make use of markVariable. FIXA
     # If it's a constant array index, maybe it should be checked? FIXA
 }
 
@@ -706,11 +641,14 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 		    if {$tok == "v"} {
 			# Check the variable
 			if {[markVariable [lindex $argv $i] \
-                                [lindex $wordstatus $i] 1 knownVars]} {
-			    echo "yUnknown variable [lindex $argv $i] in line\
-                                    [calcLineNo $index]"
+                                [lindex $wordstatus $i] 2 knownVars]} {
+			    echo "Unknown variable \"[lindex $argv $i]\" in\
+				    line [calcLineNo $index]"
 			}
 		    } elseif {$tok == "n"} {
+			markVariable [lindex $argv $i] \
+                                [lindex $wordstatus $i] 1 knownVars
+		    } else {
 			markVariable [lindex $argv $i] \
                                 [lindex $wordstatus $i] 0 knownVars
 		    }
@@ -759,8 +697,9 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 
 ##syntax markVariable x x x n
 # Central function to handle known variable names.
-# If check is 1, check if it is known, return 1 if unknown
-# If check is 0, mark the variable as known and set
+# If check is 2, check if it is known, return 1 if unknown
+# If check is 1, mark the variable as known and set
+# If check is 0, mark the variable as known
 proc markVariable {var ws check knownVarsName} {
     upvar $knownVarsName knownVars
     
@@ -783,7 +722,7 @@ proc markVariable {var ws check knownVarsName} {
 	set varArray 1
     }
 
-    if {$check} {
+    if {$check == 2} {
 	if {$varBaseWs != 0} {
 	    if {![info exists knownVars($varBase)]} {
 		return 1
@@ -797,14 +736,15 @@ proc markVariable {var ws check knownVarsName} {
 	return 0
     } else {
 	if {$varBaseWs != 0} {
+	    set bit [expr {$check == 1 ? 4 : 0}]
 	    if {[info exists knownVars($varBase)]} {
-		set knownVars($varBase) [expr {$knownVars($varBase) | 4}]
+		set knownVars($varBase) [expr {$knownVars($varBase) | $bit}]
 	    } else {
-		set knownVars($varBase) 5
+		set knownVars($varBase) [expr {1 | $bit}]
 	    }
 	    if {$varArray && $varIndexWs != 0} {
 		if {[info exists knownVars($var)]} {
-		    set knownVars($var) [expr {$knownVars($var) | 4}]
+		    set knownVars($var) [expr {$knownVars($var) | $bit}]
 		} else {
 		    set knownVars($var) $knownVars($varBase)
 		}
@@ -1045,28 +985,29 @@ proc parseStatement {statement index knownVarsName} {
 		set ws [lindex $wordstatus $i]
 		set ix [lindex $indices $i]
 
-		set argv [splitList $arg $ix indices]
-		if {[llength $argv] % 2 == 1} {
+		set swargv [splitList $arg $ix swindices]
+		if {[llength $swargv] % 2 == 1} {
 		    echo "Odd number of elements in last argument to switch."
 		    echo "  Line [calcLineNo $ix]."
 		    return
 		}
-		set wordstatus {}
-		foreach word $argv {
-		    lappend wordstatus 1
+		set swwordstatus {}
+		foreach word $swargv {
+		    lappend swwordst 1
 		}
 	    } elseif {$left % 2 == 1} {
 		WA
 		return
 	    } else {
-		set argv [lrange $argv $i end]
-		set wordstatus [lrange $wordstatus $i end]
-		set indices [lrange $indices $i end]
+		set swargv [lrange $argv $i end]
+		set swwordst [lrange $wordstatus $i end]
+		set swindices [lrange $indices $i end]
 	    }
-	    foreach {pat body} $argv {ws1 ws2} $wordstatus {i1 i2} $indices {
+	    foreach {pat body} $swargv {ws1 ws2} $swwordst {i1 i2} $swindices {
 		if {[string index $pat 0] == "#"} {
-		    echo "Warning: Switch pattern starting with #."
-		    echo "  This could be a bad comment."
+		    echo "Warning: Switch pattern starting with #.\
+			    This could be a bad comment."
+		    echo "  Line [calcLineNo $i1]."
 		}
 		if {[string equal $body -]} {
 		    continue
@@ -1164,7 +1105,10 @@ proc splitScript {script index statementsName indicesName} {
 	    }
 	    # Check if it's a complete line
 	    if {[info complete $tryline]} {
-                # Remove leading space, keep track of index
+                # Remove leading space, keep track of index.
+		# Most lines will have no leading whitespace since
+		# buildLineDb removes most of it. This takes care
+		# of all remaining.
                 if {[string is space -failindex i $tryline]} {
                     # Only space, discard the line
                     incr index [string length $tryline]
@@ -1194,11 +1138,11 @@ proc splitScript {script index statementsName indicesName} {
     }
     # If tryline is non empty, it did not become complete
     if {[string length $tryline] != 0} {
-	echo "Error in splitScript"
-	echo "Could not complete statement in line [calcLineNo $index]."
-	echo "Starting with: [string range $tryline 0 20]"
-	echo "tryline:$tryline:"
-	echo "line:$line:"
+	echo "Internal error in splitScript:"
+	echo " Could not complete statement in line [calcLineNo $index]."
+	echo " Starting with: [string range $tryline 0 20]"
+	echo " tryline:$tryline:"
+	echo " line:$line:"
     }
 }
 
@@ -1213,8 +1157,9 @@ proc parseBody {body index knownVarsName} {
     }
 }
 
+# This is called when a proc command is ecountered.
 proc parseProc {argv indices} {
-    global knownProcs syntax
+    global knownProcs knownCommands knownGlobals syntax
     
     if {[llength $argv] != 3} {
 	echo "Wrong number of arguments to proc in line\
@@ -1223,8 +1168,12 @@ proc parseProc {argv indices} {
     }
 
     foreach {name args body} $argv {break}
-    set minn 0
-    set maxn 0
+
+    # Parse the arguments.
+    # Initalise a knownVars array with the arguments. 
+    # Build a syntax description for the procedure.
+    set min 0
+    set unlim 0
     array set knownVars {}
     foreach a $args {
 	if {[llength $a] != 1} {
@@ -1232,25 +1181,40 @@ proc parseProc {argv indices} {
 	    continue
 	}
 	if {[string equal $a "args"]} {
-	    set maxn 1
+	    set unlim 1
 	}
-	incr minn
+	incr min
 	set knownVars($a) 5
     }
     if {![info exists syntax($name)]} {
-	if {$maxn} {
-	    set syntax($name) "r $minn"
-	} elseif {$minn == [llength $args]} {
-	    set syntax($name) $minn
+	if {$unlim} {
+	    set syntax($name) [list r $min]
+	} elseif {$min == [llength $args]} {
+	    set syntax($name) $min
 	} else {
-	    set syntax($name) [list r $minn [llength $args]]
+	    set syntax($name) [list r $min [llength $args]]
 	}
     }
     lappend knownProcs $name
+    lappend knownCommands $name
 
 #    decho "Note: parsing procedure $name"
     parseBody $body [lindex $indices 2] knownVars
-    #FIXA, kolla vilka globals som har satts?
+
+    # Update known globals with those that were set in the proc.
+    # Values in knownVars:
+    # 1: local
+    # 2: global
+    # 4: Has been set.
+    # I.e. anyone marked 6 should be added to known globals.
+    foreach var [array names knownVars] {
+	if {$knownVars($var) == 6} {
+	    decho "Set global $var in proc $name."
+	    if {[lsearch $knownGlobals $var] == -1} {
+		lappend knownGlobals $var
+	    }
+	}
+    }
 }
 
 # Given an index in the original string, calculate its line number.
@@ -1281,9 +1245,15 @@ proc buildLineDb {str} {
     # Append works a lot better that way.
     set sp [string range " " 0 0]
     set nl [string range \n 0 0]
+    set lineNo 0
 
     foreach line $lines {
+	incr lineNo
 	set line [string trimleft $line]
+        # Check for comments.
+	if {[string index $line 0] == "#"} {
+	    checkPossibleComment $line $lineNo
+	}
         # Count backslashes to determine if it's escaped
         if {[string index $line end] == "\\"} {
 	    set len [string length $line]
@@ -1327,7 +1297,14 @@ proc parseScript {script} {
         }
     }
     #Update known globals.
-    set knownGlobals [array names knownVars]
+    foreach var [array names knownVars] {
+	# Check if it has been set.
+	if {($knownVars($var) & 4) == 4} {
+	    if {[lsearch $knownGlobals $var] == -1} {
+		lappend knownGlobals $var
+	    }
+	}
+    }
 }
 
 # Parse a file
@@ -1413,7 +1390,7 @@ if {![info exists gurka]} {
             set knownProcs    $defknownProcs
         } else {
             source $defaultDb
-        } 
+        }
     }
 }
 
@@ -1429,26 +1406,6 @@ if {$tcl_interactive} {
     
 } else {
     catch {console show ; console eval {focus .console}}
-}
-
-# Experimental test for comments with unmatched braces.
-proc comTest {file} {
-    set ch [open $file]
-    
-    set RE {^\s*#}
-    set lineNo 1
-    while {[gets $ch line] != -1} {
-	if {[regexp $RE $line]} {
-	    set n1 [llength [split $line \{]]
-	    set n2 [llength [split $line \}]]
-	    if {$n1 != $n2} {
-		echo "Unbalanced brace in comment. Line $lineNo."
-	    }
-	}
-	incr lineNo
-    }
-
-    close $ch
 }
 
 #Test stuff
