@@ -10,7 +10,7 @@ source [file join [file dirname [file join [pwd] [info script]]] syntaxdb.tcl]
 #      Everything marked FIXA
 #      Give this program a silly name.
 
-#Arguments used to many procedures:
+#Arguments to many procedures:
 #lineNo    : Line number of the start of a string or command.
 #cmd       : Command
 #argv      : List of arguments
@@ -24,9 +24,14 @@ proc echo {str} {
     update
 }
 
+#Debug output
 proc decho {str} {
     puts stderr $str
     update
+}
+
+proc timestamp {str} {
+    puts stderr [clock clicks]:$str
 }
 
 #Allow syntax information in comments
@@ -42,8 +47,8 @@ proc checkComment {str lineNo} {
 ##syntax skipWS x x n n
 #Skip whitespace
 #Afterwards, "i" points to the first non whitespace char.
-proc skipWS {str len iVar lineNoVar} {
-    upvar $iVar i $lineNoVar lineNo
+proc skipWS {str len iName lineNoName} {
+    upvar $iName i $lineNoName lineNo
 
     for {} {$i < $len} {incr i} {
 	set c [string index $str $i]
@@ -64,12 +69,12 @@ proc skipWS {str len iVar lineNoVar} {
     return
 }
 
-##syntax scanWord x x n n
+##syntax scanWordOld x x n n
 #Scan the string until the end of one word is found.
 #When entered, i points to the start of the word.
 #When returning, i points to the last char of the word.
-proc scanWord {str len iVar lineNoVar} {
-    upvar $iVar i $lineNoVar lineNo
+proc scanWordOld {str len iName lineNoName} {
+    upvar $iName i $lineNoName lineNo
 
     set si $i
     set ei $i
@@ -140,12 +145,106 @@ proc scanWord {str len iVar lineNoVar} {
     return
 }
 
+##syntax scanWord x x n n
+#Scan the string until the end of one word is found.
+#When entered, i points to the start of the word.
+#When returning, i points to the last char of the word.
+proc scanWord {str len iName lineNoName} {
+    upvar $iName i $lineNoName lineNo
+
+    set si $i
+    set ei $i
+    set c [string index $str $i]
+    if {$c == "\{"} {
+        set closeChar \}
+    } elseif {$c == "\""} {
+        set closeChar \"
+    } else {
+        set closeChar ""
+    }
+
+    set escape 0
+    set nextnl [string first \n $str $i]
+
+    for {} {$i < $len} {incr i} {
+        if {$closeChar != ""} {
+            #Speedup parsing for closeChar
+            set ci [string first $closeChar $str $i]
+            if {$ci != -1} {
+                #This should always happen since no incomplete lines should
+                #reach this function
+                set i $ci
+            }
+            while {$nextnl != -1 && $nextnl < $i} {
+                incr lineNo
+                incr nextnl
+                set nextnl [string first \n $str $nextnl]
+            }
+            if {[info complete [string range $str $si $i]]} {
+                #Switch over to scanning for whitespace
+                set ei $i
+                set closeChar ""
+            }
+        } else {
+            #Slow parsing for whitspace
+            set c [string index $str $i]
+            if {$c == "\n"} {
+                incr lineNo
+            }
+            if {$c == "\\"} {
+                set escape [expr {!$escape}]
+            } else {
+                #Take care of an escaped newline. Treat it as space
+                if {$escape && $c == "\n"} {
+                    incr i -2
+                    if {[info complete [string range $str $si $i]]} {
+                        if {$ei != $si && $ei != $i} {
+                            echo "Extra chars after closing brace or quote.\
+                                    Line $lineNo."
+                        }
+                        return
+                    }
+                    set escape 0
+                    incr i 2
+                    continue
+                }
+                if {!$escape} {
+                    if {[string is space $c] && \
+                            [info complete [string range $str $si $i]]} {
+                        incr i -1
+                        if {$ei != $si  && $ei != $i} {
+                            echo "Extra chars after closing brace or quote.\
+                                    Line $lineNo."
+                        }
+                        return
+                    }
+                } else {
+                    set escape 0
+                }
+            }
+	}
+    }
+    
+    #Theoretically, no incomplete string should come to this function,
+    #but some precaution is never bad.
+    if {![info complete [string range $str $si end]]} {
+        echo "Error in scanWord: String not complete."
+        echo $str
+	return -code break
+    }
+    incr i -1
+    if {$closeChar != "" && $ei != $i} {
+	echo "Extra chars after closing brace or quote. Line $lineNo."
+    }
+    return
+}
+
 ##syntax splitStatement x x n
 #Split a statement into words.
 #Returns a list of the words, and puts a list with the line number
-#for each word in lVar.
-proc splitStatement {statement lineNo lVar} {
-    upvar $lVar lines
+#for each word in linesName.
+proc splitStatement {statement lineNo linesName} {
+    upvar $linesName lines
     set lines {}
 
     set len [string length $statement]
@@ -215,8 +314,8 @@ proc checkOptions {cmd argv wordstatus lines {startI 0} {max 0} {pair 0}} {
 ##syntax splitList x x n
 #Make a list of a string. This is easy, just treat it as a list.
 #But we must keep track of line numbers, so our own parsing is needed too.
-proc splitList {str lineNo lVar} {
-    upvar $lVar lines
+proc splitList {str lineNo linesName} {
+    upvar $linesName lines
 
     #Make a copy to perform list operations on
     set lstr [string range $str 0 end]
@@ -296,8 +395,8 @@ proc splitList {str lineNo lVar} {
 
 ##syntax parseVar x x x n n
 #Parse a variable name, check for existance
-proc parseVar {str len lineNo iVar knownVarsVar} {
-    upvar $iVar i $knownVarsVar knownVars
+proc parseVar {str len lineNo iName knownVarsName} {
+    upvar $iName i $knownVarsName knownVars
     set si $i
     set c [string index $str $si]
     if {$c == "\{"} {
@@ -389,8 +488,8 @@ proc parseVar {str len lineNo iVar knownVarsVar} {
 #Check any variables referenced, and parse any commands within brackets.
 #Returns 1 if the string is constant, i.e. no substitutions
 #Returns 0 if any substitutions are present
-proc parseSubst {str lineNo knownVarsVar} {
-    upvar $knownVarsVar knownVars
+proc parseSubst {str lineNo knownVarsName} {
+    upvar $knownVarsName knownVars
 
     #First do a quick check for $ or [
     if {[string first \$ $str] == -1 && [string first \[ $str] == -1} {
@@ -434,8 +533,8 @@ proc parseSubst {str lineNo knownVarsVar} {
 
 ##syntax parseExpr x x n
 #Parse an expression
-proc parseExpr {str lineNo knownVarsVar} {
-    upvar $knownVarsVar knownVars
+proc parseExpr {str lineNo knownVarsName} {
+    upvar $knownVarsName knownVars
     #Kolla efter variabler och kommandon
     parseSubst $str $lineNo knownVars
 }
@@ -453,7 +552,7 @@ proc checkCommand {cmd lineNo argv wordstatus lines {firsti 0}} {
     upvar constantsDontCheck constantsDontCheck knownVars knownVars
     set argc [llength $argv]
     set syn $::syntax($cmd)
-    #echo "Checking $cmd against syntax $syn"
+    #decho "Checking $cmd against syntax $syn"
 
     if {[string is integer $syn]} {
 	if {$argc != $syn} {
@@ -611,8 +710,8 @@ proc checkCommand {cmd lineNo argv wordstatus lines {firsti 0}} {
 
 #Mark a variable as known
 ##syntax markVariable x x x n
-proc markVariable {var ws check knownVarsVar} {
-    upvar $knownVarsVar knownVars
+proc markVariable {var ws check knownVarsName} {
+    upvar $knownVarsName knownVars
     
     set varBase $var
     set varArray 0
@@ -658,9 +757,12 @@ proc markVariable {var ws check knownVarsVar} {
 ##syntax parseStatement x x n
 #Parse one statement
 #This is the "big one"
-proc parseStatement {statement lineNo knownVarsVar} {
-    upvar $knownVarsVar knownVars
+proc parseStatement {statement lineNo knownVarsName} {
+    upvar $knownVarsName knownVars
+    set apa [clock clicks]
     set words [splitStatement $statement $lineNo lines]
+    set apa [expr {[clock clicks] - $apa}]
+    incr ::acc $apa
     if {[llength $words] == 0} {return}
 
     set words2 {}
@@ -704,6 +806,7 @@ proc parseStatement {statement lineNo knownVarsVar} {
     
     switch -glob -- $cmd {
 	proc {
+	    incr ::accp $apa
 	    if {$argc != 3} {
 		WA
 		return
@@ -852,7 +955,7 @@ proc parseStatement {statement lineNo knownVarsVar} {
 		echo "  Missing one body."
 		return
 	    }
-	    #echo "if syntax \"$ifsyntax\""
+	    #decho "if syntax \"$ifsyntax\""
 	    set ::syntax(if) $ifsyntax
 	    checkCommand $cmd $lineNo $argv $wordstatus $lines
 	}
@@ -940,7 +1043,7 @@ proc parseStatement {statement lineNo knownVarsVar} {
 	    if {[info exists ::syntax($cmd)]} {
 		checkCommand $cmd $lineNo $argv $wordstatus $lines
 	    } else {
-		#echo "Uncheck: $cmd"
+		#decho "Uncheck: $cmd"
 	    }
 	}
     }
@@ -961,13 +1064,12 @@ proc parseStatement {statement lineNo knownVarsVar} {
     }
 }
 
-##syntax splitScript x x n n
+##syntax splitScriptOld x x n n
 #Split a script into individual statements
-proc splitScript {script lineNo sVar lVar} {
-    upvar $sVar statements
-    upvar $lVar lines
+proc splitScriptOld {script lineNo statementsName linesName} {
+    upvar $statementsName statements
+    upvar $linesName lines
     
-    set re \[\n\;\]
     set commentre {^\s*#}
 
     set statements {}
@@ -977,8 +1079,17 @@ proc splitScript {script lineNo sVar lVar} {
 
     while {[string bytelength $rest] != 0} {
 	#Move everything up to the next semicolon, newline or eof to tryline
-	if {[regexp -indices $re $rest match]} {
-	    set i [lindex $match 0]
+	
+	set i1 [string first \n $rest]
+	set i2 [string first \; $rest]
+	if {$i1 + $i2 != -2} {
+	    if {$i1 == -1} {
+		set i $i2
+	    } elseif {$i2 == -1 || $i1 < $i2} {
+		set i $i1
+	    } else {
+		set i $i2
+	    }
 	    set splitchar [string index $rest $i]
 	    append tryline [string range $rest 0 $i]
 	    incr i
@@ -988,7 +1099,7 @@ proc splitScript {script lineNo sVar lVar} {
 	    set rest ""
 	    set splitchar ""
 	}
-	#If we split at a ; we must check that it really is a statement end
+	#If we split at a ; we must check that it really may be a statement end
 	if {$splitchar == ";"} {
 	    #Comment lines don't end with ;
 	    if {[regexp $commentre $tryline]} {continue}
@@ -1003,6 +1114,7 @@ proc splitScript {script lineNo sVar lVar} {
 		if {($i - $t) % 2 == 1} {continue}
 	    }
 	}
+	#We don't need to check for escaped newlines, info complete does that.
 	if {[info complete $tryline]} {
 	    if {[regexp $commentre $tryline]} {
 		checkComment $tryline $lineNo
@@ -1013,6 +1125,7 @@ proc splitScript {script lineNo sVar lVar} {
                 lappend statements $tryline
             }
 	    lappend lines $lineNo
+	    #Count the newlines
 	    incr lineNo [regsub -all \n $tryline a dummy]
 	    set tryline ""
 	}
@@ -1023,16 +1136,162 @@ proc splitScript {script lineNo sVar lVar} {
 	echo "Could not complete statement in line $lineNo."
 	echo "Starting with: [string range $tryline 0 20]"
 	echo "tryline:$tryline:"
-	echo "script:$script:"
+	echo "rest:$rest:"
+    }
+}
+
+##syntax splitScript x x n n
+#Split a script into individual statements
+proc splitScript {script lineNo statementsName linesName} {
+    upvar $statementsName statements
+    upvar $linesName lines
+    
+    set commentre {^\s*#}
+
+    set statements {}
+    set lines {}
+    set rest $script
+    set tryline ""
+    set trynewline 0
+    set i2 0
+    while {[string bytelength $rest] != 0} {
+	#Move everything up to the next semicolon, newline or eof to tryline
+	
+	set i1 [string first \n $rest]
+	set i2 [string first \; $rest]
+	if {$i1 + $i2 != -2} {
+	    if {$i1 != -1 && ($i2 == -1 || $i1 < $i2)} {
+		set i $i1
+		set splitchar \n
+		incr trynewline
+	    } else {
+		set i $i2
+		set splitchar \;
+	    }
+	    append tryline [string range $rest 0 $i]
+	    incr i
+	    set rest [string range $rest $i end]
+	} else {
+	    append tryline $rest
+	    set rest ""
+	    set splitchar ""
+	}
+	#If we split at a ; we must check that it really may be a statement end
+	if {$splitchar == ";"} {
+	    #Comment lines don't end with ;
+	    if {[regexp $commentre $tryline]} {continue}
+	    
+	    #Look for \'s before the ;
+	    #If there is an odd number of \, the ; is ignored
+	    if {[string index $tryline end-1] == "\\"} {
+		set i [expr {[string length $tryline] - 2}]
+		for {set t $i} {$t >= 0} {incr t -1} {
+		    if {[string index $tryline $t] != "\\"} {break}
+		}
+		if {($i - $t) % 2 == 1} {continue}
+	    }
+	}
+	#We don't need to check for escaped newlines, info complete does that.
+	if {[info complete $tryline]} {
+	    if {[regexp $commentre $tryline]} {
+		checkComment $tryline $lineNo
+	    }
+            if {$splitchar == ";"} {
+                lappend statements [string range $tryline 0 end-1]
+            } else {
+                lappend statements $tryline
+            }
+	    lappend lines $lineNo
+	    incr lineNo $trynewline
+	    set tryline ""
+	    set trynewline 0
+	}
+    }
+    #If tryline is non empty, it did not become complete
+    if {[string length $tryline] != 0} {
+	echo "Error in splitScript"
+	echo "Could not complete statement in line $lineNo."
+	echo "Starting with: [string range $tryline 0 20]"
+	echo "tryline:$tryline:"
+	echo "rest:$rest:"
+    }
+}
+
+##syntax splitScriptRe x x n n
+#Split a script into individual statements
+proc splitScriptRe {script lineNo statementsName linesName} {
+    upvar $statementsName statements
+    upvar $linesName lines
+
+    set re \[\n\;\]
+    set commentre {^\s*#}
+
+    set statements {}
+    set lines {}
+    set rest $script
+    set tryline ""
+
+    while {[string length $rest] != 0} {
+	#Move everything up to the next semicolon, newline or eof to tryline
+	if {[regexp -indices $re $rest match]} {
+	    set i [lindex $match 0]
+	    set splitchar [string index $rest $i]
+	    append tryline [string range $rest 0 $i]
+	    incr i
+	    set rest [string range $rest $i end]
+	} else {
+	    append tryline $rest
+	    set rest ""
+	    set splitchar ""
+	}
+	#If we split at a ; we must check that it really may be a statement end
+	if {$splitchar == ";"} {
+	    #Comment lines don't end with ;
+	    if {[regexp $commentre $tryline]} {continue}
+	    
+	    #Look for \'s before the ;
+	    #If there is an odd number of \, the ; is ignored
+	    if {[string index $tryline end-1] == "\\"} {
+		set i [expr {[string length $tryline] - 2}]
+		for {set t $i} {$t >= 0} {incr t -1} {
+		    if {[string index $tryline $t] != "\\"} {break}
+		}
+		if {($i - $t) % 2 == 1} {continue}
+	    }
+	}
+	#We don't need to check for escaped newlines, info complete does that.
+	if {[info complete $tryline]} {
+	    if {[regexp $commentre $tryline]} {
+		checkComment $tryline $lineNo
+	    }
+            if {$splitchar == ";"} {
+                lappend statements [string range $tryline 0 end-1]
+            } else {
+                lappend statements $tryline
+            }
+	    lappend lines $lineNo
+	    #Count the newlines
+	    incr lineNo [regsub -all \n $tryline a dummy]
+	    set tryline ""
+	}
+    }
+    #If tryline is non empty, it did not become complete
+    if {[string length $tryline] != 0} {
+	echo "Error in splitScript"
+	echo "Could not complete statement in line $lineNo."
+	echo "Starting with: [string range $tryline 0 20]"
+	echo "tryline:$tryline:"
 	echo "rest:$rest:"
     }
 }
 
 ##syntax parseBody x x n
-proc parseBody {body lineNo knownVarsVar} {
-    upvar $knownVarsVar knownVars
+proc parseBody {body lineNo knownVarsName} {
+    upvar $knownVarsName knownVars
 
+    set apa [clock clicks]
     splitScript $body $lineNo statements lines
+    incr ::accs [expr {[clock clicks] - $apa}]
 
     foreach statement $statements line $lines {
 	parseStatement $statement $line knownVars
@@ -1073,7 +1332,7 @@ proc parseProc {argv lineNo} {
     }
     lappend knownProcs $name
 
-#    echo "Note: parsing procedure $name"
+#    decho "Note: parsing procedure $name"
     parseBody $body $lineNo knownVars
 }
 
@@ -1093,16 +1352,34 @@ proc parseFile {filename} {
     set ch [open $filename]
     set script [read $ch]
     close $ch
-
+    set ::acc 0
+    set ::accp 0
+    set ::accs 0
+    set ::start [clock clicks]
     parseScript $script
+    set ::stop [clock clicks]
+    puts total:[expr {$::stop - $::start}]
+    puts splitSt:$::acc
+    puts splitSt(p):$::accp
+    puts splitSc:$::accs
 }
 
-proc parseFile2 {filename} {
-    set ch [open $filename]
-    set script [read $ch]
-    close $ch
-
-    splitScript $script 1 ::ss ::ls
+proc sptest {{n 4} {f 0}} {
+    if {$f} {
+	set ch [open unicode.tcl]
+	set script2 [read $ch]
+	close $ch
+    } else {
+	set ch [open syntax.tcl]
+	set script2 [read $ch]
+	close $ch
+    }
+    string index $script2 end
+    puts [time {splitScript $script2 1 statements lines} $n]
+    update
+    puts [time {splitScriptOld $script2 1 statements lines} $n]
+    update
+    puts [time {splitScriptRe $script2 1 statements lines} $n]
 }
 
 set test {apa bepa {apa bepa} [hej hopp] "as[hej gupp]g$w"}
