@@ -914,7 +914,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 	    }
 	}
 	switch -- $tok {
-	    x {
+	    x - X {
 		# x* matches anything up to the end.
 		if {[string equal $mod "*"]} {
                     checkForCommentL [lrange $argv $i end] \
@@ -923,7 +923,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 		    set i $argc
 		    break
 		}
-		if {[lindex $wordstatus $i] == 2} {
+		if {[lindex $wordstatus $i] == 2 && $tok != "X"} {
                     checkForComment [lindex $argv $i] [lindex $indices $i]
                 }
 		if {![string equal $mod "?"] || $i < $argc} {
@@ -1455,7 +1455,7 @@ proc parseStatement {statement index knownVarsName} {
 		switch -- $state {
                     skip {
                         # This will behave bad with "if 0 then then"...
-                        lappend ifsyntax x 
+                        lappend ifsyntax X 
 			if {![string equal $arg then]} {
                             set state else
 			}
@@ -2187,16 +2187,20 @@ proc addFilter {pat} {
 
 proc usage {} {
     puts $::version
-    puts {Usage: syntax.tcl [options] [-s dbfile] scriptfile ...}
-    puts { -h        : Show usage.}
-    puts { -gui      : Start with GUI even when files are specified.}
-    puts { -s dbfile : Include a database file. (More than one is allowed.)}
-    puts { -filter p : Any message that matches the glob pattern is suppressed}
-    puts { -WexprN   : Sets expression warning level.}
-    puts {   2 (def) = Warn about any unbraced expression.}
-    puts {   1       = Don't warn on single commands. "if [apa] {...}" is ok.}
-    puts { -WsubN    : Sets subcommand warning level.}
-    puts {   1 (def) = Warn about shortened subcommands.}
+    puts {Usage: nagelfar [options] scriptfile ...
+ -help             : Show usage.
+ -gui              : Start with GUI even when files are specified.
+ -s <dbfile>       : Include a database file. (More than one is allowed.)
+ -encoding <enc>   : Read script with this encoding.
+ -filter <p>       : Any message that matches the glob pattern is suppressed.
+ -severity <level> : Set severity level filter to N/W/E (default N).
+ -novar            : Disable variable checking.
+ -WexprN           : Sets expression warning level to N.
+   2 (def)         = Warn about any unbraced expression.
+   1               = Don't warn on single commands. "if [apa] {...}" is ok.
+ -WsubN            : Sets subcommand warning level to N.
+   1 (def)         = Warn about shortened subcommands.
+ -WelseN           : Enforce else keyword. Default 1.}
     exit
 }
 
