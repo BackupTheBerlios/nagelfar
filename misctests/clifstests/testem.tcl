@@ -49,10 +49,10 @@ for {set t 0} {$t <= 16} {incr t} {
     test nagelfar-clif-1.$t {
         Test case
     } -body {
-        exec ../nagelfar.kit Err.$t.tcl
+        exec ../../nagelfar.kit Err.$t.tcl
     } -result $expect($t) -match glob
 
     lappend files Err.$t.tcl
 }
 
-eval [list exec ../nagelfar.kit] $files > result.txt
+eval [list exec ../../nagelfar.kit] $files > result.txt
