@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 0.9
-set version "Version 0.9 2003-12-11"
+set version "Version 0.9+ 2003-12-16"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -218,9 +218,14 @@ proc checkPossibleComment {str lineNo} {
 
 # This is called when a comment is encountered.
 # It allows syntax information to be stored in comments
-proc checkComment {str index} {
+proc checkComment {str index knownVarsName} {
+    upvar $knownVarsName knownVars
     if {[string match "##syntax *" $str]} {
         set ::syntax([lindex $str 1]) [lrange $str 2 end]
+    }
+    if {[string match "##variable *" $str]} {
+        set var [string trim [string range $str 11 end]]
+        markVariable $var 1 1 $index knownVars
     }
 }
 
@@ -774,7 +779,7 @@ proc parseExpr {str index knownVarsName} {
     # substitution in the expression by "$dummy"
     set dummy 1
 
-    if {[catch {expr $exp} msg]} {
+    if {[catch [list expr $exp] msg]} {
         regsub {syntax error in expression.*:\s+} $msg {} msg
         if {[string match "*divide by zero*" $msg]} return
         errorMsg E "Bad expression: $msg" $index
@@ -1373,6 +1378,7 @@ proc parseStatement {statement index knownVarsName} {
                     }
                     foreach $fVars $valList {
                         foreach fVar $varList {
+                            ##variable apaV
                             lappend ::foreachVar($fVar) $apaV($fVar)
                         }
                     }
@@ -1399,6 +1405,14 @@ proc parseStatement {statement index knownVarsName} {
 	    set ifsyntax {}
             foreach arg $argv ws $wordstatus index $indices {
 		switch -- $state {
+                    skip {
+                        # This will behave bad with "if 0 then then"...
+                        lappend ifsyntax x 
+			if {![string equal $arg then]} {
+                            set state else
+			}
+                        continue
+                    }
 		    then {
 			set state body
 			if {[string equal $arg then]} {
@@ -1427,8 +1441,14 @@ proc parseStatement {statement index knownVarsName} {
 		}
 		switch -- $state {
 		    expr {
-			lappend ifsyntax e
-			set state then
+                        # Handle if 0 { ... } as a comment
+                        if {[string equal $arg "0"]} {
+                            lappend ifsyntax x
+                            set state skip
+                        } else {
+                            lappend ifsyntax e
+                            set state then
+                        }
 		    }
 		    lastbody {
 			lappend ifsyntax c
@@ -1592,8 +1612,9 @@ proc parseStatement {statement index knownVarsName} {
 }
 
 # Split a script into individual statements
-proc splitScript {script index statementsName indicesName} {
+proc splitScript {script index statementsName indicesName knownVarsName} {
     upvar $statementsName statements $indicesName indices
+    upvar $knownVarsName knownVars
 
     set statements {}
     set indices {}
@@ -1679,7 +1700,7 @@ proc splitScript {script index statementsName indicesName} {
                 }
                 if {[string equal [string index $tryline 0] "#"]} {
 		    # Check and discard comments
-		    checkComment $tryline $index
+		    checkComment $tryline $index knownVars
 		} else {
 		    if {$splitSemi} {
 			lappend statements [string range $tryline 0 end-1]
@@ -1760,7 +1781,7 @@ proc splitScript {script index statementsName indicesName} {
 proc parseBody {body index knownVarsName} {
     upvar $knownVarsName knownVars
 
-    splitScript $body $index statements indices
+    splitScript $body $index statements indices knownVars
 
     foreach statement $statements index $indices {
 	parseStatement $statement $index knownVars
@@ -2141,6 +2162,7 @@ proc fileDropFile {files} {
     }
 }
 
+# FIXA: Move safe reading to package
 ##syntax _ipsource x
 ##syntax _ipexists l
 ##syntax _ipset    v
