@@ -27,8 +27,8 @@ exec tclsh "$0" "$@"
 set debug 0
 package require Tcl 8.4
 
-package provide app-nagelfar 0.9
-set version "Version 0.9+ 2004-01-09"
+package provide app-nagelfar 1.0
+set version "Version 1.0b1 2004-01-29"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -979,6 +979,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 		    echo "Modifier \"$mod\" is not supported for \"s\" in\
                             syntax for $cmd."
 		}
+		lappend constantsDontCheck $i
 		if {[lindex $wordstatus $i] == 0} {
 		    errorMsg N "Non static subcommand to \"$cmd\"" \
                             [lindex $indices $i]
@@ -1017,7 +1018,6 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 			break
 		    }
 		}
-		lappend constantsDontCheck $i
 		incr i
 	    }
 	    l -
