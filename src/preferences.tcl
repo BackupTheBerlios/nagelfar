@@ -26,8 +26,7 @@
 # Save default options
 proc saveOptions {} {
     if {[catch {set ch [open "~/.nagelfarrc" w]}]} {
-        tk_messageBox -icon error -title "Nagelfar error" -type ok -message \
-                "Could not create options file."
+        errEcho "Could not create options file."
         return
     }
 
