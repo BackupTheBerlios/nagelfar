@@ -210,7 +210,27 @@ proc buildDb {ch} {
     set syntax(source)           1
     set syntax(split)           "r 1 2"
     set syntax(string)          "s x x*"
+    set syntax(string\ bytelength) 1
+    set syntax(string\ compare) "o* x x"
+    set syntax(string\ equal)   "o* x x"
+    set syntax(string\ first)   "r 2 3"
+    set syntax(string\ index)    2
     set syntax(string\ is)      "x o* x"
+    set syntax(string\ last)    "r 2 3"
+    set syntax(string\ length)   1
+    set syntax(string\ map)     "o? x x"
+    set syntax(string\ match)   "o? x x"
+    set syntax(string\ range)    3
+    set syntax(string\ repeat)   2
+    set syntax(string\ replace) "r 3 4"
+    set syntax(string\ tolower) "r 1 3"
+    set syntax(string\ totitle) "r 1 3"
+    set syntax(string\ toupper) "r 1 3"
+    set syntax(string\ trim)    "r 1 2"
+    set syntax(string\ trimleft) "r 1 2"
+    set syntax(string\ trimright) "r 1 2"
+    set syntax(string\ wordend)   2
+    set syntax(string\ wordstart) 2
     set syntax(subst)           "o* x"
     # "switch" is handled specially
     set syntax(tell)             1
@@ -274,7 +294,7 @@ proc buildDb {ch} {
     set option(fconfigure) [getSubCmds fconfigure stdin -gurkmeja]
     set option(fcopy)      [getSubCmds fcopy stdin stdout -gurkmeja x]
 
-    # Get options for any commands defining "o*" or "p*"
+    # Get options for any commands defining "o" or "p"
     foreach cmd [array names syntax] {
         if {[info exists option($cmd)]} continue
         set syn $syntax($cmd)
@@ -298,11 +318,19 @@ proc buildDb {ch} {
     # The default for options is not to take a value unless 'p' is
     # used in the syntax definition.
     # If option(cmd opt) is set, the option is followed by a value.
-    # The value of option(cmd opt) may be any of the syntax chars cnvl
-    # and will be used to check the option.
-    set option(lsort\ -index) 1
+    # The value of option(cmd opt) may also be any of the syntax chars
+    # c/n/v/l and will be used to check the option.
+    set option(lsort\ -index)   1
     set option(lsort\ -command) 1
-    set option(string\ is\ -failindex) n
+    set option(lsearch\ -start) 1
+    set option(string\ is\ -failindex)   n
+    set option(string\ compare\ -length) 1
+    set option(string\ equal\ -length)   1
+    set option(regexp\ -start)   1
+    set option(regsub\ -start)   1
+    set option(glob\ -directory) 1
+    set option(glob\ -path)      1
+    set option(glob\ -types)     1
 
     # Build syntax info for procs
     foreach apa $::kP {
