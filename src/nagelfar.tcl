@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.0.1+ 2004-09-02"
+set version "Version 1.0.2 2004-09-02"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -439,12 +439,13 @@ proc splitStatement {statement index indicesName} {
 proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
     global option
 
-
+    # How many is the limit imposed by the number of argument?
     set maxa [expr {[llength $argv] - $startI}]
     if {$pair && ($maxa % 2) == 1} {
         incr maxa -1
     }
-    if {$maxa > $max} {
+
+    if {$max == 0 || $maxa < $max} {
         set max $maxa
     }
     if {$maxa == 0} {
@@ -1349,7 +1350,8 @@ proc markVariable {var ws wordtype check index knownVarsName typeName} {
 
 # This is called when an unknown command is encountered.
 # If not encountered it is stored to be checked last.
-# Returns the resolved name with qualifier.
+# Returns a list with a partial command where the first element
+# is the resolved name with qualifier.
 proc lookForCommand {cmd ns index} {
     # Get both the namespace and global possibility
     if {[string match "::*" $cmd]} {
@@ -1363,14 +1365,21 @@ proc lookForCommand {cmd ns index} {
         set cmd2 $cmd
     }
 
+    if {[info exists ::knownAliases($cmd1)]} {
+        return $::knownAliases($cmd1)
+    }
+    if {[info exists ::knownAliases($cmd2)]} {
+        return $::knownAliases($cmd2)
+    }
+
     if {[lsearch $::knownCommands $cmd] >= 0} {
-        return $cmd
+        return [list $cmd]
     }
     if {[lsearch $::knownCommands $cmd1] >= 0} {
-        return $cmd1
+        return [list $cmd1]
     }
     if {$cmd2 != "" && [lsearch $::knownCommands $cmd2] >= 0} {
-        return $cmd2
+        return [list $cmd2]
     }
 
     lappend ::unknownCommands [list $cmd $cmd1 $cmd2 $index]
@@ -1854,7 +1863,38 @@ proc parseStatement {statement index knownVarsName} {
 	eval { # FIXA
             set noConstantCheck 1
 	}
-	interp { # FIXA
+	interp {
+            if {$argc < 1} {
+                WA
+                return
+            }
+            # Special handling of interp alias
+            if {([lindex $wordstatus 0] & 1) && \
+                    [string equal "alias" [lindex $argv 0]]} {
+                if {$argc < 3} {
+                    WA
+                    return
+                }
+                # This should define a source in the current interpreter
+                # with a known name.
+                if {$argc >= 5 && \
+                        ([lindex $wordstatus 1] & 1) && \
+                        "" eq [lindex $argv 1] && \
+                        ([lindex $wordstatus 2] & 1)} {
+                    set newAlias [lindex $argv 2]
+                    set aliasCmd {}
+                    for {set t 4} {$t < $argc} {incr t} {
+                        if {[lindex $wordstatus 1] & 1} {
+                            lappend aliasCmd [lindex $argv $t]
+                        } else {
+                            lappend aliasCmd {}
+                        }
+                    }
+                    set ::knownAliases($newAlias) $aliasCmd
+                }
+            }
+            set type [checkCommand $cmd $index $argv $wordstatus \
+                    $wordtype $indices]
             set noConstantCheck 1
 	}
         package { # FIXA, take care of require
@@ -1908,8 +1948,28 @@ proc parseStatement {statement index knownVarsName} {
 	    } else {
                 # Resolve commands in namespace
                 set rescmd [lookForCommand $cmd [currentNamespace] $index]
-                if {$rescmd != "" && [info exists ::syntax($rescmd)]} {
-                    set type [checkCommand $rescmd $index $argv $wordstatus \
+                if {[llength $rescmd] > 0 && \
+                        [info exists ::syntax([lindex $rescmd 0])]} {
+                    set cmd [lindex $rescmd 0]
+                    # If lookForCommand returns a partial command, fill in
+                    # all lists accordingly.
+                    if {[llength $rescmd] > 1} {
+                        set preargv {}
+                        set prews {}
+                        set prewt {}
+                        set preindices {}
+                        foreach arg [lrange $rescmd 1 end] {
+                            lappend preargv $arg
+                            lappend prews 1
+                            lappend prewt ""
+                            lappend preindices $index
+                        }
+                        set argv [concat $preargv $argv]
+                        set wordstatus [concat $prews $wordstatus]
+                        set wordtype [concat $prewt $wordtype]
+                        set indices [concat $preindices $indices]
+                    }
+                    set type [checkCommand $cmd $index $argv $wordstatus \
                             $wordtype $indices]
                 } elseif {$::Nagelfar(dbpicky)} {
                     errorMsg N "DB: Missing syntax for command $cmd" \
@@ -2188,7 +2248,7 @@ proc parseBody {body index knownVarsName} {
 
 # This is called when a proc command is encountered.
 proc parseProc {argv indices} {
-    global knownCommands knownGlobals syntax
+    global knownGlobals syntax
 
     if {[llength $argv] != 3} {
 	errorMsg E "Wrong number of arguments to proc." [lindex $indices 0]
@@ -2227,7 +2287,7 @@ proc parseProc {argv indices} {
         set knownVars(type,$var)  ""
     }
 
-    lappend knownCommands $name
+    lappend ::knownCommands $name
 
 #    decho "Note: parsing procedure $name"
     if {!$::Nagelfar(firstpass)} {
@@ -2460,6 +2520,7 @@ proc parseScript {script} {
     catch {unset unknownCommands}
     set unknownCommands {}
     array set knownVars {}
+    array set ::knownAliases {}
     foreach g $knownGlobals {
 	set knownVars(known,$g) 1
 	set knownVars(set,$g)   1
@@ -2481,6 +2542,7 @@ proc parseScript {script} {
     popNamespace
 
     # Check commands that where unknown when encountered
+    # FIXA: aliases
     foreach apa $unknownCommands {
         foreach {cmd cmd1 cmd2 index} $apa break
         if {![info exists syntax($cmd1)] && \
@@ -2518,7 +2580,6 @@ proc parseFile {filename} {
     initMsg
     parseScript $script
     flushMsg
-    #puts stderr [lsearch -all -inline $::knownCommands *::*]
 }
 
 # Add a message filter
