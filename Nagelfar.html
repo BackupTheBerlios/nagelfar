@@ -22,6 +22,14 @@ a misspelled variable after running for 30 hours.<br>
 After some regular usage by me it is getting stable and can catch a lot
 of common errors.
 <p>
+Nagelfar sometimes uses coding style to help checking code.  Some constructs
+that are perfectly legal Tcl gives warnings just because they deviate
+from what is "normal".  For example, it checks brace indentation,
+braced expressions and enforces the <i>else</i> keyword.<br>
+Naturally Nagelfar expects the coding style of its author so if you
+do things differently, you may get false errors.  I am very interested
+in hearing about such things to be able to make Nagelfar more general.
+<p>
 Any feedback, good or bad, can be sent to
 &lt;peter <i>dot</i> spjuth <i>at</i> space <i>dot</i> se&gt;
 <p>
@@ -30,13 +38,13 @@ Any feedback, good or bad, can be sent to
 
 <a name="NagelfarFeatures"></a><h3>Features</h3>
 <ul>
-  <li>Written in pure Tcl/Tk.  No compilation. If you can run Tcl you can run
+  <li>Written in pure Tcl/Tk.  No compilation.  If you can run Tcl you can run
       Nagelfar.</li>
   <li>Extendible.  You can add to the syntax database, or let the tool use
       Tcl's introspection to extract syntax information from any Tcl
       interpreter.  Thus you can test scripts for applications using Tcl as
       script language.</li>
-  <li>It is picky. It prefers to warn if it is uncertain.</li>
+  <li>It is picky.  It prefers to warn if it is uncertain.</li>
   <li>Severity level filter and glob matching filters to remove errors
       known to be ok.</li>
 </ul>
