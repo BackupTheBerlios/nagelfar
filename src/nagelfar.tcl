@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.0b1 2004-01-29"
+set version "Version 1.0b1+ 2004-02-03"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -1599,7 +1599,10 @@ proc parseStatement {statement index knownVarsName} {
 	interp { # FIXA
             set noConstantCheck 1
 	}
-	namespace { # FIXA
+        package { # FIXA, take care of require
+            checkCommand $cmd $index $argv $wordstatus $indices
+        }
+	namespace { # FIXA, also handle import
             if {$argc < 1} {
                 WA
                 return
@@ -2027,6 +2030,7 @@ proc calcLineNo {ix} {
     }
 
     # Binary search
+    if {$ix < [lindex $newlineIx 0]} {return 1}
     set first 0
     set last [expr {[llength $newlineIx] - 1}]
 
@@ -2165,6 +2169,10 @@ proc parseScript {script} {
 # Parse a file
 proc parseFile {filename} {
     set ch [open $filename]
+    if {[info exists ::Nagelfar(encoding)] && \
+            $::Nagelfar(encoding) ne "system"} {
+        fconfigure $ch -encoding $::Nagelfar(encoding)
+    }
     set script [read $ch]
     close $ch
 
@@ -2366,15 +2374,15 @@ proc doCheck {} {
                 parseFile $syntaxfile
             }
             if {$f == $syntaxfile} continue
-            if {[file exists $f]} {
+            if {[file isfile $f] && [file readable $f]} {
                 echo "Checking file $f"
                 parseFile $f
             } else {
                 if {$::Nagelfar(gui)} {
                     tk_messageBox -title "Nagelfar Error" -type ok -icon error \
-                            -message "Could not find file $f"
+                            -message "Could not find file '$f'"
                 } else {
-                    puts stderr "Could not find file $f"
+                    puts stderr "Could not find file '$f'"
                 }
             }
         }
@@ -2743,6 +2751,15 @@ proc makeWin {} {
     .m.mo add checkbutton -label "Enforce else keyword" \
             -variable ::Prefs(forceElse)
 
+    .m.mo add cascade -label "Script encoding" -menu .m.mo.me
+    menu .m.mo.me
+    .m.mo.me add radiobutton -label "Ascii" \
+            -variable ::Nagelfar(encoding) -value ascii
+    .m.mo.me add radiobutton -label "Iso 8859-1" \
+            -variable ::Nagelfar(encoding) -value iso8859-1
+    .m.mo.me add radiobutton -label "System ([encoding system])" \
+            -variable ::Nagelfar(encoding) -value system
+
     # Tools menu
 
     .m add cascade -label "Tools" -underline 0 -menu .m.mt
@@ -3092,6 +3109,7 @@ if {![info exists gurka]} {
     set ::Nagelfar(gui) 0
     set ::Nagelfar(filter) {}
     set ::Nagelfar(2pass) 0
+    set ::Nagelfar(encoding) system
     getOptions
 
     # Locate default syntax database(s)
@@ -3105,7 +3123,8 @@ if {![info exists gurka]} {
     eval lappend apa [glob -nocomplain [file join $thisDir syntaxdb*.tcl]]
 
     foreach file $apa {
-        if {[file exists $file] && [lsearch $::Nagelfar(allDb) $file] == -1} {
+        if {[file isfile $file] && [file readable $file] && \
+                [lsearch $::Nagelfar(allDb) $file] == -1} {
             lappend ::Nagelfar(allDb) $file
             if {[file dirname $file] == $::thisDir} {
                 lappend ::Nagelfar(allDbView) "[file tail $file] (app)"
@@ -3125,9 +3144,24 @@ if {![info exists gurka]} {
             }
             -s {
                 incr i
-                lappend ::Nagelfar(db) [lindex $argv $i]
-                lappend ::Nagelfar(allDb) [lindex $argv $i]
-                lappend ::Nagelfar(allDbView) [lindex $argv $i]
+                set arg [lindex $argv $i]
+                if {[file isfile $arg] && [file readable $arg]} {
+                    lappend ::Nagelfar(db) $arg
+                    lappend ::Nagelfar(allDb) $arg
+                    lappend ::Nagelfar(allDbView) $arg
+                } else {
+                    puts stderr "Cannot read \"$arg\""
+                }
+            }
+            -encoding {
+                incr i
+                set enc [lindex $argv $i]
+                if {$enc eq ""} {set enc system}
+                if {[lsearch -exact [encoding names] $enc] < 0} {
+                    puts stderr "Bad encoding name: \"$enc\""
+                    set enc system
+                }
+                set ::Nagelfar(encoding) $enc
             }
             -2pass {
                 set ::Nagelfar(2pass) 1
