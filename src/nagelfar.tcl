@@ -24,13 +24,14 @@
 # the next line restarts using tclsh \
 exec tclsh "$0" "$@"
 
-set debug 0
-set version "Version 0.3 2002-09-02"
+set debug 1
+set version "Version 0.3+ 2002-11-14"
 set thisScript [file join [pwd] [info script]]
 set thisDir    [file dirname $thisScript]
+set ::Syntax(tcl84) [expr {[info tclversion] >= 8.4}]
 
 # Follow any link
-if {[file type $thisScript] == "link"} {
+while {[file type $thisScript] == "link"} {
     set tmplink [file readlink $thisScript]
     set thisDir [file dirname [file join $thisDir $tmplink]]
     unset tmplink
@@ -93,8 +94,12 @@ proc errorMsg {msg i} {
 }
 
 # Continued message. Used to give extra info after an error.
-proc contMsg {msg} {
-    append ::Syntax(currentMessage) "\n" $::Syntax(indent)$msg
+proc contMsg {msg {i {}}} {
+    append ::Syntax(currentMessage) "\n" $::Syntax(indent)
+    if {$i != ""} {
+        regsub -all {%L} $msg [calcLineNo $i] msg
+    }
+    append ::Syntax(currentMessage) $msg
 }
 
 #
@@ -114,6 +119,15 @@ proc flushMsg {} {
     foreach msg $msgs {
         echo [lindex $msg 1]
     }
+}
+
+# Trim a string to fit within a length.
+proc trimStr {str {len 10}} {
+    set str [string trim $str]
+    if {[string length $str] > $len} {
+        set str [string range $str 0 [expr {$len - 4}]]...
+    }
+    return $str
 }
 
 # A profiling thingy
@@ -148,7 +162,7 @@ proc checkPossibleComment {str lineNo} {
     set n1 [llength [split $str \{]]
     set n2 [llength [split $str \}]]
     if {$n1 != $n2} {
-	echo "Test: Unbalanced brace in comment. Line $lineNo."
+	echo "Experimental comment check: Unbalanced brace in comment. Line $lineNo."
     }
 }
 
@@ -197,8 +211,10 @@ proc scanWord {str len index iName} {
 
     if {[string equal $c "\{"]} {
         set closeChar \}
+        set charType brace
     } elseif {[string equal $c "\""]} {
         set closeChar \"
+        set charType quote
     } else {
         set closeChar [string range apa 1 0]
     }
@@ -222,9 +238,9 @@ proc scanWord {str len index iName} {
                 if {$j == $len || [string is space [string index $str $j]]} {
                     return
                 }
-                errorMsg "Extra chars after closing brace or quote." \
+                errorMsg "Extra chars after closing $charType." \
                         [expr {$index + $i}]
-                errorMsg " Opening brace/quote of above was on this line."\
+                contMsg "Opening $charType of above was on line %L." \
                         [expr {$index + $si}]
                 # Switch over to scanning for whitespace
                 incr i
@@ -546,7 +562,7 @@ proc parseVar {str len index iName knownVarsName} {
     # varindex is the array index
     # varindexconst is 1 if the array index is a constant
 
-    if {$var == ""} {
+    if {$::Prefs(noVar) || $var == ""} {
         return
     }
 
@@ -773,12 +789,23 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
                                 errorMsg "Unknown subcommand \"$arg\" to \"$cmd\""\
                                         [lindex $indices $i]
                             } else {
-                                # Check ambiguity? FIXA
-                                # Report shortened subcmd?
-                                if {$::Prefs(warnShortSub)} {
+                                # Check ambiguity.
+                                # Just do it if 8.4 is available since
+                                # its simple.
+                                set match [list [lindex $::subCmd($cmd) $ix]]
+                                if {$::Syntax(tcl84)} {
+                                    set match [lsearch -all -inline -glob \
+                                            $::subCmd($cmd) $arg*]
+                                }
+                                if {[llength $match] > 1} {
+                                    errorMsg "Ambigous subcommand for $cmd,\
+                                            $arg -> [join $match /]" \
+                                            [lindex $indices $i]
+                                } elseif {$::Prefs(warnShortSub)} {
+                                    # Report shortened subcmd?
                                     errorMsg "Shortened subcommand for $cmd,\
                                             $arg ->\
-                                            [lindex $::subCmd($cmd) $ix]" \
+                                            [lindex $match 0]" \
                                             [lindex $indices $i]
                                 }
                                 set arg [lindex $::subCmd($cmd) $ix]
@@ -877,6 +904,10 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 # If check is 0, mark the variable as known
 proc markVariable {var ws check index knownVarsName} {
     upvar $knownVarsName knownVars
+    
+    if {$::Prefs(noVar)} {
+        return 0
+    }
 
     set varBase $var
     set varArray 0
@@ -905,6 +936,7 @@ proc markVariable {var ws check index knownVarsName} {
 	}
 	return 1;
     }
+
     if {$check == 2} {
 	if {![info exists knownVars($varBase)]} {
 	    return 1
@@ -943,6 +975,10 @@ proc lookForCommand {cmd ns index} {
         set cmd2 "::$cmd"
     }
 
+    if {[lsearch $::knownCommands $cmd] >= 0 || \
+            [lsearch $::knownProcs $cmd] >= 0} {
+        return
+    }
     if {[lsearch $::knownCommands $cmd1] >= 0 || \
             [lsearch $::knownProcs $cmd1] >= 0} {
         return
@@ -1003,6 +1039,7 @@ proc parseStatement {statement index knownVarsName} {
     # The parsing below can pass information to the constants checker
     # This list primarily consists of args that are supposed to be variable
     # names without a $ in front.
+    set noConstantCheck 0
     set constantsDontCheck {}
 
     # Any command that can't be described in the syntax database
@@ -1023,10 +1060,11 @@ proc parseStatement {statement index knownVarsName} {
 		return
 	    }
 	    parseProc $argv $indices
-	    lappend constantsDontCheck all
+            set noConstantCheck 1
 	}
-	.* { # FIXA, kolla kod i ev. -command. Aven widgetkommandon ska kollas.
-	     # Kanske i checkOptions ?
+	.* { # FIXA, check code in any -command.
+             # Even widget commands should be checked.
+	     # Maybe in checkOptions ?
 	    return
 	}
 	bind { # FIXA, check the code
@@ -1042,7 +1080,7 @@ proc parseStatement {statement index knownVarsName} {
 		    errorMsg "Non constant argument to $cmd: $var" $index
 		}
 	    }
-	    lappend constantsDontCheck all
+            set noConstantCheck 1
 	}
 	variable {
 	    # FIXA, namespaces?
@@ -1127,6 +1165,12 @@ proc parseStatement {statement index knownVarsName} {
 			    lappend ifsyntax x
 			    continue
 			}
+                        if {$::Prefs(forceElse)} {
+                            errorMsg "Badly formed if statement" $index
+                            contMsg "Found argument '[trimStr $arg]' where\
+                                    else/elseif was expected."
+                            return
+                        }
 		    }
 		}
 		switch -- $state {
@@ -1144,10 +1188,7 @@ proc parseStatement {statement index knownVarsName} {
 		    }
 		    illegal {
 			errorMsg "Badly formed if statement" $index
-                        if {[string length $arg] > 10} {
-                            set arg [string range $arg 0 6]...
-                        }
-			contMsg "Found argument '$arg' after\
+			contMsg "Found argument '[trimStr $arg]' after\
                               supposed last body."
 			return
 		    }
@@ -1231,10 +1272,10 @@ proc parseStatement {statement index knownVarsName} {
             }
 	}
 	eval { # FIXA
-            lappend constantsDontCheck all
+            set noConstantCheck 1
 	}
 	interp { # FIXA
-            lappend constantsDontCheck all
+            set noConstantCheck 1
 	}
 	namespace { # FIXA
             if {$argc < 1} {
@@ -1265,7 +1306,7 @@ proc parseStatement {statement index knownVarsName} {
             }
 	}
 	uplevel { # FIXA
-            lappend constantsDontCheck all
+            set noConstantCheck 1
 	}
 	default {
 	    if {[info exists ::syntax($cmd)]} {
@@ -1276,19 +1317,25 @@ proc parseStatement {statement index knownVarsName} {
 	}
     }
 
+    if {$::Prefs(noVar)} {
+        return
+    }
+
+    if {$noConstantCheck} {
+        return
+    }
+
     # Check unmarked constants against known variables to detect missing $.
-    # The constant is considered ok if within quotes.
-    if {[lsearch $constantsDontCheck all] == -1} {
-	set i 0
-	foreach ws $wordstatus var $argv {
-	    if {$ws == 1 && [lsearch $constantsDontCheck $i] == -1} {
-		if {[info exists knownVars($var)]} {
-		    errorMsg "Found constant \"$var\" which is also a\
-                            variable." [lindex $indices $i]
-		}
-	    }
-	    incr i
-	}
+    # The constant is considered ok if within quotes (i.e. ws=2).
+    set i 0
+    foreach ws $wordstatus var $argv {
+        if {[info exists knownVars($var)]} {
+            if {$ws == 1 && [lsearch $constantsDontCheck $i] == -1} {
+                errorMsg "Found constant \"$var\" which is also a\
+                        variable." [lindex $indices $i]
+            }
+        }
+        incr i
     }
 }
 
@@ -1474,7 +1521,7 @@ proc parseProc {argv indices} {
 
     foreach {name args body} $argv {break}
 
-    # FIXA, take care of namespace
+    # Take care of namespace
     set cns [currentNamespace]
     set ns [namespace qualifiers $name]
     set tail [namespace tail $name]
@@ -1703,6 +1750,7 @@ proc fileDropDb {files} {
         lappend ::Syntax(db) $file
         lappend ::Syntax(allDb) $file
     }
+    updateDbSelection 1
 }
 
 # Browse for and add a file to check.
@@ -1804,6 +1852,7 @@ proc showError {{lineNo {}}} {
     }
 }
 
+# Update the selection in the db listbox to or from the db list.
 proc updateDbSelection {{fromVar 0}} {
     if {$fromVar} {
         .fs.lb selection clear 0 end
@@ -1879,7 +1928,7 @@ proc makeWin {} {
     set ::Syntax(resultWin) .fr.t
     frame .fr
     button .fr.b -text "Check" -command "doCheck"
-    text .fr.t -width 100 -height 25 -wrap none \
+    text .fr.t -width 100 -height 25 -wrap none -font "Courier 8" \
             -xscrollcommand ".fr.sbx set" \
             -yscrollcommand ".fr.sby set"
     scrollbar .fr.sbx -orient horizontal -command ".fr.t xview"
@@ -1940,6 +1989,8 @@ proc makeWin {} {
             -variable ::Prefs(warnBraceExpr) -value 1
     .m.mo.mb add radiobutton -label "Warn on any unbraced" \
             -variable ::Prefs(warnBraceExpr) -value 2
+    .m.mo add checkbutton -label "Enforce else keyword" \
+            -variable ::Prefs(forceElse)
 
     # Debug menu
 
@@ -2137,6 +2188,8 @@ proc getOptions {} {
     array set ::Prefs {
         warnBraceExpr 2
         warnShortSub 1
+        forceElse 1
+        noVar 0
     }
 
     if {[file exists "~/.syntaxrc"]} {
@@ -2189,11 +2242,17 @@ if {![info exists gurka]} {
             -gui {
                 set ::Syntax(gui) 1
             }
+            -novar {
+                set ::Prefs(noVar) 1
+            }
             -Wexpr* {
                 set ::Prefs(warnBraceExpr) [string range $arg 6 end]
             }
             -Wsub* {
                 set ::Prefs(warnShortSub) [string range $arg 5 end]
+            }
+            -Welse* {
+                set ::Prefs(forceElse) [string range $arg 6 end]
             }
             -* {
                 puts "Unknown option $arg."
