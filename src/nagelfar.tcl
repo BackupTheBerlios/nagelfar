@@ -24,11 +24,11 @@
 # the next line restarts using tclsh \
 exec tclsh "$0" "$@"
 
-set debug 0
+set debug 1
 package require Tcl 8.4
 
 package provide app-nagelfar 0.6
-set version "Version 0.6+ 2003-07-10"
+set version "Version 0.6+ 2003-07-13"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -644,7 +644,10 @@ proc parseSubst {str index knownVarsName} {
     upvar $knownVarsName knownVars
 
     # First do a quick check for $ or [
-    if {[string first \$ $str] == -1 && [string first \[ $str] == -1} {
+    # If the word ends in "]" and there is no "[" it is considered
+    # suspicious and we continue checking.
+    if {[string first \$ $str] == -1 && [string first \[ $str] == -1 && \
+            [string index $str end] ne "\]"} {
 	return 1
     }
 
@@ -676,7 +679,11 @@ proc parseSubst {str index knownVarsName} {
                         knownVars
 		incr i
 		set result 0
-	    }
+	    } elseif {[string equal $c "\]"] && $i == ($len - 1)} {
+                # Note unescaped bracket at end of word since it's
+                # likely to mean it should not be there.
+                errorMsg N "Unescaped end bracket" [expr {$index + $i}]
+            }
         } else {
             set escape 0
         }
@@ -694,6 +701,7 @@ proc parseExpr {str index knownVarsName} {
 }
 
 # A "macro" for checkCommand to print common error message
+# It should not be called from anywhere else.
 proc WA {} {
     upvar "cmd" cmd "index" index "argc" argc "argv" argv "indices" indices
     errorMsg E "Wrong number of arguments ($argc) to \"$cmd\"" $index
@@ -1141,6 +1149,7 @@ proc parseStatement {statement index knownVarsName} {
                         Skipping." $index
 		return
 	    }
+            if {$::Nagelfar(gui)} {progressUpdate [calcLineNo $index]}
 	    parseProc $argv $indices
             set noConstantCheck 1
 	}
@@ -1777,6 +1786,7 @@ proc buildLineDb {str} {
         lappend newlineIx [string length $result]
         lappend indentInfo $indent
     }
+    if {$::Nagelfar(gui)} {progressMax $lineNo}
     return $result
 }
 
@@ -1825,6 +1835,13 @@ proc parseFile {filename} {
     initMsg
     parseScript $script
     flushMsg
+}
+
+# Add a message filter
+proc addFilter {pat} {
+    if {[lsearch -exact $::Nagelfar(filter) $pat] < 0} {
+        lappend ::Nagelfar(filter) $pat
+    }
 }
 
 proc usage {} {
@@ -1879,6 +1896,7 @@ proc addDbFile {} {
 # File drop using TkDnd
 proc fileDropDb {files} {
     foreach file $files {
+        set file [fileRelative [pwd] $file]
         lappend ::Nagelfar(db) $file
         lappend ::Nagelfar(allDb) $file
         lappend ::Nagelfar(allDbView) $file
@@ -1893,7 +1911,7 @@ proc addFile {} {
             -filetypes {{{Tcl File} {.tcl}} {{All Files} {.*}}}]
     if {$apa == ""} return
 
-    lappend ::Nagelfar(files) $apa
+    lappend ::Nagelfar(files) [fileRelative [pwd] $apa]
 }
 
 # Remove a file from the list to check
@@ -1907,7 +1925,7 @@ proc removeFile {} {
 # File drop using TkDnd
 proc fileDropFile {files} {
     foreach file $files {
-        lappend ::Nagelfar(files) $file
+        lappend ::Nagelfar(files) [fileRelative [pwd] $file]
     }
 }
 
@@ -2014,7 +2032,9 @@ proc doCheck {} {
         }
     }
     if {$::Nagelfar(gui)} {
+        echo "Done"
         normalCursor
+        progressUpdate 0
     }
 }
 
@@ -2030,6 +2050,27 @@ proc showError {{lineNo {}}} {
     if {[regexp {^(.*): Line\s+(\d+):} $line -> fileName fileLine]} {
         editFile $fileName $fileLine
     }
+}
+
+proc resultPopup {x y X Y} {
+    set w $::Nagelfar(resultWin) 
+    
+    set lineNo [lindex [split [$w index @$x,$y] .] 0]
+    set line [$w get $lineNo.0 $lineNo.end]
+
+    destroy .popup
+    menu .popup -tearoff 0
+
+    if {[regexp {^(.*): Line\s+(\d+):} $line -> fileName fileLine]} {
+        .popup add command -label "Show File" \
+                -command [list editFile $fileName $fileLine]
+    }
+    if {[regexp {^(.*): Line\s+\d+:\s*(.*)$} $line -> pre post]} {
+        .popup add command -label "Filter this message" \
+                -command [list addFilter "*$pre*$post*"]
+    }
+
+    tk_popup .popup $X $Y
 }
 
 # Update the selection in the db listbox to or from the db list.
@@ -2068,6 +2109,36 @@ proc Scroll {class w args} {
     grid rowconfigure    $w 0 -weight 1
 
     return $w.s
+}
+
+# Set the progress
+proc progressUpdate {n} {
+    if {$n == 0} {
+        place $::Nagelfar(progressWin).f -x -100 -relx 0 -y 0 -rely 0 \
+                -relheight 1.0 -relwidth 0.0
+    } else {
+        set frac [expr {double($n) / $::Nagelfar(progressMax)}]
+
+        place $::Nagelfar(progressWin).f -x 0 -relx 0 -y 0 -rely 0 \
+                -relheight 1.0 -relwidth $frac
+    }
+    update idletasks
+}
+
+# Set the 100 % level of the progress bar
+proc progressMax {n} {
+    set ::Nagelfar(progressMax) $n
+    progressUpdate 0
+}
+
+# Create a simple progress bar
+proc progressBar {w} {
+    set ::Nagelfar(progressWin) $w
+
+    frame $w -bd 2 -relief sunken -padx 2 -pady 2 -width 100 -height 20
+    frame $w.f -background blue
+
+    progressMax 100
 }
 
 # Create main window
@@ -2126,15 +2197,19 @@ proc makeWin {} {
     # Result section
 
     frame .fr
+    progressBar .fr.pr
     button .fr.b -text "Check" -width 7 -command "doCheck"
     set ::Nagelfar(resultWin) [Scroll \
             text .fr.t -width 100 -height 25 -wrap none -font ResultFont]
 
-    pack .fr.b -side top -anchor w
-    pack .fr.t -side top -fill both -expand 1
+    grid .fr.b .fr.pr -sticky w
+    grid .fr.t -      -sticky news
+    grid columnconfigure .fr 0 -weight 1
+    grid rowconfigure    .fr 1 -weight 1
 
     $::Nagelfar(resultWin) tag configure error -foreground red
     bind $::Nagelfar(resultWin) <Double-Button-1> "showError ; break"
+    bind $::Nagelfar(resultWin) <Button-3> "resultPopup %x %y %X %Y ; break"
 
     # Use the panedwindow in 8.4
     if {[package present Tk] >= 8.4} {
@@ -2402,7 +2477,7 @@ proc makeDocWin {fileName} {
 
     toplevel $w
     wm title $w "Nagelfar Help"
-    set t [Scroll text $w.t -width 80 -height 25 -wrap none]
+    set t [Scroll text $w.t -width 80 -height 25 -wrap none -font ResultFont]
     button $w.b -text "Close" -command "destroy $w"
 
     pack $w.b -side bottom
@@ -2542,7 +2617,7 @@ if {![info exists gurka]} {
             }
             -filter {
                 incr i
-                lappend ::Nagelfar(filter) [lindex $argv $i]
+                addFilter [lindex $argv $i]
             }
             -severity {
                 incr i
