@@ -1,3 +1,14 @@
+Version 1.0b2
+
+2004-02-09
+ Comment checking was too sensitive in expressions.
+ Added registry setting on Windows.
+ 
+2004-02-03
+ A bug made line number 1 behave strangely.
+ Added an -encoding flag to read scripts that are not in system encoding.
+ Handle unreadable files better.
+
 Version 1.0b1
 
 2004-01-29
