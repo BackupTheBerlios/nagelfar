@@ -39,15 +39,6 @@ if {[file type $thisScript] == "link"} {
     unset tmplink
 }
 
-# TODO: Handle widgets -command options, bind code and other callbacks
-#       Handle e.g. -textvariable
-#       Handle namespaces and qualified vars
-#       Handle multiple files. Remember variables.
-#       Everything marked FIXA
-#       Give this program a silly name. (maybe Psyche, Peter's SYntax CHEcker)
-#       Optimise. Always optimise.
-#       Tidy up messages. Tidy up code structure. Things are getting messy.
-
 # Arguments to many procedures:
 # index     : Index of the start of a string or command.
 # cmd       : Command
@@ -55,6 +46,11 @@ if {[file type $thisScript] == "link"} {
 # wordstatus: List of status for the words in argv
 # indices   : List of indices where every word in argv starts
 # knownVars : An array that keeps track of variables known in this scope
+
+# Interpretation of wordstatus:
+# 0 contains substitutions
+# 1 constant
+# 2 enclosed in braces, or constant in quotes
 
 # Moved out message handling to make it more flexible
 proc echo {str} {
@@ -107,7 +103,7 @@ proc profile {str script} {
 
 # Experimental test for comments with unmatched braces.
 proc checkPossibleComment {str lineNo} {
-    
+
     set n1 [llength [split $str \{]]
     set n2 [llength [split $str \}]]
     if {$n1 != $n2} {
@@ -128,7 +124,6 @@ proc checkComment {str index} {
     # Maybe splitScript can take care of it? Or buildLineDb?
 }
 
-##syntax skipWS x x v
 # Move "i" forward to the first non whitespace char
 proc skipWS {str len iName} {
     upvar $iName i
@@ -137,7 +132,6 @@ proc skipWS {str len iName} {
     set i [expr {$len - $j}]
 }
 
-##syntax scanWord x x x v
 # Scan the string until the end of one word is found.
 # When entered, i points to the start of the word.
 # When returning, i points to the last char of the word.
@@ -200,7 +194,7 @@ proc scanWord {str len index iName} {
             return
         }
     }
-    
+
     # Theoretically, no incomplete string should come to this function,
     # but some precaution is never bad.
     if {![info complete [string range $str $si end]]} {
@@ -212,7 +206,6 @@ proc scanWord {str len index iName} {
     incr i -1
 }
 
-##syntax splitStatement x x n
 # Split a statement into words.
 # Returns a list of the words, and puts a list with the indices
 # for each word in indicesName.
@@ -267,7 +260,7 @@ proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
 	if {$skip} {
 	    set skip 0
 	    incr used
-	    continue 
+	    continue
 	}
 	if {$i < $startI} {
 	    incr i
@@ -488,7 +481,7 @@ proc parseVar {str len index iName knownVarsName} {
     if {$var == ""} {
         return
     }
-    
+
     if {[string match ::* $var]} {
 	# Skip qualified names until we handle namespace better. FIXA
 	return
@@ -558,7 +551,7 @@ proc parseExpr {str index knownVarsName} {
     parseSubst $str $index knownVars
 }
 
-# A "macro" to print common error message
+# A "macro" for checkCommand to print common error message
 proc WA {} {
     upvar cmd cmd index index argc argc argv argv indices indices
     errorMsg "Wrong number of arguments ($argc) to \"$cmd\"" $index
@@ -597,7 +590,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 	}
 	return
     }
-    
+
     set i $firsti
     foreach token $::syntax($cmd) {
 	set tok [string index $token 0]
@@ -721,18 +714,18 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 		    if {[string equal $tok "v"]} {
 			# Check the variable
 			if {[markVariable [lindex $argv $i] \
-                                [lindex $wordstatus $i] 2 knownVars]} {
+                                [lindex $wordstatus $i] 2 $index knownVars]} {
 			    errorMsg "Unknown variable \"[lindex $argv $i]\""\
                                     $index
 			}
 		    } elseif {[string equal $tok "n"]} {
 			markVariable [lindex $argv $i] \
-                                [lindex $wordstatus $i] 1 knownVars
+                                [lindex $wordstatus $i] 1 $index knownVars
 		    } else {
 			markVariable [lindex $argv $i] \
-                                [lindex $wordstatus $i] 0 knownVars
+                                [lindex $wordstatus $i] 0 $index knownVars
 		    }
-		    
+
 		    lappend constantsDontCheck $i
 		    incr i
 		}
@@ -775,14 +768,14 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
     }
 }
 
-##syntax markVariable x x x n
+##syntax markVariable x x x x n
 # Central function to handle known variable names.
 # If check is 2, check if it is known, return 1 if unknown
 # If check is 1, mark the variable as known and set
 # If check is 0, mark the variable as known
-proc markVariable {var ws check knownVarsName} {
+proc markVariable {var ws check index knownVarsName} {
     upvar $knownVarsName knownVars
-    
+
     set varBase $var
     set varArray 0
     set varIndex ""
@@ -796,38 +789,42 @@ proc markVariable {var ws check knownVarsName} {
 	set varBase [string range $var 0 $i]
 	incr i 2
 	set varIndex [string range $var $i end-1]
+	# Check if the base is free from substitutions
 	if {$varBaseWs == 0 && [regexp {^(::)?(\w+(::)?)+$} $varBase]} {
 	    set varBaseWs 1
 	}
 	set varArray 1
     }
 
+    # If the base contains substitutions it can't be checked.
+    if {$varBaseWs == 0} {
+	if {$check != 2} {
+	    errorMsg "Suspicious variable name \"$var\"" $index
+	}
+	return 1;
+    }
     if {$check == 2} {
-	if {$varBaseWs != 0} {
-	    if {![info exists knownVars($varBase)]} {
+	if {![info exists knownVars($varBase)]} {
+	    return 1
+	}
+	if {$varArray && $varIndexWs != 0} {
+	    if {![info exists knownVars($var)]} {
 		return 1
-	    }
-	    if {$varArray && $varIndexWs != 0} {
-		if {![info exists knownVars($var)]} {
-		    return 1
-		}
 	    }
 	}
 	return 0
     } else {
-	if {$varBaseWs != 0} {
-	    set bit [expr {$check == 1 ? 4 : 0}]
-	    if {[info exists knownVars($varBase)]} {
-		set knownVars($varBase) [expr {$knownVars($varBase) | $bit}]
+	set bit [expr {$check == 1 ? 4 : 0}]
+	if {[info exists knownVars($varBase)]} {
+	    set knownVars($varBase) [expr {$knownVars($varBase) | $bit}]
+	} else {
+	    set knownVars($varBase) [expr {1 | $bit}]
+	}
+	if {$varArray && $varIndexWs != 0} {
+	    if {[info exists knownVars($var)]} {
+		set knownVars($var) [expr {$knownVars($var) | $bit}]
 	    } else {
-		set knownVars($varBase) [expr {1 | $bit}]
-	    }
-	    if {$varArray && $varIndexWs != 0} {
-		if {[info exists knownVars($var)]} {
-		    set knownVars($var) [expr {$knownVars($var) | $bit}]
-		} else {
-		    set knownVars($var) $knownVars($varBase)
-		}
+		set knownVars($var) $knownVars($varBase)
 	    }
 	}
     }
@@ -844,34 +841,33 @@ proc parseStatement {statement index knownVarsName} {
     set wordstatus {}
     set indices2 {}
     foreach word $words index $indices {
-        set c [string index $word 0]
-        if {[string equal $c "\{"]} {
+        set char [string index $word 0]
+        if {[string equal $char "\{"]} {
             lappend words2 [string range $word 1 end-1]
             lappend wordstatus 2
 	    incr index
         } else {
-            if {[string equal $c "\""]} {
+	    set ws 1
+            if {[string equal $char "\""]} {
                 set word [string range $word 1 end-1]
 		incr index
+		set ws 2
             }
 	    lappend words2 $word
-            lappend wordstatus [parseSubst $word $index knownVars]
+	    set ws [expr {[parseSubst $word $index knownVars] ? $ws : 0}]
+            lappend wordstatus $ws
         }
 	lappend indices2 $index
     }
-    
-    # Interpretation of wordstatus:
-    # 0 contains substitutions
-    # 1 constant
-    # 2 enclosed in braces
 
-    # If the command contains substitutions, then we can not determine 
+
+    # If the command contains substitutions, then we can not determine
     # which command it is, so we skip it.
     # FIXA. A command with a variable may be a widget command.
     if {[lindex $wordstatus 0] == 0} {
         return
     }
-    
+
     set cmd [lindex $words2 0]
     set index [lindex $indices2 0]
     set argv [lrange $words2 1 end]
@@ -925,10 +921,12 @@ proc parseStatement {statement index knownVarsName} {
 	}
 	variable {
 	    # FIXA, namespaces?
+	    # FIXA, qualified names?
 	    set i 0
 	    foreach {var val} $argv {ws1 ws2} $wordstatus {
+		regexp {::([^:]+)$} $var -> var
 		if {$ws1} {
-		    if {$i >= $argc - 1} { 
+		    if {$i >= $argc - 1} {
 			set knownVars($var) 1
 		    } else {
 			set knownVars($var) 5
@@ -956,7 +954,7 @@ proc parseStatement {statement index knownVarsName} {
 	}
 	set {
 	    # Set gets a different syntax string depending on the
-	    # number of arguments. 
+	    # number of arguments.
 	    # If more commands needs this, maybe a general way to
 	    # express it in the syntax db should be implemented. FIXA?
 	    if {$argc == 1} {
@@ -982,7 +980,7 @@ proc parseStatement {statement index knownVarsName} {
 		}
 		lappend constantsDontCheck $i
 		foreach var [lindex $argv $i] {
-		    markVariable $var 1 0 knownVars
+		    markVariable $var 1 0 $index knownVars
 		}
 	    }
 	    if {[lindex $wordstatus end] == 0} {
@@ -1131,7 +1129,7 @@ proc parseStatement {statement index knownVarsName} {
 		checkCommand $cmd $index $argv $wordstatus $indices
 	    } elseif {[lsearch $::knownCommands $cmd] == -1 && \
                     [lsearch $::knownProcs $cmd] == -1} {
-                
+
 #                decho "Uncheck: $cmd argc:$argc line:[calcLineNo $index]"
                 # Store the unknown commands for later check.
                 set ::unknownCommands($cmd) $index
@@ -1140,8 +1138,7 @@ proc parseStatement {statement index knownVarsName} {
     }
 
     # Check unmarked constants against known variables to detect missing $.
-    # FIXA: Maybe if the constant is within quotes the warning should
-    # be turned off.
+    # The constant is considered ok if within quotes.
     if {[lsearch $constantsDontCheck all] == -1} {
 	set i 0
 	foreach ws $wordstatus var $argv {
@@ -1212,7 +1209,7 @@ proc splitScript {script index statementsName indicesName} {
 		#if {[regexp {^\s*#} $tryline]} {continue}
                 if {[string equal [string index [string trimleft $tryline] 0]\
                         "#"]} continue
-		
+
 		# Look for \'s before the ;
 		# If there is an odd number of \, the ; is ignored
 		if {[string equal [string index $tryline end-1] "\\"]} {
@@ -1268,7 +1265,7 @@ proc splitScript {script index statementsName indicesName} {
                     ![string match "namespace eval*" $tryline]} {
                 # A close brace that is not indented is typically the end of
                 # a global statement, like "proc".
-                # If it does not end the statement, there are probably a 
+                # If it does not end the statement, there are probably a
                 # brace mismatch.
                 # When inside a namespace eval block, this is probably ok.
                 errorMsg "Found non indented close brace that did not end\
@@ -1311,7 +1308,7 @@ proc parseBody {body index knownVarsName} {
 # This is called when a proc command is encountered.
 proc parseProc {argv indices} {
     global knownProcs knownCommands knownGlobals syntax
-    
+
     if {[llength $argv] != 3} {
 	errorMsg "Wrong number of arguments to proc." [lindex $indices 0]
 	return
@@ -1324,7 +1321,7 @@ proc parseProc {argv indices} {
     set name [namespace tail $name]
 
     # Parse the arguments.
-    # Initialise a knownVars array with the arguments. 
+    # Initialise a knownVars array with the arguments.
     # Build a syntax description for the procedure.
     set min 0
     set unlim 0
@@ -1398,12 +1395,12 @@ proc countIndent {str} {
 }
 
 # Build a database of newlines to be able to calculate line numbers.
-# Also replace all escaped newlines with a space, and remove all 
-# whitespace from the start of lines. Later processing is greatly 
+# Also replace all escaped newlines with a space, and remove all
+# whitespace from the start of lines. Later processing is greatly
 # simplified if it does not need to bother with those.
 proc buildLineDb {str} {
     global newlineIx indentInfo
-    
+
     set result ""
     set lines [split $str \n]
     set newlineIx {}
@@ -1556,14 +1553,22 @@ if {![info exists gurka]} {
                 set knownProcs    $defknownProcs
             } else {
                 source $defaultDb
-            } 
+            }
         } else {
 	    foreach f $dbfiles {
 		source $f
 	    }
 	}
+	set ::currentFile ""
         foreach f $files {
-            set ::currentFile $f
+	    if {[llength $files] > 1} {
+		set ::currentFile $f
+	    }
+	    set syntaxfile [file rootname $f].syntax
+	    if {[file exists $syntaxfile]} {
+		puts "Parsing file $syntaxfile"
+		parseFile $syntaxfile
+	    }
             puts "Checking file $f"
             parseFile $f
         }
