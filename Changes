@@ -1,3 +1,12 @@
+2004-04-07
+ Fixed a bug in subcommand checking. Subcommands later than first
+ argument did not work.
+ Improved options checking.
+ Added more subcommands and options to syntax database.
+
+2004-03-30
+ Dialog for adding files accepts multiple files.
+
 Version 1.0b3
 
 2004-03-23
