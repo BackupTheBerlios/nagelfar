@@ -203,6 +203,6 @@ test nagelfar-5.1 {
     }
 } -body {
     execTestFile
-} -result {*Procedure "info" do not match previous definition*} -match glob
+} -result {*Procedure "info" does not match previous definition*} -match glob
 
 file delete _testfile_
