@@ -24,17 +24,20 @@
 # the next line restarts using tclsh \
 exec tclsh "$0" "$@"
 
-set debug 1
-set version "Version 0.4+ 2003-02-10"
+set debug 0
+set version "Version 0.5 2003-02-14"
 set thisScript [file join [pwd] [info script]]
 set thisDir    [file dirname $thisScript]
 set ::Syntax(tcl84) [expr {[info tclversion] >= 8.4}]
 
 # Support for FreeWrap 5.5
-if {[info proc ::freewrap::unpack] != ""} {
+if {[info procs ::freewrap::unpack] != ""} {
     set debug 0
     set thisDir [file dirname [info nameofexecutable]]
     set thisScript ""
+    if {[file exists $thisDir/tkdnd]} {
+        lappend ::auto_path $thisDir/tkdnd
+    }
 } else {
     # Follow any link
     set tmplink $thisScript
