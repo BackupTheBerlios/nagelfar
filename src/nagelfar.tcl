@@ -24,8 +24,8 @@
 # the next line restarts using tclsh \
 exec tclsh "$0" "$@"
 
-set debug 1
-set version "Version 0.1+ 2002-08-27"
+set debug 0
+set version "Version 0.2 2002-08-28"
 set thisScript [file join [pwd] [info script]]
 set thisDir    [file dirname $thisScript]
 
@@ -73,15 +73,47 @@ proc decho {str} {
     update
 }
 
+# Standard error message.
 proc errorMsg {msg i} {
-    global currentFile
-
-    set pre ""
-    if {$currentFile != ""} {
-        set pre "$currentFile: "
+    if {[info exists ::Syntax(currentMessage)] && \
+                $::Syntax(currentMessage) != ""} {
+        lappend ::Syntax(messages) [list $::Syntax(currentMessageLine) \
+                                            $::Syntax(currentMessage)]
     }
 
-    echo "${pre}Line [calcLineNo $i]: $msg"
+    set pre ""
+    if {$::currentFile != ""} {
+        set pre "$::currentFile: "
+    }
+    set line [calcLineNo $i]
+    set pre "${pre}Line [format %3d $line]: "
+    set ::Syntax(indent) [string repeat " " [string length $pre]]
+    set ::Syntax(currentMessage) $pre$msg
+    set ::Syntax(currentMessageLine) $line
+}
+
+# Continued message. Used to give extra info after an error.
+proc contMsg {msg} {
+    append ::Syntax(currentMessage) "\n" $::Syntax(indent)$msg
+}
+
+#
+proc initMsg {} {
+    set ::Syntax(messages) {}
+    set ::Syntax(currentMessage) ""
+}
+
+# Called after a file has been parsed, to flush messages
+proc flushMsg {} {
+    if {[info exists ::Syntax(currentMessage)] && \
+                $::Syntax(currentMessage) != ""} {
+        lappend ::Syntax(messages) [list $::Syntax(currentMessageLine) \
+                                            $::Syntax(currentMessage)]
+    }
+    set msgs [lsort -integer -index 0 $::Syntax(messages)]
+    foreach msg $msgs {
+        echo [lindex $msg 1]
+    }
 }
 
 # A profiling thingy
@@ -249,7 +281,7 @@ proc splitStatement {statement index indicesName} {
         incr i
         skipWS $statement $len i
     }
-    set words
+    return $words
 }
 
 # FIXA Options may be non constant.
@@ -570,7 +602,7 @@ proc WA {} {
     foreach ix $indices {
         set aline [calcLineNo $ix]
         if {$aline != $line} {
-            echo " Argument $t at line $aline"
+            contMsg "Argument $t at line $aline"
         }
         incr t
     }
@@ -1046,7 +1078,11 @@ proc parseStatement {statement index knownVarsName} {
 		    }
 		    illegal {
 			errorMsg "Badly formed if statement" $index
-			echo "  Found arguments after supposed last body."
+                        if {[string length $arg] > 10} {
+                            set arg [string range $arg 0 6]...
+                        }
+			contMsg "Found argument '$arg' after\
+                              supposed last body."
 			return
 		    }
 		}
@@ -1054,7 +1090,7 @@ proc parseStatement {statement index knownVarsName} {
 	    if {![string equal $state "else"] \
                     && ![string equal $state "illegal"]} {
 		errorMsg "Badly formed if statement" $index
-		echo "  Missing one body."
+		contMsg "Missing one body."
 		return
 	    }
 #            decho "if syntax \"$ifsyntax\""
@@ -1281,8 +1317,8 @@ proc splitScript {script index statementsName indicesName} {
                 # brace mismatch.
                 # When inside a namespace eval block, this is probably ok.
                 errorMsg "Found non indented close brace that did not end\
-                        statement. This may indicate a brace mismatch." \
-                        $closeBraceIx
+                        statement." $closeBraceIx
+                contMsg "This may indicate a brace mismatch."
             }
 	}
     }
@@ -1291,17 +1327,36 @@ proc splitScript {script index statementsName indicesName} {
         errorMsg "Could not complete statement." $index
 
         # Experiment a little to give more info.
-        foreach line [list $firstline $tryline] \
-                txt [list "the first line." "the script body."] {
-            if {[info complete $line\}]} {
-                echo "  One close brace would complete $txt"
-            }
-            if {[info complete $line\"]} {
-                echo "  One double quote would complete $txt"
-            }
-            if {[info complete $line\]]} {
-                echo "  One close bracket would complete $txt"
-            }
+        if {[info complete $firstline\}]} {
+            contMsg "One close brace would complete the first line"
+        } elseif {[info complete $firstline\}\}]} {
+            contMsg "Two close braces would complete the first line"
+        }
+        if {[info complete $firstline\"]} {
+            contMsg "One double quote would complete the first line"
+        }
+        if {[info complete $firstline\]]} {
+            contMsg "One close bracket would complete the first line"
+        }
+
+        set txt "the script body at line\
+                [calcLineNo [expr {$index + [string length $tryline] - 1}]]."
+        if {[info complete $tryline\}]} {
+            contMsg "One close brace would complete $txt"
+            contMsg "Assuming completeness for further processing."
+            lappend statements $tryline\}
+            lappend indices $index
+        } elseif {[info complete $tryline\}\}]} {
+            contMsg "Two close braces would complete $txt"
+            contMsg "Assuming completeness for further processing."
+            lappend statements $tryline\}\}
+            lappend indices $index
+        }
+        if {[info complete $tryline\"]} {
+            contMsg "One double quote would complete $txt"
+        }
+        if {[info complete $tryline\]]} {
+            contMsg "One close bracket would complete $txt"
         }
     }
 }
@@ -1387,10 +1442,12 @@ proc calcLineNo {i} {
 
     set n 1
     foreach ni $newlineIx {
-        if {$ni > $i} break
+        if {$ni > $i} {
+            return $n
+        }
         incr n
     }
-    set n
+    return [llength $newlineIx]
 }
 
 # Given an index in the original string, tell if that line was indented
@@ -1454,7 +1511,7 @@ proc buildLineDb {str} {
         lappend newlineIx [string length $result]
         lappend indentInfo $indent
     }
-    set result
+    return $result
 }
 
 # Parse a global script
@@ -1494,13 +1551,16 @@ proc parseFile {filename} {
     set script [read $ch]
     close $ch
 
+    initMsg
     parseScript $script
+    flushMsg
 }
 
 proc usage {} {
     puts $::version
     puts {Usage: syntax.tcl [options] [-s dbfile] scriptfile ...}
     puts { -h        : Show usage.}
+    puts { -gui      : Start with GUI even when files are specified.}
     puts { -s dbfile : Include a database file. (More than one is allowed.)}
     puts { -WexprN   : Sets expression warning level.}
     puts {   2 (def) = Warn about any unbraced expression.}
@@ -1630,7 +1690,7 @@ proc showError {{lineNo {}}} {
 
     set line [$w get $lineNo.0 $lineNo.end]
 
-    if {[regexp {^(.*): Line (\d+):} $line -> fileName fileLine]} {
+    if {[regexp {^(.*): Line\s+(\d+):} $line -> fileName fileLine]} {
         editFile $fileName $fileLine
     }
 }
@@ -1672,7 +1732,7 @@ proc makeWin {} {
             -height 4 -width 40 -selectmode extended
     updateDbSelection 1
     bind .fs.lb <<ListboxSelect>> updateDbSelection
-    scrollbar .fs.sby -orient vertical -command ".fs.lb set"
+    scrollbar .fs.sby -orient vertical -command ".fs.lb yview"
 
     grid .fs.l -sticky w
     grid .fs.b -sticky w
@@ -1689,7 +1749,7 @@ proc makeWin {} {
     listbox .ff.lb -yscrollcommand ".ff.sby set" \
             -listvariable ::Syntax(files) \
             -height 4 -width 40
-    scrollbar .ff.sby -orient vertical -command ".ff.lb set"
+    scrollbar .ff.sby -orient vertical -command ".ff.lb yview"
     bind .ff.lb <Key-Delete> "removeFile"
     bind .ff.lb <Button-1> "focus .ff.lb"
 
@@ -1786,8 +1846,8 @@ proc makeWin {} {
         .m.md add command -label "Reread Source" -command {source $thisScript}
         .m.md add separator
         .m.md add command -label "Redraw Window" -command {makeWin}
-        .m.md add separator
-        .m.md add command -label "Normal Cursor" -command {normalCursor}
+        #.m.md add separator
+        #.m.md add command -label "Normal Cursor" -command {normalCursor}
     }
 
     # Help menu is last
@@ -1810,7 +1870,11 @@ proc editFile {filename lineNo} {
         raise .fv
     } else {
         toplevel .fv
-        text .fv.t -width 80 -height 25 -font {Courier 8} \
+	if {![info exists ::Syntax(editFileFont)]} {
+	    set ::Syntax(editFileFont) "Courier -12"
+	}
+
+        text .fv.t -width 80 -height 25 -font $::Syntax(editFileFont) \
                 -xscrollcommand ".fv.sbx set" \
                 -yscrollcommand ".fv.sby set"
         scrollbar .fv.sbx -orient horizontal -command ".fv.t xview"
@@ -1819,8 +1883,8 @@ proc editFile {filename lineNo} {
         grid .fv.t .fv.sby -sticky news
         grid .fv.sbx       -sticky we
         grid .fv.f -       -sticky we
-        grid columnconfigure .fv 0 -weight 0
-        grid rowconfigure .fv 0 -weight 0
+        grid columnconfigure .fv 0 -weight 1
+        grid rowconfigure .fv 0 -weight 1
 
         menu .fv.m
         .fv configure -menu .fv.m
@@ -1829,6 +1893,18 @@ proc editFile {filename lineNo} {
         .fv.m.mf add command -label "Save" -command "saveFile"
         .fv.m.mf add separator
         .fv.m.mf add command -label "Close" -command "closeFile"
+
+        .fv.m add cascade -label "Font" -menu .fv.m.mo
+        menu .fv.m.mo
+	.fv.m.mo add radiobutton -label "Courier -10" \
+	    -variable ::Syntax(editFileFont) -value "Courier -10" \
+	    -command {.fv.t configure -font $::Syntax(editFileFont)}
+	.fv.m.mo add radiobutton -label "Courier -12" \
+	    -variable ::Syntax(editFileFont) -value "Courier -12" \
+	    -command {.fv.t configure -font $::Syntax(editFileFont)}
+	.fv.m.mo add radiobutton -label "Courier -14" \
+	    -variable ::Syntax(editFileFont) -value "Courier -14" \
+	    -command {.fv.t configure -font $::Syntax(editFileFont)}
 
         label .fv.f.ln -width 5 -textvariable ::Syntax(lineNo)
         pack .fv.f.ln -side right
@@ -2046,4 +2122,3 @@ if {![info exists gurka]} {
     doCheck
     exit
 }
-
