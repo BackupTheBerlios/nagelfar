@@ -18,8 +18,33 @@
 #  Boston, MA 02111-1307, USA.
 #
 #----------------------------------------------------------------------
+# startup.tcl
+#----------------------------------------------------------------------
 # $Revision$
 #----------------------------------------------------------------------
+
+# Output usage info and exit
+proc usage {} {
+    puts $::version
+    puts {Usage: nagelfar [options] scriptfile ...
+ -help             : Show usage.
+ -gui              : Start with GUI even when files are specified.
+ -s <dbfile>       : Include a database file. (More than one is allowed.)
+ -encoding <enc>   : Read script with this encoding.
+ -filter <p>       : Any message that matches the glob pattern is suppressed.
+ -severity <level> : Set severity level filter to N/W/E (default N).
+ -novar            : Disable variable checking.
+ -WexprN           : Sets expression warning level to N.
+   2 (def)         = Warn about any unbraced expression.
+   1               = Don't warn on single commands. "if [apa] {...}" is ok.
+ -WsubN            : Sets subcommand warning level to N.
+   1 (def)         = Warn about shortened subcommands.
+ -WelseN           : Enforce else keyword. Default 1.
+ -strictappend     : Enforce having an initialised variable in (l)append.
+ -instrument       : Instrument source file for code coverage.
+ -markup           : Markup source file with code coverage result.}
+    exit
+}
 
 # Global code is only run first time to allow re-sourcing
 if {![info exists gurka]} {
@@ -33,9 +58,9 @@ if {![info exists gurka]} {
     set ::Nagelfar(dbpicky) 0
     set ::Nagelfar(withCtext) 0
 
-    if {[info exists _nagelfar_test]} return
-
     getOptions
+
+    if {[info exists _nagelfar_test]} return
 
     # Locate default syntax database(s)
     set ::Nagelfar(allDb) {}
@@ -77,6 +102,17 @@ if {![info exists gurka]} {
                 } else {
                     puts stderr "Cannot read \"$arg\""
                 }
+            }
+ 	    -editor {
+                incr i
+                set arg [lindex $argv $i]
+		switch -glob -- $arg {
+		    ema*    {set ::Prefs(editor) emacs}
+		    inte*   {set ::Prefs(editor) internal}
+		    default {
+                        puts stderr "Bad -editor option: \"$arg\""
+                    }
+		}
             }
             -encoding {
                 incr i
