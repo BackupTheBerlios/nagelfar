@@ -8,6 +8,7 @@
 # $Revision$
 
 # Autoload stuff to have them available
+catch {parray}
 foreach gurkmeja [array names auto_index] {
     if {[info procs $gurkmeja] == ""} {
         eval $auto_index($gurkmeja)
