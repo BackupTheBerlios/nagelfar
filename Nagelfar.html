@@ -196,7 +196,7 @@ Line  83: N Close brace not aligned with line 80 (4 0)
 <a name="NagelfarDownload"></a><h3>Download</h3>
 
 Nagelfar requires Tcl/Tk 8.4 to run. The licence is GPL.<br>
-Version 1.0b2:<br>
+Version 1.0b3:<br>
 <a href="nagelfar/nagelfar10.tar.gz">Main distribution</a><br>
 <a href="nagelfar/nagelfar.kit">Starkit</a><br>
 <a href="nagelfar/nagelfar">Starpack for Linux (x86)</a><br>
@@ -204,6 +204,13 @@ Version 1.0b2:<br>
 <a href="nagelfar/nagelfar.exe">Starpack for Windows</a><br>
 
 <a name="NagelfarChanges"></a><h3>Changes</h3>
+Changes in v1.0b3 (2004-03-23):<br>
+<ul>
+  <li>  Fixed a bug in option checking where glob chars disturbed things.</li>
+  <li>  Also make sure that option checking is not invoked on args that
+        cannot be options due to their placement.</li>
+</ul>
+<br>
 Changes in v1.0b2 (2004-02-09):<br>
 <ul>
   <li> Added -encoding option for scripts that are not in system encoding.</li>

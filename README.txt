@@ -78,6 +78,8 @@ Option to enforce not using "then".
 Make a GUI to help working with the database builder.  It should
 be possible to add packages that should be included in the db.
 
+Recognise the new {expand} syntax introduced in 8.5.
+
 
 BUGS
 

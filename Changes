@@ -1,3 +1,10 @@
+Version 1.0b3
+
+2004-03-23
+ Fixed a bug in option checking where glob chars disturbed things.
+ Also make sure that option checking is not invoked on args that
+ cannot be options due to their placement.
+
 Version 1.0b2
 
 2004-02-09
