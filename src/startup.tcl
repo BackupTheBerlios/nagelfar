@@ -222,6 +222,13 @@ if {![info exists gurka]} {
         }
     }
 
+    # If we are on Windows and Tk is already loaded it means we run in
+    # wish, and there is no stdout. Thus non-gui is pointless.
+    if {!$::Nagelfar(gui) && $::tcl_platform(platform) eq "windows" &&
+        [package provide Tk] ne ""} {
+        set ::Nagelfar(gui) 1
+    }
+
     # If there is no file specified, try invoking a GUI
     if {$::Nagelfar(gui) || [llength $::Nagelfar(files)] == 0} {
         if {[catch {package require Tk}]} {
