@@ -12,8 +12,9 @@ package require tcltest 2.2
 namespace import tcltest::*
 tcltest::configure -verbose "body error"
 #testConstraint knownbug 1
-#tcltest::configure -match nagelfar-\[5\].*
-#tcltest::configure -match tk-*
+if {$argc > 0} {
+    eval tcltest::configure $argv
+}
 
 proc createTestFile {scr} {
     set ch [open _testfile_ w]
