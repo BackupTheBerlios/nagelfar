@@ -41,6 +41,7 @@ proc usage {} {
    1 (def)         = Warn about shortened subcommands.
  -WelseN           : Enforce else keyword. Default 1.
  -strictappend     : Enforce having an initialised variable in (l)append.
+ -header <file>    : Create a "header" file with syntax info for scriptfiles.
  -instrument       : Instrument source file for code coverage.
  -markup           : Markup source file with code coverage result.}
     exit
@@ -57,6 +58,8 @@ if {![info exists gurka]} {
     set ::Nagelfar(encoding) system
     set ::Nagelfar(dbpicky) 0
     set ::Nagelfar(withCtext) 0
+    set ::Nagelfar(instrument) 0
+    set ::Nagelfar(header) ""
 
     getOptions
 
@@ -89,7 +92,7 @@ if {![info exists gurka]} {
         set arg [lindex $argv $i]
         switch -glob -- $arg {
             --h* -
-            -h* {
+            -h - -hel* {
                 usage
             }
             -s {
@@ -129,6 +132,20 @@ if {![info exists gurka]} {
             }
             -gui {
                 set ::Nagelfar(gui) 1
+            }
+            -header {
+                incr i
+                set arg [lindex $argv $i]
+                set ::Nagelfar(header) $arg
+                # Put checks down as much as possible
+                array set ::Prefs {
+                    warnBraceExpr 0
+                    warnShortSub 0
+                    strictAppend 0
+                    forceElse 0
+                    noVar 1
+                    severity E
+                }
             }
             -instrument {
                 set ::Nagelfar(instrument) 1

@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.1.1+ 2005-01-12"
+set version "Version 1.1.1+ 2005-01-14"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -2562,9 +2562,8 @@ proc parseFile {filename} {
     parseScript $script
     flushMsg
     
-    if {[info exists ::Nagelfar(instrument)] && \
-                $::Nagelfar(instrument) && \
-                [file extension $filename] ne ".syntax"} {
+    if {$::Nagelfar(instrument) && \
+            [file extension $filename] ne ".syntax"} {
         # Experimental instrumenting
         dumpInstrumenting $filename
     }
@@ -2854,6 +2853,14 @@ proc doCheck {} {
     # Load syntax databases
     loadDatabases
 
+    # In header generation, store info before reading
+    if {$::Nagelfar(header) ne ""} {
+        set h_oldsyntax [array names ::syntax]
+        set h_oldsubCmd [array names ::subCmd]
+        set h_oldoption [array names ::option]
+        set h_oldreturn [array names ::return]
+    }
+
     # Do the checking
 
     set ::currentFile ""
@@ -2883,6 +2890,32 @@ proc doCheck {} {
                     puts stderr "Could not find file '$f'"
                 }
             }
+        }
+    }
+    # Generate header
+    if {$::Nagelfar(header) ne ""} {
+        foreach item $h_oldsyntax { unset ::syntax($item) }
+        foreach item $h_oldsubCmd { unset ::subCmd($item) }
+        foreach item $h_oldoption { unset ::option($item) }
+        foreach item $h_oldreturn { unset ::return($item) }
+        
+        if {[catch {set ch [open $::Nagelfar(header) w]}]} {
+            puts stderr "Could not create file \"$::Nagelfar(header)\""
+        } else {
+            echo "Writing \"$::Nagelfar(header)\""
+            foreach item [lsort -dictionary [array names ::syntax]] {
+                puts $ch "[list \#\#nagelfar syntax $item] $::syntax($item)"
+            }
+            foreach item [lsort -dictionary [array names ::subCmd]] {
+                puts $ch "[list \#\#nagelfar subcmd $item] $::subCmd($item)"
+            }
+            foreach item [lsort -dictionary [array names ::option]] {
+                puts $ch "[list \#\#nagelfar option $item] $::option($item)"
+            }
+            foreach item [lsort -dictionary [array names ::return]] {
+                puts $ch "[list \#\#nagelfar return $item] $::return($item)"
+            }
+            close $ch
         }
     }
     if {$::Nagelfar(gui)} {
