@@ -23,8 +23,14 @@ peter.spjuth@space.se
 
 SOME INFO
 
-Note: Messages may not come in line order since a file is not parsed
-in a start-to-end fashion, and things are reported when they are seen.
+A common source of false warnings have to do with call-by-name.
+The syntax checker can be told about procedures using call-by-name
+using inline comments or separate info files. See syntax.syntax and
+tests/test.syntax for examples.
+
+
+Messages may not come in line order since a file is not parsed in a
+straight start-to-end fashion, and things are reported when they are seen.
 Specially, unknown commands are not reported until the end when
 it can be checked if such proc was defined later.
 
@@ -70,7 +76,6 @@ TODO
 Handle widgets -command options, bind code and other callbacks
 Handle e.g. -textvariable
 Handle namespaces and qualified vars
-Handle multiple files. Remember variables.
 Everything marked FIXA
 Give this program a silly name. (maybe Psyche, Peter's SYntax CHEcker)
 Optimise. Always optimise.
