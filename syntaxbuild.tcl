@@ -74,30 +74,19 @@ proc buildDb {ch} {
     puts $ch [list set ::knownCommands $::kC]
     puts $ch [list set ::knownProcs $::kP]
 
-    # Build a database of options and subcommands
-    # TODO: Add all such commands
-    foreach cmd {info string file image interp namespace winfo} {
-        set subCmd($cmd) [getSubCmds $cmd gurkmeja]
-    }
-
-    set subCmd(wm) [getSubCmds wm gurkmeja .]
-    set subCmd(array) [getSubCmds array gurkmeja apa]
-    set subCmd(binary) [getSubCmds binary gurkmeja]
-
-    foreach cmd {glob switch} {
-        set option($cmd) [getSubCmds $cmd -gurkmeja]
-    }
-    foreach cmd {lsort subst} {
-        set option($cmd) [getSubCmds $cmd -gurkmeja g]
-    }
-    set option(fconfigure) [getSubCmds fconfigure stdin -gurkmeja]
-    set option(lsearch) [getSubCmds lsearch -gurkmeja g g]
-
     # Below is the hardcoded syntax for many core commands.
     # It is defined using the "language" below.
     # TODO: Add all core commands.
 
-    # If syntax is an integer, just check the number of arguments agains it.
+    # An entry should be a valid list of tokens as described below.
+
+    # If the first token ends with : it means that there are different
+    # syntax descriptions for different number of arguments.
+    # Any token ending with : starts a syntax for the number of arguments
+    # that the number preceding it says. A lone : starts the default syntax.
+    # Example "1: x 2: n n : e x*"
+
+    # If a token is an integer, just check the number of arguments against it.
     # r min ?max?  Specify a range for number of arguments
 
     # x Any
@@ -105,6 +94,7 @@ proc buildDb {ch} {
     # p Option+Any (p as in option Pair)
     # s Subcommand
     # e Expression
+    # E Expression that should be in braces
     # c Code
     # n, v and l all marks variable names. Those arguments will not be
     #   checked against known variables to detect missing $.
@@ -121,116 +111,144 @@ proc buildDb {ch} {
     # s may only have .
     # e and c may not have any modifier
 
-    # The following commands are handled directly be the code:
-    # global, upvar, variable, set
-    # if, switch, foreach
-    # expr, proc, bind, eval
-    # interp, namespace, uplevel
+    # If a syntax for a subcommand is defined, it is used to check the rest
 
-    # Starting to build up for all commands
-    #set syntax(after)
-    #set syntax(bgerror)
-    #set syntax(dde)
+    # Syntax for all Tcl core commands
+
+    set syntax(after)           "r 1"
+    set syntax(append)          "n x*"
+    set syntax(array)           "s n x*"
+    set syntax(array\ names)    "v x?"
+    set syntax(binary)          "s x*"
+    set syntax(binary\ scan)    "x x n n*"
+    set syntax(break)            0
+    set syntax(catch)           "c n?"
+    set syntax(cd)              "r 0 1"
+    set syntax(close)            1
+    set syntax(concat)          "r 0"
+    set syntax(continue)         0
+    set syntax(clock)           "s x*"
+    set syntax(dde)             "o? s x*"
     #set syntax(encoding)
     #set syntax(eof)
+    set syntax(error)           "r 1 3"
+    # eval is handled specially
     #set syntax(exec)
+    set syntax(exit)            "r 0 1"
+    # expr is handled specially
     #set syntax(fblocked)
+    set syntax(fconfigure)      "x o. x. p*"
     #set syntax(fcopy)
+    set syntax(file)            "s x*"
+    set syntax(file\ lstat)     "x n"
+    set syntax(file\ stat)      "x n"
     #set syntax(fileevent)
     #set syntax(filename)
     #set syntax(flush)
+    set syntax(for)             "c E c c"
+    # foreach is handled specially
+    set syntax(format)          "r 1"
+    set syntax(gets)            "x n?"
+    set syntax(glob)            "o* x x*"
+    # global is handled specially
     #set syntax(history)
+    # if is handled specially
+    set syntax(incr)            "v x?"
+    set syntax(info)            "s x*"
+    set syntax(info\ exists)    "l"
+    set syntax(info\ default)   "x x n"
+    # interp is handled specially
+    set syntax(interp)          "s x*"
+    set syntax(join)            "r 1 2"
+    set syntax(lappend)         "n x*"
+    set syntax(lindex)           2
     #set syntax(linsert)
+    set syntax(list)            "r 0"
+    set syntax(llength)          1
     #set syntax(load)
+    set syntax(lrange)           3
+    set syntax(lreplace)        "r 3"
+    set syntax(lsearch)         "o? x x"
+    set syntax(lsort)           "o* x"
     #set syntax(memory)
     #set syntax(msgcat)
+    # namespace is handled specially
+    set syntax(namespace)       "s x*"
+    set syntax(open)            "r 1 3"
+    set syntax(package)         "s x*"
     #set syntax(parray)
     #set syntax(pid)
+    # proc is handled specially
+    set syntax(puts)            "1: x : o? x x?"
+    set syntax(pwd)              0
+    set syntax(read)            "r 1 2"
+    set syntax(regexp)          "o* x x n*"
     #set syntax(registry)
+    set syntax(regsub)          "o* x x x n"
+    set syntax(rename)           2   ;# Maybe treat rename specially?
     #set syntax(resource)
+    set syntax(return)          "p* x?"
+    set syntax(scan)            "x x n*"
     #set syntax(seek)
+    # set is handled specially
+    set syntax(set)             "1: v : n x"
     #set syntax(socket)
+    set syntax(source)           1
+    set syntax(split)           "r 1 2"
+    set syntax(string)          "s x x*"
+    set syntax(subst)           "o* x"
+    # switch is handled specially
     #set syntax(tell)
-    #set syntax(time)
+    set syntax(time)            "r 1 2"
+    # variable is handled specially
     #set syntax(vwait)
-
-    # Commands with a set number of arguments that are not checked.
-    set syntax(break)    0
-    set syntax(continue) 0
-    set syntax(pwd)      0
-    set syntax(close)    1
-    set syntax(llength)  1
-    set syntax(source)   1
-    set syntax(lindex)   2
-    set syntax(rename)   2 ;# Maybe treat rename specially?
-    set syntax(lrange)   3
-
-    # Commands with a varying number of arguments that are not checked.
-    set syntax(list)     "r 0"
-    set syntax(concat)   "r 0"
-    set syntax(console)  "r 1"
-    set syntax(format)   "r 1"
-    set syntax(lreplace) "r 3"
-    set syntax(cd)       "r 0 1"
-    set syntax(exit)     "r 0 1"
-    set syntax(join)     "r 1 2"
-    set syntax(read)     "r 1 2"
-    set syntax(split)    "r 1 2"
-    set syntax(time)     "r 1 2"
-    set syntax(error)    "r 1 3"
-    set syntax(open)     "r 1 3"
-
-    # Commands with code
-    set syntax(for) "c e c c"
-    set syntax(while) "e c"
-    set syntax(catch) "c n?"
-
-    # Commands with subcommands
-    # If a syntax for a subcommand is defined, it is used to check the rest
-    set syntax(package)      "s x*"
-    set syntax(clock)        "s x*"
-    set syntax(info)         "s x*"
-    set syntax(info\ exists) "l"
-    set syntax(interp)       "s x*"
-    set syntax(file)         "s x*"
-    set syntax(file\ lstat)  "x n"
-    set syntax(file\ stat)   "x n"
-    set syntax(namespace)    "s x*"
-    set syntax(package)      "s x*"
-    set syntax(string)       "s x x*"
-    set syntax(array)        "s n x*"
-    set syntax(array\ names) "v x?"
-    set syntax(update)       "s."
-    set syntax(binary)       "s x*"
-    set syntax(binary\ scan) "x x n n*"
-    set syntax(trace)        "s x x*"
+    set syntax(while)           "E c"
+    set syntax(trace)           "s x x*"
     set syntax(trace\ variable) "n x x"
-    set syntax(trace\ vinfo) "l"
+    set syntax(trace\ vinfo)    "l"
+    set syntax(unset)           "l l*"
+    set syntax(update)          "s."
+    # uplevel is handled specially
+    # upvar is handled specially
+
+    # Syntax for Tk commands
 
     if {$useTk} {
-	set syntax(winfo) "s x x*"
-        set syntax(wm)    "s x x*"
+        # bind is handled specially
+        set syntax(console)  "r 1"
+	set syntax(winfo)    "s x x*"
+        set syntax(wm)       "s x x*"
     }
 
-    # General commands
-    set syntax(fconfigure) "x o. x. p*"
-    set syntax(glob)       "o* x x*"
-    set syntax(lsearch) "o? x x"
-    set syntax(lsort)      "o* x"
-    set syntax(puts) "o? x x?"
-    set syntax(return) "p* x?"
-    set syntax(regsub) "o* x x x n"
-    set syntax(subst)      "o* x"
+    # Build a database of options and subcommands
 
-    set syntax(gets) "x n?"
+    # Get subcommands for commands that can't use the standard form
+    set subCmd(wm) [getSubCmds wm gurkmeja .]
+    set subCmd(array) [getSubCmds array gurkmeja apa]
 
-    set syntax(append) "n x*"
-    set syntax(lappend) "n x*"
-    set syntax(incr) "v x?"
-    set syntax(regexp) "o* x x n*"
+    # Get subcommands for any commands defining "s"
+    foreach cmd [array names syntax] {
+        if {![info exists subCmd($cmd)] && \
+                [lsearch -glob $syntax($cmd) "s*"] >= 0} {
+            set subCmd($cmd) [getSubCmds $cmd gurkmeja]
+        }
+    }
 
-    set syntax(scan) "x x n*"
-    set syntax(unset) "l l*"
+    # Get options
+    foreach cmd {glob switch} {
+        set option($cmd) [getSubCmds $cmd -gurkmeja]
+    }
+    foreach cmd {lsort subst} {
+        set option($cmd) [getSubCmds $cmd -gurkmeja g]
+    }
+    set option(fconfigure) [getSubCmds fconfigure stdin -gurkmeja]
+    set option(lsearch) [getSubCmds lsearch -gurkmeja g g]
+
+    # The default for options is not to take a value unless 'p' is
+    # used in the syntax definition.
+    # If an index can be fund below, it takes a value.
+    set option(lsort\ -index) 1
+    set option(lsort\ -command) 1
 
     # Build syntax info for procs
     foreach apa $::kP {
