@@ -1,5 +1,5 @@
 # This script is intended to be run in a Tcl interpreter to extract
-# information for the syntax checker.
+# information for the Nagelfar syntax checker.
 #
 # This file contains hardcoded syntax info for many commands that it
 # adds to the resulting syntax database, plus it tries to extract info
@@ -97,13 +97,19 @@ proc buildDb {ch} {
     puts $ch "# Automatically generated syntax database."
     puts -nonewline $ch "# Generated with syntaxbuild "
     puts $ch [string trim {$Revision$} \$]
+    puts $ch ""
 
     set useTk [expr {![catch {package present Tk}]}]
-    if {!$useTk} {
-        puts $ch "# Based on Tcl version $patch\n"
-    } else {
-        puts $ch "# Based on Tcl/Tk version $patch\n"
+    set dbstring "Tcl $patch $::tcl_platform(platform)"
+    if {$useTk} {
+        append dbstring ", Tk $::tk_patchLevel"
+        if {![catch {tk windowingsystem}]} {
+            append dbstring " [tk windowingsystem]"
+        }
     }
+
+    puts $ch [list lappend ::dbInfo $dbstring]
+    puts $ch [list set ::dbTclVersion [package present Tcl]]
     puts $ch [list set ::knownGlobals $::kG]
     puts $ch [list set ::knownCommands $::kC]
 
