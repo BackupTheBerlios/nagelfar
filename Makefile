@@ -55,7 +55,8 @@ setup: links
 # Concatening source
 #----------------------------------------------------------------
 
-CATFILES = src/nagelfar.tcl src/startup.tcl
+CATFILES = src/nagelfar.tcl src/gui.tcl src/dbbrowser.tcl \
+	src/registry.tcl src/preferences.tcl src/startup.tcl
 
 
 nagelfar.tcl: $(CATFILES)
@@ -72,7 +73,7 @@ spell:
 check:
 	@./nagelfar.tcl -strictappend nagelfar.tcl
 
-test:
+test: base
 	@./tests/all.tcl $(TESTFLAGS)
 
 test85:
@@ -83,7 +84,7 @@ test85:
 #----------------------------------------------------------------
 
 # Source files for code coverage
-SRCFILES = nagelfar.tcl
+SRCFILES = $(CATFILES)
 IFILES   = $(SRCFILES:.tcl=.tcl_i)
 LOGFILES = $(SRCFILES:.tcl=.tcl_log)
 MFILES   = $(SRCFILES:.tcl=.tcl_m)
@@ -96,8 +97,14 @@ MFILES   = $(SRCFILES:.tcl=.tcl_m)
 instrument: $(IFILES)
 	@rm -f $(LOGFILES)
 
+# Top file for coverage run
+nagelfar.tcl_i: $(IFILES)
+	@rm -f nagelfar.tcl_i
+	@touch nagelfar.tcl_i
+	@for i in $(IFILES) ; do echo "source $$i" >> nagelfar.tcl_i ; done
+
 # Run tests to create log file.
-testcover $(LOGFILES): $(IFILES)
+testcover $(LOGFILES): nagelfar.tcl_i
 	@./tests/all.tcl $(TESTFLAGS)
 	@$(TCLSH85) ./tests/all.tcl -match expand-*
 
@@ -111,7 +118,7 @@ icheck: $(MFILES)
 
 # Remove code coverage files
 clean:
-	@rm -f $(LOGFILES) $(IFILES) $(MFILES)
+	@rm -f $(LOGFILES) $(IFILES) $(MFILES) nagelfar.tcl_i
 
 #----------------------------------------------------------------
 # Generating test examples
@@ -122,7 +129,7 @@ misctests/test.result: misctests/test.tcl nagelfar.tcl
 
 misctests/test.html: misctests/test.tcl misctests/htmlize.tcl \
 		misctests/test.result
-	cd misctests; ./htmlize.tcl
+	@cd misctests; ./htmlize.tcl
 
 misctest: misctests/test.result misctests/test.html
 
