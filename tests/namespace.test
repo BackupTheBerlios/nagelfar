@@ -4,7 +4,7 @@
 # $Revision$
 #----------------------------------------------------------------------
 
-test nagelfar-14.1 {
+test namespace-1.1 {
     Namespaces, procs in namespace
 } -body {
     createTestFile {
@@ -19,7 +19,7 @@ test nagelfar-14.1 {
     execTestFile
 } -result {%%}
 
-test nagelfar-14.2 {
+test namespace-1.2 {
     Namespaces, procs in namespace
 } -body {
     createTestFile {
@@ -35,7 +35,37 @@ test nagelfar-14.2 {
     execTestFile
 } -result {%%}
 
-test nagelfar-14.3 {
+test namespace-1.3 {
+    Namespaces, procs 2-pass
+} -body {
+    createTestFile {
+        proc apa::cepa {hej hopp} {
+            set apa [bepa $hej $hopp happ]
+        }
+        proc apa::bepa {hej hopp} {
+            set apa $hej
+        }
+    }
+    execTestFile -flags -dbpicky
+} -result {%%Line   3: E Wrong number of arguments (3) to "apa::bepa"}
+
+test namespace-1.4 {
+    Namespaces, procs 2-pass, ns eval version
+} -body {
+    createTestFile {
+        namespace eval apa {
+            proc cepa {hej hopp} {
+                set apa [bepa $hej $hopp happ]
+            }
+            proc bepa {hej hopp} {
+                set apa $hej
+            }
+        }
+    }
+    execTestFile
+} -result {%%Line   4: E Wrong number of arguments (3) to "apa::bepa"}
+
+test namespace-2.1 {
     Namespaces, imported procs
 } -constraints {
     knownbug
