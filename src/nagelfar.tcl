@@ -24,20 +24,21 @@
 # the next line restarts using tclsh \
 exec tclsh "$0" "$@"
 
-# Collect default syntax data
-# This must be done first, before we start to pollute.
-set defknownGlobals  [info globals]
-set defknownCommands [info commands]
-set defknownProcs    [info procs]
-
-set version "Version 0.1 2002-08-21"
+set debug 1
+set version "Version 0.1+ 2002-08-27"
 set thisScript [file join [pwd] [info script]]
 set thisDir    [file dirname $thisScript]
+
+# Follow any link
 if {[file type $thisScript] == "link"} {
     set tmplink [file readlink $thisScript]
     set thisDir [file dirname [file join $thisDir $tmplink]]
     unset tmplink
 }
+
+#####################
+# Syntax check engine
+#####################
 
 # Arguments to many procedures:
 # index     : Index of the start of a string or command.
@@ -54,13 +55,21 @@ if {[file type $thisScript] == "link"} {
 
 # Moved out message handling to make it more flexible
 proc echo {str} {
-    puts $str
+    if {[info exists ::Syntax(resultWin)]} {
+        $::Syntax(resultWin) insert end $str\n
+    } else {
+        puts $str
+    }
     update
 }
 
 # Debug output
 proc decho {str} {
-    puts stderr $str
+    if {[info exists ::Syntax(resultWin)]} {
+        $::Syntax(resultWin) insert end $str\n error
+    } else {
+        puts stderr $str
+    }
     update
 }
 
@@ -572,7 +581,7 @@ proc WA {} {
 # to call it recursively.
 proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
     upvar constantsDontCheck constantsDontCheck knownVars knownVars
-    global Prefs
+
     set argc [llength $argv]
     set syn $::syntax($cmd)
 #    decho "Checking $cmd against syntax $syn"
@@ -626,9 +635,9 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 		    echo "Modifier \"$mod\" is not supported for \"e\" in\
                             syntax for $cmd."
 		}
-		if {[lindex $wordstatus $i] == 0 && $Prefs(warnBraceExpr)} {
+		if {[lindex $wordstatus $i] == 0 && $::Prefs(warnBraceExpr)} {
                     # Allow pure command substitution if warnBraceExpr == 1
-                    if {$Prefs(warnBraceExpr) == 2 || \
+                    if {$::Prefs(warnBraceExpr) == 2 || \
                             [string index [lindex $argv $i] 0] != "\[" || \
                             [string index [lindex $argv $i] end] != "\]" } {
                         errorMsg "Warning: No braces around expression in\
@@ -676,7 +685,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
                             } else {
                                 #Check ambiguity? FIXA
                                 #Report shortened subcmd?
-                                if {$Prefs(warnShortSub)} {
+                                if {$::Prefs(warnShortSub)} {
                                     errorMsg "Shortened subcommand for $cmd,\
                                             $arg ->\
                                             [lindex $::subCmd($cmd) $ix]" \
@@ -713,7 +722,10 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 		while {$i < $ei} {
 		    if {[string equal $tok "v"]} {
 			# Check the variable
-			if {[markVariable [lindex $argv $i] \
+                        if {[string match ::* [lindex $argv $i]]} {
+                            # Skip qualified names until we handle
+                            # namespace better. FIXA
+                        } elseif {[markVariable [lindex $argv $i] \
                                 [lindex $wordstatus $i] 2 $index knownVars]} {
 			    errorMsg "Unknown variable \"[lindex $argv $i]\""\
                                     $index
@@ -1498,90 +1510,540 @@ proc usage {} {
     exit
 }
 
-# End of procs, global code here
+###########
+# GUI stuff
+###########
 
-# Locate default syntax database
-set defaultDb ""
-foreach file [list [file join [pwd] syntaxdb.tcl] \
-        [file join $thisDir syntaxdb.tcl]] {
-    if {[file exists $file]} {
-        set defaultDb $file
-        break
+proc exitApp {} {
+    exit
+}
+
+# Browse for and add a syntax database file
+proc addDbFile {} {
+    set apa [tk_getOpenFile -title "Select db file"]
+    if {$apa == ""} return
+
+    lappend ::Syntax(db) $apa
+    lappend ::Syntax(allDb) $apa
+    updateDbSelection 1
+}
+
+# File drop using TkDnd
+proc fileDropDb {files} {
+    foreach file $files {
+        lappend ::Syntax(db) $file
+        lappend ::Syntax(allDb) $file
     }
 }
 
-# Things to run only the first time.
-if {![info exists gurka]} {
-    set gurka 1
-    array set Prefs {
+# Browse for and add a file to check.
+proc addFile {} {
+    set apa [tk_getOpenFile -title "Select file to check" \
+                     -defaultextension .tcl \
+                     -filetypes {{{Tcl File} {.tcl}} {{All Files} {.*}}}]
+    if {$apa == ""} return
+
+    lappend ::Syntax(files) $apa
+}
+
+# Remove a file from the list to check
+proc removeFile {} {
+    set ixs [lsort -decreasing -integer [.ff.lb curselection]]
+    foreach ix $ixs {
+        set ::Syntax(files) [lreplace $::Syntax(files) $ix $ix]
+    }
+}
+
+# File drop using TkDnd
+proc fileDropFile {files} {
+    foreach file $files {
+        lappend ::Syntax(files) $file
+    }
+}
+
+# Execute the checks
+proc doCheck {} {
+    if {[llength $::Syntax(db)] == 0} {
+        if {$::Syntax(gui)} {
+            tk_messageBox -title "Syntax Error" -type ok -icon error \
+                    -message "No syntax database file selected"
+            return
+        } else {
+            puts stderr "No syntax database file found"
+            exit 1
+        }
+    }
+
+    if {[llength $::Syntax(files)] == 0} {
+        tk_messageBox -title "Syntax Error" -type ok -icon error \
+                -message "No files to check"
+        return
+    }
+
+    set ::Syntax(editFile) ""
+    if {[info exists ::Syntax(resultWin)]} {
+        $::Syntax(resultWin) delete 1.0 end
+    }
+
+    # Clear the database first
+    set ::knownGlobals {}
+    set ::knownCommands {}
+    set ::knownProcs {}
+    catch {unset ::syntax}
+    catch {unset ::subCmd}
+    catch {unset ::options}
+
+    foreach f $::Syntax(db) {
+        uplevel #0 [list source $f]
+    }
+
+    set ::currentFile ""
+    foreach f $::Syntax(files) {
+        if {$::Syntax(gui) || [llength $::Syntax(files)] > 1} {
+            set ::currentFile $f
+        }
+        set syntaxfile [file rootname $f].syntax
+        if {[file exists $syntaxfile]} {
+            echo "Parsing file $syntaxfile"
+            parseFile $syntaxfile
+        }
+        if {[file exists $f]} {
+            echo "Checking file $f"
+            parseFile $f
+        } else {
+            if {$::Syntax(gui)} {
+                tk_messageBox -title "Syntax Error" -type ok -icon error \
+                        -message "Could not find file $f"
+            } else {
+                puts stderr "Could not find file $f"
+            }
+        }
+    }
+}
+
+# This shows the file and the line from an error in the result window.
+proc showError {{lineNo {}}} {
+    set w $::Syntax(resultWin) 
+    if {$lineNo == ""} {
+        set lineNo [lindex [split [$w index current] .] 0]
+    }
+
+    set line [$w get $lineNo.0 $lineNo.end]
+
+    if {[regexp {^(.*): Line (\d+):} $line -> fileName fileLine]} {
+        editFile $fileName $fileLine
+    }
+}
+
+proc updateDbSelection {{fromVar 0}} {
+    if {$fromVar} {
+        .fs.lb selection clear 0 end
+        foreach f $::Syntax(db) {
+            set i [lsearch $::Syntax(allDb) $f]
+            if {$i >= 0} {
+                .fs.lb selection set $i
+            }
+        }
+        return
+    }
+
+    set ::Syntax(db) {}
+    foreach ix [.fs.lb curselection] {
+        lappend ::Syntax(db) [lindex $::Syntax(allDb) $ix]
+    }
+}
+
+# Create main window
+proc makeWin {} {
+    option add *Menu.tearOff 0
+    option add *Listbox.exportSelection 0
+
+    eval destroy [winfo children .]
+    wm protocol . WM_DELETE_WINDOW exitApp
+    wm title . "Tcl Syntax Checker"
+    wm withdraw .
+
+    # Syntax file section
+
+    frame .fs
+    label .fs.l -text "Syntax database files"
+    button .fs.b -text "Add" -command addDbFile
+    listbox .fs.lb -yscrollcommand ".fs.sby set" -listvariable ::Syntax(allDb) \
+            -height 4 -width 40 -selectmode extended
+    updateDbSelection 1
+    bind .fs.lb <<ListboxSelect>> updateDbSelection
+    scrollbar .fs.sby -orient vertical -command ".fs.lb set"
+
+    grid .fs.l -sticky w
+    grid .fs.b -sticky w
+    grid .fs.lb .fs.sby -sticky news
+    grid columnconfigure .fs 0 -weight 1
+    grid rowconfigure .fs 2 -weight 1
+    
+    
+    # File section
+
+    frame .ff
+    label .ff.l -text "Tcl files to check"
+    button .ff.b -text "Add" -command addFile
+    listbox .ff.lb -yscrollcommand ".ff.sby set" \
+            -listvariable ::Syntax(files) \
+            -height 4 -width 40
+    scrollbar .ff.sby -orient vertical -command ".ff.lb set"
+    bind .ff.lb <Key-Delete> "removeFile"
+    bind .ff.lb <Button-1> "focus .ff.lb"
+
+    grid .ff.l -sticky w
+    grid .ff.b -sticky w
+    grid .ff.lb .ff.sby -sticky news
+    grid columnconfigure .ff 0 -weight 1
+    grid rowconfigure .ff 2 -weight 1
+
+    # Set up file dropping in listboxes if TkDnd is available
+    if {![catch {package require tkdnd}]} {
+        dnd bindtarget .fs.lb text/uri-list <Drop> {fileDropDb %D}
+        dnd bindtarget .ff.lb text/uri-list <Drop> {fileDropFile %D}
+    }
+
+    # Result section
+
+    set ::Syntax(resultWin) .fr.t
+    frame .fr
+    button .fr.b -text "Check" -command "doCheck"
+    text .fr.t -width 100 -height 25 -wrap none \
+            -xscrollcommand ".fr.sbx set" \
+            -yscrollcommand ".fr.sby set"
+    scrollbar .fr.sbx -orient horizontal -command ".fr.t xview"
+    scrollbar .fr.sby -orient vertical -command ".fr.t yview"
+
+    grid .fr.b         -sticky w
+    grid .fr.t .fr.sby -sticky news
+    grid .fr.sbx       -sticky we
+    grid columnconfigure .fr 0 -weight 1
+    grid rowconfigure .fr 1 -weight 1
+
+    .fr.t tag configure error -foreground red
+    bind .fr.t <Double-Button-1> "showError ; break"
+
+    # Use the panedwindow in 8.4
+    if {[package present Tk] >= 8.4} {
+        panedwindow .pw -orient vertical
+        lower .pw
+        frame .pw.f
+        grid .fs .ff -in .pw.f -sticky news 
+        grid columnconfigure .pw.f {0 1} -weight 1 -uniform a
+        grid rowconfigure .pw.f 0 -weight 1
+
+        # Make sure the frames have calculated their size before
+        # adding them to the pane
+        update idletasks
+        .pw add .pw.f -sticky news
+        .pw add .fr   -sticky news
+        pack .pw -fill both -expand 1
+    } else {
+        grid .fs .ff -sticky news
+        grid .fr -   -sticky news
+        grid columnconfigure . {0 1} -weight 1
+        grid rowconfigure . 1 -weight 1
+    }
+
+    # Menus
+
+    menu .m
+    . configure -menu .m
+
+    .m add cascade -label "File" -menu .m.mf
+    menu .m.mf
+    .m.mf add command -label "Add File" -command addFile
+    .m.mf add command -label "Add Database" -command addDbFile
+    .m.mf add separator
+    .m.mf add command -label "Quit" -command exitApp
+
+    .m add cascade -label "Options" -menu .m.mo
+    menu .m.mo
+    .m.mo add checkbutton -label "Warn about shortened subcommands" \
+            -variable ::Prefs(warnShortSub)
+    .m.mo add cascade -label "Braced expressions" -menu .m.mo.mb
+    menu .m.mo.mb
+    .m.mo.mb add radiobutton -label "Allow unbraced" \
+            -variable ::Prefs(warnBraceExpr) -value 0
+    .m.mo.mb add radiobutton -label {Allow 'if [cmd] {xxx}'} \
+            -variable ::Prefs(warnBraceExpr) -value 1
+    .m.mo.mb add radiobutton -label "Warn on any unbraced" \
+            -variable ::Prefs(warnBraceExpr) -value 2
+
+    # Debug menu
+
+    if {$::debug == 1} {
+        .m add cascade -label "Debug" -menu .m.md
+        menu .m.md
+        if {$::tcl_platform(platform) == "windows"} {
+            .m.md add checkbutton -label Console -variable consolestate \
+                    -onvalue show -offvalue hide \
+                    -command {console $consolestate}
+            .m.md add separator
+        }
+        .m.md add command -label "Reread Source" -command {source $thisScript}
+        .m.md add separator
+        .m.md add command -label "Redraw Window" -command {makeWin}
+        .m.md add separator
+        .m.md add command -label "Normal Cursor" -command {normalCursor}
+    }
+
+    # Help menu is last
+
+    .m add cascade -label "Help" -menu .m.mh
+    menu .m.mh
+    .m.mh add command -label About -command makeAboutWin
+
+
+    wm deiconify .
+}
+
+#############################
+# A simple file viewer/editor
+#############################
+
+proc editFile {filename lineNo} {
+    if {[winfo exists .fv]} {
+        wm deiconify .fv
+        raise .fv
+    } else {
+        toplevel .fv
+        text .fv.t -width 80 -height 25 -font {Courier 8} \
+                -xscrollcommand ".fv.sbx set" \
+                -yscrollcommand ".fv.sby set"
+        scrollbar .fv.sbx -orient horizontal -command ".fv.t xview"
+        scrollbar .fv.sby -orient vertical   -command ".fv.t yview"
+        frame .fv.f
+        grid .fv.t .fv.sby -sticky news
+        grid .fv.sbx       -sticky we
+        grid .fv.f -       -sticky we
+        grid columnconfigure .fv 0 -weight 0
+        grid rowconfigure .fv 0 -weight 0
+
+        menu .fv.m
+        .fv configure -menu .fv.m
+        .fv.m add cascade -label "File" -menu .fv.m.mf
+        menu .fv.m.mf
+        .fv.m.mf add command -label "Save" -command "saveFile"
+        .fv.m.mf add separator
+        .fv.m.mf add command -label "Close" -command "closeFile"
+
+        label .fv.f.ln -width 5 -textvariable ::Syntax(lineNo)
+        pack .fv.f.ln -side right
+
+        bind .fv.t <Any-Key> {
+            after idle {set ::Syntax(lineNo) \
+                                [lindex [split [.fv.t index insert] .] 0]}
+        }
+        wm protocol .fv WM_DELETE_WINDOW closeFile
+        .fv.t tag configure hl -background yellow
+        if {[info exists ::Syntax(editFileGeom)]} {
+            wm geometry .fv $::Syntax(editFileGeom)
+        } else {
+            after idle {after 1 {
+                set ::Syntax(editFileOrigGeom) [wm geometry .fv]
+            }}
+        }
+    }
+
+    if {![info exists ::Syntax(editFile)] || \
+                $filename != $::Syntax(editFile)} {
+        .fv.t delete 1.0 end
+        set ::Syntax(editFile) $filename
+        wm title .fv [file tail $filename]
+
+        # Try to figure out eol style
+        set ch [open $filename r]
+        fconfigure $ch -translation binary
+        set data [read $ch 400]
+        close $ch
+        
+        set crCnt [expr {[llength [split $data \r]] - 1}]
+        set lfCnt [expr {[llength [split $data \n]] - 1}]
+        if {$crCnt == 0 && $lfCnt > 0} {
+            set ::Syntax(editFileTranslation) lf
+        } elseif {$crCnt > 0 && $crCnt == $lfCnt} {
+            set ::Syntax(editFileTranslation) crlf
+        } elseif {$lfCnt == 0 && $crCnt > 0} {
+            set ::Syntax(editFileTranslation) cr
+        } else {
+            set ::Syntax(editFileTranslation) auto
+        }
+            
+        #puts "EOL $::Syntax(editFileTranslation)"
+
+        set ch [open $filename r]
+        set data [read $ch]
+        close $ch
+        .fv.t insert end $data
+    }
+   
+    .fv.t tag remove hl 1.0 end
+    .fv.t tag add hl $lineNo.0 $lineNo.end
+    .fv.t mark set insert $lineNo.0
+    focus .fv.t
+    set ::Syntax(lineNo) $lineNo
+    #update idletasks
+    after 1 {after idle {.fv.t see insert}}
+}
+
+proc saveFile {} {
+    if {[tk_messageBox -parent .fv -title "Save File" -type okcancel \
+                 -icon question \
+                 -message "Save file\n$::Syntax(editFile)"] != "ok"} {
+        return
+    }
+    set ch [open $::Syntax(editFile) w]
+    fconfigure $ch -translation $::Syntax(editFileTranslation)
+    puts -nonewline $ch [.fv.t get 1.0 end-1char]
+    close $ch
+}
+
+proc closeFile {} {
+    if {[info exists ::Syntax(editFileGeom)] || \
+                ([info exists ::Syntax(editFileOrigGeom)] && \
+                         $::Syntax(editFileOrigGeom) != [wm geometry .fv])} {
+        set ::Syntax(editFileGeom) [wm geometry .fv]
+    }
+
+    destroy .fv
+    set ::Syntax(editFile) ""
+}
+
+
+######
+# Help
+######
+
+proc makeAboutWin {} {
+    global version
+    destroy .ab
+
+    toplevel .ab
+    wm title .ab "About syntax checker"
+    text .ab.t -width 45 -height 7 -wrap word
+    button .ab.b -text "Close" -command "destroy .ab"
+    pack .ab.b -side bottom
+    pack .ab.t -side top -expand y -fill both
+
+    .ab.t insert end "A syntax checker for Tcl\n\n"
+    .ab.t insert end "$version\n\n"
+    .ab.t insert end "Made by Peter Spjuth\n"
+    .ab.t insert end "E-Mail: peter.spjuth@space.se"
+}
+
+#########
+# Options
+#########
+
+proc saveOptions {} {
+    set ch [open "~/.syntaxrc" w]
+
+    foreach i [array names ::Prefs] {
+        puts $ch [list set ::Prefs($i) $::Prefs($i)]
+    }
+    close $ch
+}
+
+proc getOptions {} {
+    array set ::Prefs {
         warnBraceExpr 2
         warnShortSub 1
     }
-    if {$argc >= 1} {
-        set dbfiles {}
-        set files {}
-        for {set i 0} {$i < $argc} {incr i} {
-            set arg [lindex $argv $i]
-            switch -glob -- $arg {
-                -h* {
-                    usage
-                }
-                -s {
-                    incr i
-                    lappend dbfiles [lindex $argv $i]
-                }
-                -Wexpr* {
-                    set Prefs(warnBraceExpr) [string range $arg 6 end]
-                }
-                -Wsub* {
-                    set Prefs(warnShortSub) [string range $arg 5 end]
-                }
-                -* {
-                    puts "Unknown option $arg."
-                    usage
-                }
-                default {
-                    lappend files $arg
-                }
-            }
-        }
-	if {[llength $dbfiles] == 0} {
-            if {$defaultDb == ""} {
-                puts "No syntax database file."
-                set knownGlobals  $defknownGlobals
-                set knownCommands $defknownCommands
-                set knownProcs    $defknownProcs
-            } else {
-                source $defaultDb
-            }
-        } else {
-	    foreach f $dbfiles {
-		source $f
-	    }
-	}
-	set ::currentFile ""
-        foreach f $files {
-	    if {[llength $files] > 1} {
-		set ::currentFile $f
-	    }
-	    set syntaxfile [file rootname $f].syntax
-	    if {[file exists $syntaxfile]} {
-		puts "Parsing file $syntaxfile"
-		parseFile $syntaxfile
-	    }
-            puts "Checking file $f"
-            parseFile $f
-        }
-        exit
-    } else {
-        #We have no arguments. Just try to load the syntaxDb.
-        if {$defaultDb == ""} {
-            puts "No syntax database file."
-            set knownGlobals  $defknownGlobals
-            set knownCommands $defknownCommands
-            set knownProcs    $defknownProcs
-        } else {
-            source $defaultDb
-        }
+
+    if {[file exists "~/.syntaxrc"]} {
+        source "~/.syntaxrc"
     }
 }
+
+################################
+# End of procs, global code here
+################################
+
+# Global code is only run first time to allow re-sourcing
+if {![info exists gurka]} {
+    set gurka 1
+    set ::Syntax(db) {}
+    set ::Syntax(files) {}
+    set ::Syntax(gui) 0
+    getOptions
+
+    # Locate default syntax database(s)
+    set ::Syntax(allDb) {}
+    set apa {}
+    lappend apa [file join [pwd] syntaxdb.tcl]
+    eval lappend apa [glob -nocomplain [file join [pwd] syntaxdb*.tcl]]
+    while {$thisDir != "." && [file tail $thisDir] == "."} {
+	set thisDir [file dirname $thisDir]
+    }
+    lappend apa [file join $thisDir syntaxdb.tcl]
+    eval lappend apa [glob -nocomplain [file join $thisDir syntaxdb*.tcl]]
+
+    foreach file $apa {
+        if {[file exists $file] && [lsearch $::Syntax(allDb) $file] == -1} {
+            lappend ::Syntax(allDb) $file
+        }
+    }
+    
+    # Parse command line options
+    for {set i 0} {$i < $argc} {incr i} {
+        set arg [lindex $argv $i]
+        switch -glob -- $arg {
+            --h* -
+            -h* {
+                usage
+            }
+            -s {
+                incr i
+                lappend ::Syntax(db) [lindex $argv $i]
+                lappend ::Syntax(allDb) [lindex $argv $i]
+            }
+            -gui {
+                set ::Syntax(gui) 1
+            }
+            -Wexpr* {
+                set ::Prefs(warnBraceExpr) [string range $arg 6 end]
+            }
+            -Wsub* {
+                set ::Prefs(warnShortSub) [string range $arg 5 end]
+            }
+            -* {
+                puts "Unknown option $arg."
+                usage
+            }
+            default {
+                lappend ::Syntax(files) $arg
+            }
+        }
+    }
+
+    # Use default database if none were given
+    if {[llength $::Syntax(db)] == 0} {
+        if {[llength $::Syntax(allDb)] != 0} {
+            lappend ::Syntax(db) [lindex $::Syntax(allDb) 0]
+        }
+    }
+
+    # If there is no file specified, try invoking a GUI
+    if {$::Syntax(gui) || [llength $::Syntax(files)] == 0} {
+        if {[catch {package require Tk}]} {
+            if {$::Syntax(gui)} {
+                puts stderr "Failed to start GUI"
+                exit 1
+            } else {
+                puts stderr "No files specified"
+                exit 1
+            }
+        }
+        set ::Syntax(gui) 1
+        makeWin
+        vwait forever
+        exit
+    }
+
+    doCheck
+    exit
+}
+
