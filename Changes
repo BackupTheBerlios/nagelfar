@@ -1,3 +1,9 @@
+2004-04-13
+ Improved types a bit to allow the type 'varName' to indicate a variable name.
+ Added new inline comments to allow controlling of all database fields.
+ All inline comments now starts with ##nagelfar.
+ Improved how upvar #0 is handled.
+
 2004-04-07
  Fixed a bug in subcommand checking. Subcommands later than first
  argument did not work.
