@@ -405,6 +405,19 @@ test nagelfar-8.1 {
     execTestFile
 } -result {should detect missing dollar}
 
+test nagelfar-8.2 {
+    Variable handling, -novar flag
+} -setup {
+    createTestFile {
+        proc hej {x y} {
+            set apa bepa
+            set cepa apa
+        }
+    }
+} -body {
+    execTestFile -flags -novar
+} -result {%%}
+
 test nagelfar-9.1 {
     if statement, as comment
 } -setup {
@@ -533,6 +546,27 @@ test nagelfar-12.3 {
     execTestFile -flags -2pass
 } -result "%%Line   4: N Suspicious \# char. Possibly a bad comment."
 
+test nagelfar-12.4 {
+    Comments, should not complain too much
+} -setup {
+    createTestFile {
+        if {[catch {
+            set apa bepa
+            # An ok comment
+            set apa bepa
+        }]} {
+            # An ok comment
+        }
+        if 0 {
+            set apa bepa
+            # An ok comment
+            set apa bepa
+        }
+    }
+} -body {
+    execTestFile
+} -result "%%"
+
 test nagelfar-13.1 {
     Syntax database, multiple ?
 } -setup {
@@ -541,6 +575,58 @@ test nagelfar-13.1 {
         array names hej
         array names hej *a*
         array names hej -regexp *a*
+    }
+} -body {
+    execTestFile
+} -result {%%}
+
+test nagelfar-14.1 {
+    Namespaces, procs in namespace
+} -setup {
+    createTestFile {
+        namespace eval apa {}
+        proc apa::bepa {hej hopp} {
+            set apa $hej
+        }
+        proc apa::cepa {hej hopp} {
+            set apa [bepa $hej $hopp]
+        }
+    }
+} -body {
+    execTestFile
+} -result {%%}
+
+test nagelfar-14.2 {
+    Namespaces, procs in namespace
+} -setup {
+    createTestFile {
+        namespace eval apa {
+            proc bepa {hej hopp} {
+                set apa $hej
+            }
+        }
+        proc apa::cepa {hej hopp} {
+            set apa [bepa $hej $hopp]
+        }
+    }
+} -body {
+    execTestFile
+} -result {%%}
+
+test nagelfar-14.3 {
+    Namespaces, imported procs
+} -constraints { 
+    knownbug
+} -setup {
+    createTestFile {
+        namespace eval apa {}
+        proc apa::bepa {hej hopp} {
+            set apa $hej
+        }
+        namespace import apa::bepa
+        proc cepa {hej hopp} {
+            set apa [bepa $hej $hopp]
+        }
     }
 } -body {
     execTestFile
