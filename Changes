@@ -1,0 +1,16 @@
+
+2002-08-29
+ Added support in syntax database for expressing different
+ definitions for different number of arguments.
+
+ Added support to mix options that are followed by a value and
+ options that don't.
+
+ Detect shortened options, just like shortened subcommands.
+  
+ Separate checks for expressions that need braces and those who don't.
+ Those who need it are always checked regardless of the check-braced-expr
+ option.
+
+
+Started on this file after v0.2
