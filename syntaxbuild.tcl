@@ -1,13 +1,17 @@
 # This script is intended to be run in a Tcl interpreter to extract
 # information for the syntax checker.
 #
+# This file contains hardcoded syntax info for many commands that it
+# adds to the resulting syntax database, plus it tries to extract info
+# from the interpreter about things like subcommands.
+#
 # $Revision$
 
 # First get some data about the system
 
-set kG [lsort [info globals]]
-set kC [lsort [info commands]]
-set kP [lsort [info procs]]
+set ::kG [lsort [info globals]]
+set ::kC [lsort [info commands]]
+set ::kP [lsort [info procs]]
 
 # Function to get an option or subcommand list from an error message.
 proc getSubCmds {args} {
@@ -55,19 +59,23 @@ proc createSyntax {procName} {
     return $result
 }
 
+# Build a syntax database and write it to a channel
 proc buildDb {ch} {
-    global kG kC kP
-
-    set ver [info tclversion]
+    set ver [info patchlevel]
     
     puts $ch "# Automatically generated syntax database."
-    puts $ch "# Based on Tcl version $ver\n"
-
-    puts $ch [list set knownGlobals $kG]
-    puts $ch [list set knownCommands $kC]
-    puts $ch [list set knownProcs $kP]
+    set useTk [expr {![catch {package present Tk}]}]
+    if {!$useTk} {
+        puts $ch "# Based on Tcl version $ver\n"
+    } else {
+        puts $ch "# Based on Tcl/Tk version $ver\n"
+    }
+    puts $ch [list set knownGlobals $::kG]
+    puts $ch [list set knownCommands $::kC]
+    puts $ch [list set knownProcs $::kP]
     
     # Build a database of options and subcommands
+    # TODO: Add all such commands
     foreach cmd {info string file image} {
         set subCmd($cmd) [getSubCmds $cmd gurkmeja]
     }
@@ -80,14 +88,16 @@ proc buildDb {ch} {
     set option(switch) [getSubCmds switch -gurkmeja]
     set option(lsearch) [getSubCmds lsearch -gurkmeja g g]
 
-    # Define syntax for commands
+    # Below is the hardcoded syntax for many core commands.
+    # It is defined using the "language" below.
+    # TODO: Add all core commands.
     
     # If syntax is an integer, just check the number of arguments agains it.
     # r min ?max?  Specify a range for number of arguments
     
     # x Any
     # o Option, i.e anything starting with -
-    # p Option+Any
+    # p Option+Any (p as in option Pair)
     # s Subcommand
     # e Expression
     # c Code
@@ -141,7 +151,6 @@ proc buildDb {ch} {
     set syntax(clock) "s x*"
     set syntax(info) "s x*"
     set syntax(info\ exists) "l"
-    set syntax(wm) "s x x*"
     set syntax(file) "s x x*"
     set syntax(file\ lstat) "x n"
     set syntax(string) "s x x*"
@@ -152,6 +161,9 @@ proc buildDb {ch} {
     set syntax(update) "s."
     set syntax(binary) "s x*"
     set syntax(binary\ scan) "x x n n*"
+    if {$useTk} {
+        set syntax(wm) "s x x*"
+    }
 
     # General commands
     set syntax(fconfigure) "x o. x. p*"
@@ -171,7 +183,7 @@ proc buildDb {ch} {
     set syntax(unset) "l l*"
 
     # Build syntax info for procs
-    foreach apa $kP {
+    foreach apa $::kP {
         if {![info exists syntax($apa)]} {
             set syntax($apa) [createSyntax $apa]
         }
@@ -183,7 +195,7 @@ proc buildDb {ch} {
         foreach i [lsort [array names $a]] {
             set v [set ${a}($i)]
             if {[llength $v] != 0} {
-                if {[lsearch $kC [lindex [split $i] 0]] == -1} {
+                if {[lsearch $::kC [lindex [split $i] 0]] == -1} {
                     puts stderr "Skipping ${a}($i) since $i is not known."
                 } else {
                     puts $ch [list set ${a}($i) $v]
@@ -194,11 +206,16 @@ proc buildDb {ch} {
     }
 }
 
+# Build a syntax database and write it to a file
 proc buildFile {filename} {
     set ch [open $filename w]
     buildDb $ch
     close $ch
 }
+
+# This file can be sourced into an interactive interpreter.
+# source syntaxbuild.tcl
+# buildFile <filename>
 
 if {!$tcl_interactive} {
     if {$argc == 0 && $tcl_platform(platform) == "windows"} {
