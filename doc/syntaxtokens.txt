@@ -1,14 +1,10 @@
 Nagelfar's syntax descriptions for a command consists of little language
 describing the arguments to the command.
            
-An entry should be a valid list of tokens as described below.
+An entry must be a valid list of tokens as described below.
 
-If the first token ends with : it means that there are different syntax
-descriptions for different number of arguments.  Any token ending
-with : starts a syntax for the number of arguments that the number
-preceding it says. A lone : starts the default syntax.
-
-Example: "1: x 2: n n : e x*"
+Check the syntax database (syntaxdb.tcl) or in the database browser in the
+gui for examples.
 
 <ul>Tokens</ul>
    
@@ -50,5 +46,14 @@ separate descriptions can be set up for each subcommand.
 If a syntax for a subcommand is defined, it is used to check the rest.
 
 ##nagelfar syntax string             s x x*
-##nagelfar syntax string\ bytelength 1
-##nagelfar syntax string\ compare    o* x x
+##nagelfar syntax string\\ bytelength 1
+##nagelfar syntax string\\ compare    o* x x
+
+<ul>Different syntax for different number of arguments</ul>
+
+If the first token ends with : it means that there are different syntax
+descriptions for different number of arguments.  Any token ending
+with : starts a syntax for the number of arguments that the number
+preceding it says. A lone : starts the default syntax.
+
+Example: "1: x 2: n n : e x*"
