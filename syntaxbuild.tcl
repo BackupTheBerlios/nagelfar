@@ -7,6 +7,15 @@
 #
 # $Revision$
 
+# Autoload stuff to have them available
+foreach gurkmeja [array names auto_index] {
+    if {[info procs $gurkmeja] == ""} {
+        eval $auto_index($gurkmeja)
+    }
+}
+unset gurkmeja
+
+
 # First get some data about the system
 
 set ::kG [lsort [info globals]]
@@ -113,7 +122,8 @@ proc buildDb {ch} {
 
     # If a syntax for a subcommand is defined, it is used to check the rest
 
-    # Syntax for all Tcl core commands
+
+    # Syntax for Tcl core commands
 
     set syntax(after)           "r 1"
     set syntax(append)          "n x*"
@@ -128,94 +138,91 @@ proc buildDb {ch} {
     set syntax(concat)          "r 0"
     set syntax(continue)         0
     set syntax(clock)           "s x*"
-    set syntax(dde)             "o? s x*"
-    #set syntax(encoding)
-    #set syntax(eof)
+    set syntax(encoding)        "s x*"
+    set syntax(eof)              1
     set syntax(error)           "r 1 3"
-    # eval is handled specially
-    #set syntax(exec)
+    # "eval" is handled specially
+    set syntax(exec)            "o* x x*"
     set syntax(exit)            "r 0 1"
-    # expr is handled specially
-    #set syntax(fblocked)
+    # "expr" is handled specially
+    set syntax(fblocked)         1
     set syntax(fconfigure)      "x o. x. p*"
-    #set syntax(fcopy)
+    set syntax(fcopy)           "x x p*"
     set syntax(file)            "s x*"
     set syntax(file\ lstat)     "x n"
     set syntax(file\ stat)      "x n"
-    #set syntax(fileevent)
-    #set syntax(filename)
-    #set syntax(flush)
+    set syntax(fileevent)       "x x x?"
+    set syntax(flush)            1
     set syntax(for)             "c E c c"
-    # foreach is handled specially
+    # "foreach" is handled specially
     set syntax(format)          "r 1"
     set syntax(gets)            "x n?"
     set syntax(glob)            "o* x x*"
-    # global is handled specially
-    #set syntax(history)
-    # if is handled specially
+    # "global" is handled specially
+    # "if" is handled specially
     set syntax(incr)            "v x?"
     set syntax(info)            "s x*"
     set syntax(info\ exists)    "l"
     set syntax(info\ default)   "x x n"
-    # interp is handled specially
+    # "interp" is handled specially
     set syntax(interp)          "s x*"
     set syntax(join)            "r 1 2"
     set syntax(lappend)         "n x*"
     set syntax(lindex)           2
-    #set syntax(linsert)
+    set syntax(linsert)         "r 3"
     set syntax(list)            "r 0"
     set syntax(llength)          1
-    #set syntax(load)
+    set syntax(load)            "r 1 3"
     set syntax(lrange)           3
     set syntax(lreplace)        "r 3"
     set syntax(lsearch)         "o? x x"
     set syntax(lsort)           "o* x"
-    #set syntax(memory)
-    #set syntax(msgcat)
-    # namespace is handled specially
+    # "namespace" is handled specially
     set syntax(namespace)       "s x*"
     set syntax(open)            "r 1 3"
     set syntax(package)         "s x*"
-    #set syntax(parray)
-    #set syntax(pid)
-    # proc is handled specially
+    set syntax(pid)             "r 0 1"
+    # "proc" is handled specially
     set syntax(puts)            "1: x : o? x x?"
     set syntax(pwd)              0
     set syntax(read)            "r 1 2"
     set syntax(regexp)          "o* x x n*"
-    #set syntax(registry)
     set syntax(regsub)          "o* x x x n"
     set syntax(rename)           2   ;# Maybe treat rename specially?
-    #set syntax(resource)
     set syntax(return)          "p* x?"
     set syntax(scan)            "x x n*"
-    #set syntax(seek)
-    # set is handled specially
+    set syntax(seek)            "r 2 3"
     set syntax(set)             "1: v : n x"
-    #set syntax(socket)
+    set syntax(socket)          "r 2"
     set syntax(source)           1
     set syntax(split)           "r 1 2"
     set syntax(string)          "s x x*"
     set syntax(subst)           "o* x"
-    # switch is handled specially
-    #set syntax(tell)
+    # "switch" is handled specially
+    set syntax(tell)             1
     set syntax(time)            "r 1 2"
-    # variable is handled specially
-    #set syntax(vwait)
+    # "variable" is handled specially
+    set syntax(vwait)           "n"
     set syntax(while)           "E c"
     set syntax(trace)           "s x x*"
     set syntax(trace\ variable) "n x x"
     set syntax(trace\ vinfo)    "l"
     set syntax(unset)           "l l*"
     set syntax(update)          "s."
-    # uplevel is handled specially
-    # upvar is handled specially
+    # "uplevel" is handled specially
+    # "upvar" is handled specially
+
+    # Some special Tcl commands
+    set syntax(dde)             "o? s x*"
+    set syntax(history)         "r 0"
+    set syntax(parray)          "v"
 
     # Syntax for Tk commands
 
     if {$useTk} {
-        # bind is handled specially
+        # "bind" is handled specially
         set syntax(console)  "r 1"
+        set syntax(image)    "s x*"
 	set syntax(winfo)    "s x x*"
         set syntax(wm)       "s x x*"
     }
@@ -246,7 +253,7 @@ proc buildDb {ch} {
 
     # The default for options is not to take a value unless 'p' is
     # used in the syntax definition.
-    # If an index can be fund below, it takes a value.
+    # If an index can be found below, it takes a value.
     set option(lsort\ -index) 1
     set option(lsort\ -command) 1
 
