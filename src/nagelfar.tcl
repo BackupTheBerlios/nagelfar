@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.0.2+ 2004-12-21"
+set version "Version 1.1 2004-12-22"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -43,7 +43,12 @@ while {[file type $tmplink] == "link"} {
 unset tmplink
 
 # Search where the script is to be able to place e.g. ctext there.
-lappend auto_path $thisDir
+if {[info exists ::starkit::topdir]} {
+    lappend auto_path [file dirname [file normalize $::starkit::topdir]]
+} else {
+    lappend auto_path $thisDir
+}
+puts $auto_path
 
 # A profiling tool
 proc _dumplogme {} {
@@ -2758,16 +2763,18 @@ proc addFilter {pat {reapply 0}} {
     }
     if {$reapply} {
         set w $::Nagelfar(resultWin)
+        $w configure -state normal
         set ln 1
         while {1} {
             set line [$w get $ln.0 $ln.end]
             if {[string match $pat $line]} {
-                $w delete $ln.0 $ln.end
+                $w delete $ln.0 $ln.end+1c
             } else {
                 incr ln
             }
             if {[$w index end] <= $ln} break
         }
+        $w configure -state disabled
     }
 }
 
@@ -4157,6 +4164,6 @@ if {![info exists gurka]} {
     }
 
     doCheck
-    _dumplogme
+    #_dumplogme
     exit
 }
