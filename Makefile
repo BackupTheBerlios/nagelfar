@@ -13,6 +13,7 @@ TCLKIT_WIN     = $(TCLKIT)/tclkit-win32.upx.exe
 # Path to the libraries used
 GRIFFIN = /home/peter/tclkit/griffin.vfs/lib/griffin
 TKDND   = /home/peter/tkdnd/lib/tkdnd1.0
+CTEXT   = /home/peter/src/ctext
 
 # Path to the interpreter used for generating the syntax database
 TCLSHDB  = ~/tcl/install/bin/wish8.4
@@ -36,12 +37,15 @@ nagelfar.vfs/lib/griffin:
 	cd nagelfar.vfs/lib ; ln -s $(GRIFFIN) griffin
 nagelfar.vfs/lib/tkdnd:
 	cd nagelfar.vfs/lib ; ln -s $(TKDND) tkdnd
+nagelfar.vfs/lib/ctext:
+	cd nagelfar.vfs/lib ; ln -s $(CTEXT) ctext
 
 links: nagelfar.vfs/lib/app-nagelfar/nagelfar.tcl \
 	nagelfar.vfs/lib/app-nagelfar/syntaxdb.tcl \
 	nagelfar.vfs/lib/app-nagelfar/doc \
 	nagelfar.vfs/lib/griffin \
-	nagelfar.vfs/lib/tkdnd
+	nagelfar.vfs/lib/tkdnd \
+	nagelfar.vfs/lib/ctext
 
 setup: links
 
@@ -53,13 +57,42 @@ spell:
 	@cat doc/*.txt | ispell -d british -l | sort -u
 
 check:
-	@./nagelfar.tcl nagelfar.tcl
+	@./nagelfar.tcl -strictappend nagelfar.tcl
 
 test:
 	@./tests/all.tcl $(TESTFLAGS)
 
 test85:
-	@$(TCLSH85) ./tests/all.tcl
+	@$(TCLSH85) ./tests/all.tcl $(TESTFLAGS)
+
+#----------------------------------------------------------------
+# Coverage
+#----------------------------------------------------------------
+
+# Instrument source file for code coverage
+nagelfar.tcl_i: nagelfar.tcl
+	@./nagelfar.tcl -instrument nagelfar.tcl
+
+# Target to prepare for code coverage run. Makes sure log file is clear.
+instrument: nagelfar.tcl_i
+	@rm -f nagelfar.tcl_log
+
+# Run tests to create log file.
+nagelfar.tcl_log: nagelfar.tcl_i
+	@./tests/all.tcl $(TESTFLAGS)
+	@$(TCLSH85) ./tests/all.tcl -match expand-*
+
+# Create markup file for better view of result
+nagelfar.tcl_m: nagelfar.tcl_log
+	@./nagelfar.tcl -markup nagelfar.tcl
+
+# View code coverage result
+icheck: nagelfar.tcl_m
+	@eskil -noparse ./nagelfar.tcl ./nagelfar.tcl_m &
+
+# Remove code coverage files
+clean:
+	@rm -f nagelfar.tcl_log nagelfar.tcl_i nagelfar.tcl_m
 
 #----------------------------------------------------------------
 # Generating test examples
