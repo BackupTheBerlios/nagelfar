@@ -52,7 +52,8 @@ FEEDBACK
 
 Bugs and suggestions can be sent to:
 peter.spjuth@space.se
-(I also accept beer and teddybears)
+(I also accept beer and teddybears, or just a note saying you use the
+tool so I get encouraged to work on it.)
 
 
 SOME INFO
