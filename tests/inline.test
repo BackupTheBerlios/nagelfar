@@ -111,7 +111,7 @@ test inline-6.1 {
         set apa [Miffo a b c]
         ##nagelfar filter Unknown variable
         set apa [lindex $Gurka 1]
-        ##nagelfar filter Unknown variable
+        ##nagelfar filter variable
         set apa [Miffo a b c]
     }
     execTestFile
