@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.0b2 2004-02-10"
+set version "Version 1.0b3 2004-03-23"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -239,7 +239,7 @@ proc checkComment {str index knownVarsName} {
     }
     if {[string match "##variable *" $str]} {
         set var [string trim [string range $str 11 end]]
-        markVariable $var 1 1 $index knownVars
+        markVariable $var 1 1 $index knownVars ""
     }
 }
 
@@ -416,15 +416,20 @@ proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
 	if {$max != 0 && $used >= $max} {
 	    break
 	}
-	if {[string equal [string index $arg 0] "-"]} {
+	if {[string match "-*" $arg]} {
 	    incr used
             lappend replaceSyn x
 	    set skip $pair
 	    if {$ws != 0  && $check} {
-                set ix [lsearch $option($cmd) $arg]
+                set ix [lsearch -exact $option($cmd) $arg]
 		if {$ix == -1} {
                     # Check ambiguity.
-                    set match [lsearch -all -inline -glob $option($cmd) $arg*]
+                    if {![regexp {[][?*]} $arg]} {
+                        # Only try globbing if $arg is free from glob chars.
+                        set match [lsearch -all -inline -glob $option($cmd) $arg*]
+                    } else {
+                        set match {}
+                    }
                     if {[llength $match] == 0} {
                         errorMsg E "Bad option $arg to $cmd" $index
                     } elseif {[llength $match] > 1} {
@@ -564,6 +569,7 @@ proc splitList {str index iName} {
 # Parse a variable name, check for existance
 # This is called when a $ is encountered
 # "i" points to the first char after $
+# Returns the type of the variable
 proc parseVar {str len index iName knownVarsName} {
     upvar $iName i $knownVarsName knownVars
     set si $i
@@ -634,7 +640,7 @@ proc parseVar {str len index iName knownVarsName} {
 	    set varindex [string range $str $pi $ei]
 	    set vararr 1
 	    set varindexconst [parseSubst $varindex \
-                    [expr {$index + $pi}] knownVars]
+                    [expr {$index + $pi}] type knownVars]
 	} else {
 	    incr ei -1
 	    set i $ei
@@ -650,12 +656,12 @@ proc parseVar {str len index iName knownVarsName} {
     # varindexconst is 1 if the array index is a constant
 
     if {$::Prefs(noVar) || $var == ""} {
-        return
+        return ""
     }
 
     if {[string match ::* $var]} {
 	# Skip qualified names until we handle namespace better. FIXA
-	return
+	return ""
     }
     if {![info exists knownVars(known,$var)]} {
 	errorMsg E "Unknown variable \"$var\"" $index
@@ -666,6 +672,10 @@ proc parseVar {str len index iName knownVarsName} {
             errorMsg E "Unknown variable \"$var\"" $index
         }
     }
+    if {[info exists knownVars(type,$var)]} {
+        return $knownVars(type,$var)
+    }
+    return ""
     # Make use of markVariable. FIXA
     # If it's a constant array index, maybe it should be checked? FIXA
 }
@@ -674,8 +684,10 @@ proc parseVar {str len index iName knownVarsName} {
 # Check any variables referenced, and parse any commands within brackets.
 # Returns 1 if the string is constant, i.e. no substitutions
 # Returns 0 if any substitutions are present
-proc parseSubst {str index knownVarsName} {
-    upvar $knownVarsName knownVars
+proc parseSubst {str index typeName knownVarsName} {
+    upvar $typeName type $knownVarsName knownVars
+    
+    set type ""
 
     # First do a quick check for $ or [
     # If the word ends in "]" and there is no "[" it is considered
@@ -688,14 +700,17 @@ proc parseSubst {str index knownVarsName} {
     set result 1
     set len [string length $str]
     set escape 0
+    set notype 0
+    set types {}
     for {set i 0} {$i < $len} {incr i} {
         set c [string index $str $i]
         if {[string equal $c "\\"]} {
             set escape [expr {!$escape}]
+            set notype 1
         } elseif {!$escape} {
 	    if {[string equal $c "\$"]} {
 		incr i
-		parseVar $str $len $index i knownVars
+		lappend types [parseVar $str $len $index i knownVars]
 		set result 0
 	    } elseif {[string equal $c "\["]} {
 		set si $i
@@ -709,8 +724,8 @@ proc parseSubst {str index knownVarsName} {
 		}
 		incr si
 		incr i -1
-		parseBody [string range $str $si $i] [expr {$index + $si}] \
-                        knownVars
+		lappend types [parseBody [string range $str $si $i] \
+                        [expr {$index + $si}] knownVars]
 		incr i
 		set result 0
 	    } elseif {[string equal $c "\]"] && $i == ($len - 1)} {
@@ -720,7 +735,11 @@ proc parseSubst {str index knownVarsName} {
             }
         } else {
             set escape 0
+            set notype 1
         }
+    }
+    if {!$notype && [llength $types] == 1} {
+        set type [lindex $types 0]
     }
     return $result
 }
@@ -841,11 +860,17 @@ proc WA {} {
 
 # Check a command that have a syntax defined in the database
 # 'firsti' says at which index in argv et.al. the arguments begin.
+# Returns the return type of the command
 proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
     upvar "constantsDontCheck" constantsDontCheck "knownVars" knownVars
 
     set argc [llength $argv]
     set syn $::syntax($cmd)
+    set type ""
+    if {[info exists ::return($cmd)]} {
+        set type $::return($cmd)
+        #puts T:$cmd:$type
+    }
 #    decho "Checking $cmd against syntax $syn"
     
     # Check if the syntax definition has multiple entries
@@ -867,7 +892,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
         }
         if {[llength $newsyn] == 0} {
             echo "Can't parse syntax definition for \"$cmd\": \"$syn\""
-            return
+            return $type
         }
         set syn $newsyn
     }
@@ -877,7 +902,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 	    WA
 	}
         checkForCommentL $argv $wordstatus $indices
-	return
+	return $type
     } elseif {[string equal [lindex $syn 0] "r"]} {
 	if {($argc - $firsti) < [lindex $syn 1]} {
 	    WA
@@ -885,8 +910,21 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 	    WA
 	}
         checkForCommentL $argv $wordstatus $indices
-	return
+	return $type
     }
+
+    # Calculate the minimum number of arguments needed by non-optional
+    # tokens. If this is the same number as the actual arguments, we
+    # know that no optional tokens may consume anything.
+    # This prevents e.g. options checking on arguments that cannot be
+    # options due to their placement.
+    set minargs 0
+    foreach token $syn {
+        if {[string length $token] <= 1} {
+            incr minargs
+        }
+    }
+    set anyOptional [expr {($argc - $firsti) > $minargs}]
 
     # Treat syn as a stack. That way a token can replace itself without
     # increasing i and thus hand over checking to another token.
@@ -1014,7 +1052,11 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 		    # Are there any syntax definition for this subcommand?
 		    set sub "$cmd $arg"
 		    if {[info exists ::syntax($sub)]} {
-			checkCommand $sub $index $argv $wordstatus $indices 1
+			set stype [checkCommand $sub $index $argv $wordstatus \
+                                $indices 1]
+                        if {$stype != ""} {
+                            set type $stype
+                        }
 			set i $argc
 			break
 		    }
@@ -1041,16 +1083,19 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
                             # Skip qualified names until we handle
                             # namespace better. FIXA
                         } elseif {[markVariable [lindex $argv $i] \
-                                [lindex $wordstatus $i] 2 $index knownVars]} {
+                                [lindex $wordstatus $i] 2 [lindex $indices $i]\
+                                knownVars vtype]} {
 			    errorMsg E "Unknown variable \"[lindex $argv $i]\""\
-                                    $index
+                                    [lindex $indices $i]
 			}
 		    } elseif {[string equal $tok "n"]} {
 			markVariable [lindex $argv $i] \
-                                [lindex $wordstatus $i] 1 $index knownVars
+                                [lindex $wordstatus $i] 1 \
+                                [lindex $indices $i] knownVars ""
 		    } else {
 			markVariable [lindex $argv $i] \
-                                [lindex $wordstatus $i] 0 $index knownVars
+                                [lindex $wordstatus $i] 0 \
+                                [lindex $indices $i] knownVars ""
 		    }
 
 		    lappend constantsDontCheck $i
@@ -1058,40 +1103,44 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 		}
 	    }
 	    o {
-		set max 0
-		if {![string equal $mod "*"]} {
-		    set max 1
-		}
-		set oSyn [checkOptions $cmd $argv $wordstatus $indices $i $max]
-                set used [llength $oSyn]
-		if {$used == 0 && ($mod == "" || $mod == ".")} {
-		    errorMsg E "Expected an option as argument $i to \"$cmd\"" \
-                            [lindex $indices $i]
-		    return
-		}
+                if {$mod eq "" || $anyOptional} {
+                    set max 0
+                    if {![string equal $mod "*"]} {
+                        set max 1
+                    }
+                    set oSyn [checkOptions $cmd $argv $wordstatus $indices $i $max]
+                    set used [llength $oSyn]
+                    if {$used == 0 && ($mod == "" || $mod == ".")} {
+                        errorMsg E "Expected an option as argument $i to \"$cmd\"" \
+                                [lindex $indices $i]
+                        return $type
+                    }
                 
-                if {[lsearch -not $oSyn "x"] >= 0} {
-                    # Feed the syntax back into the check loop
-                    set syn [concat $oSyn $syn]
-                } else {
-                    incr i $used
+                    if {[lsearch -not $oSyn "x"] >= 0} {
+                        # Feed the syntax back into the check loop
+                        set syn [concat $oSyn $syn]
+                    } else {
+                        incr i $used
+                    }
                 }
 	    }
 	    p {
-		set max 0
-		if {![string equal $mod "*"]} {
-		    set max 2
-		}
-                # FIXA: like o
-		set used [checkOptions $cmd $argv $wordstatus $indices $i \
-                        $max 1]
-                set used [llength $used]
-		if {$used == 0 && ($mod == "" || $mod == ".")} {
-		    errorMsg E "Expected an option as argument $i to \"$cmd\"" \
-			    [lindex $indices $i]
-		    return
-		}
-		incr i $used
+                if {$mod eq "" || $anyOptional} {
+                    set max 0
+                    if {![string equal $mod "*"]} {
+                        set max 2
+                    }
+                    # FIXA: like o
+                    set used [checkOptions $cmd $argv $wordstatus $indices $i \
+                            $max 1]
+                    set used [llength $used]
+                    if {$used == 0 && ($mod == "" || $mod == ".")} {
+                        errorMsg E "Expected an option as argument $i to \"$cmd\"" \
+                                [lindex $indices $i]
+                        return $type
+                    }
+                    incr i $used
+                }
 	    }
 	    default {
 		echo "Unsupported token $token in syntax for $cmd"
@@ -1102,16 +1151,23 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
     if {$i != $argc} {
 	WA
     }
+    return $type
 }
 
 # Central function to handle known variable names.
 # If check is 2, check if it is known, return 1 if unknown
 # If check is 1, mark the variable as known and set
 # If check is 0, mark the variable as known
-proc markVariable {var ws check index knownVarsName} {
+proc markVariable {var ws check index knownVarsName typeName} {
     upvar $knownVarsName knownVars
+    if {$typeName ne ""} {
+        upvar $typeName type
+    } else {
+        set type ""
+    }
     
     if {$::Prefs(noVar)} {
+        set type ""
         return 0
     }
 
@@ -1143,7 +1199,7 @@ proc markVariable {var ws check index knownVarsName} {
             if {[info exists ::foreachVar($name)]} {
                 # Mark them as known instead
                 foreach name $::foreachVar($name) {
-                    markVariable $name 1 $check $index knownVars
+                    markVariable $name 1 $check $index knownVars ""
                 }
                 #return 1
             }
@@ -1153,6 +1209,7 @@ proc markVariable {var ws check index knownVarsName} {
     }
 
     if {$check == 2} {
+        set type ""
 	if {![info exists knownVars(known,$varBase)]} {
 	    return 1
 	}
@@ -1162,11 +1219,17 @@ proc markVariable {var ws check index knownVarsName} {
 		return 1
 	    }
 	}
+        set type $knownVars(type,$varBase)
 	return 0
     } else {
 	if {![info exists knownVars(known,$varBase)]} {
             set knownVars(known,$varBase) 1
             set knownVars(local,$varBase) 1
+            set knownVars(type,$varBase)  $type
+        }
+        if {$type ne ""} {
+            # Warn if changed??
+            set knownVars(type,$varBase) $type
         }
         if {$check == 1} {
             set knownVars(set,$varBase) 1
@@ -1175,6 +1238,7 @@ proc markVariable {var ws check index knownVarsName} {
 	if {$varArray && $varIndexWs != 0} {
 	    if {![info exists knownVars(known,$var)]} {
 		set knownVars(known,$var) 1
+                set knownVars(type,$var)  $type
                 if {[info exists knownVars(local,$varBase)]} {
                     set knownVars(local,$var) 1
                 }
@@ -1215,24 +1279,28 @@ proc lookForCommand {cmd ns index} {
 }
 
 # Parse one statement and check the syntax of the command
+# Returns the return type of the statement
 proc parseStatement {statement index knownVarsName} {
     upvar $knownVarsName knownVars
     set words [splitStatement $statement $index indices]
     if {[llength $words] == 0} {return}
     if {$::Nagelfar(onlyproc)} {
         if {[lindex $words 0] != "proc"} {
-            return
+            return ""
         }
     }
 
+    set type ""
     set words2 {}
     set wordstatus {}
+    set wordtype {}
     set indices2 {}
     foreach word $words index $indices {
         set char [string index $word 0]
         if {[string equal $char "\{"]} {
             lappend words2 [string range $word 1 end-1]
             lappend wordstatus 2
+            lappend wordtype ""
 	    incr index
         } else {
 	    set ws 1
@@ -1242,27 +1310,38 @@ proc parseStatement {statement index knownVarsName} {
 		set ws 2
             }
 	    lappend words2 $word
-	    set ws [expr {[parseSubst $word $index knownVars] ? $ws : 0}]
+	    set ws [expr {[parseSubst $word $index wtype knownVars] ? $ws : 0}]
             lappend wordstatus $ws
+            lappend wordtype $wtype
         }
 	lappend indices2 $index
     }
 
+    set cmd [lindex $words2 0]
+    set index [lindex $indices2 0]
+    set cmdtype [lindex $wordtype 0]
+    set cmdsts [lindex $wordstatus 0]
 
     # If the command contains substitutions we can not determine
     # which command it is, so we skip it.
     # FIXA. A command with a variable may be a widget command.
-    if {[lindex $wordstatus 0] == 0} {
-        return
+    if {$cmdsts == 0} {
+        if {[string match "_obj,*" $cmdtype]} {
+            #puts X:$cmd:$cmdtype
+            set cmd $cmdtype
+        } else {
+            #puts Y:$cmd:$cmdtype
+            return
+        }
     }
 
-    set cmd [lindex $words2 0]
-    set index [lindex $indices2 0]
     set argv [lrange $words2 1 end]
+    set wordtype   [lrange $wordtype 1 end]
     set wordstatus [lrange $wordstatus 1 end]
     set indices [lrange $indices2 1 end]
     set argc [llength $argv]
 
+    #puts stderr $cmd:[join $wordtype ,]
     # The parsing below can pass information to the constants checker
     # This list primarily consists of args that are supposed to be variable
     # names without a $ in front.
@@ -1302,8 +1381,9 @@ proc parseStatement {statement index knownVarsName} {
 	    # FIXA, update the globals database
 	    foreach var $argv ws $wordstatus {
 		if {$ws} {
-                    set knownVars(known,$var) 1
+                    set knownVars(known,$var)     1
                     set knownVars(namespace,$var) ""
+                    set knownVars(type,$var)      ""
 		} else {
 		    errorMsg N "Non constant argument to $cmd: $var" $index
 		}
@@ -1318,6 +1398,7 @@ proc parseStatement {statement index knownVarsName} {
 		regexp {::([^:]+)$} $var -> var
 		if {$ws1} {
                     set knownVars(known,$var) 1
+                    set knownVars(type,$var)  ""
                     #set knownVars(namespace,$var) FIXA???
 		    if {$i < $argc - 1} {
                         set knownVars(set,$var) 1
@@ -1379,6 +1460,7 @@ proc parseStatement {statement index knownVarsName} {
                     errorMsg N "Suspicious upvar variable \"$var\"" $index
                 } else {
                     set knownVars(known,$var) 1
+                    set knownVars(type,$var)  ""
                     lappend constantsDontCheck $i
                     if {$wsO == 0} {
                         # Is the other name a simple var subst?
@@ -1396,6 +1478,33 @@ proc parseStatement {statement index knownVarsName} {
 		incr i 2
 	    }
 	}
+	set {
+            # miffo
+	    # Set gets a different syntax string depending on the
+	    # number of arguments.
+	    if {$argc == 1} {
+                # Check the variable
+                if {[string match ::* [lindex $argv 0]]} {
+                    # Skip qualified names until we handle
+                    # namespace better. FIXA
+                } elseif {[markVariable [lindex $argv 0] \
+                        [lindex $wordstatus 0] \
+                        2 [lindex $indices 0] knownVars wtype]} {
+                    errorMsg E "Unknown variable \"[lindex $argv 0]\""\
+                            [lindex $indices 0]
+                }
+            } elseif {$argc == 2} {
+                set wtype [lindex $wordtype 1]
+                markVariable [lindex $argv 0] \
+                        [lindex $wordstatus 0] 1 [lindex $indices 0] \
+                        knownVars wtype
+            } else {
+		WA
+		return ""
+	    }
+            lappend constantsDontCheck 0
+            set type $wtype
+	}
 	foreach {
 	    if {$argc < 3 || ($argc % 2) == 0} {
 		WA
@@ -1409,7 +1518,7 @@ proc parseStatement {statement index knownVarsName} {
 		}
 		lappend constantsDontCheck $i
 		foreach var [lindex $argv $i] {
-		    markVariable $var 1 1 $index knownVars
+		    markVariable $var 1 1 $index knownVars ""
 		}
 	    }
             # FIXA: Experimental foreach check...
@@ -1437,7 +1546,8 @@ proc parseStatement {statement index knownVarsName} {
                 errorMsg W "No braces around body in foreach\
                         statement." $index
 	    }
-	    parseBody [lindex $argv end] [lindex $indices end] knownVars
+	    set type [parseBody [lindex $argv end] [lindex $indices end] \
+                    knownVars]
             # Clean up
             foreach fVar $varsAdded {
                 catch {unset ::foreachVar($fVar)}
@@ -1598,7 +1708,7 @@ proc parseStatement {statement index knownVarsName} {
             set noConstantCheck 1
 	}
         package { # FIXA, take care of require
-            checkCommand $cmd $index $argv $wordstatus $indices
+            set type [checkCommand $cmd $index $argv $wordstatus $indices]
         }
 	namespace { # FIXA, also handle import
             if {$argc < 1} {
@@ -1625,7 +1735,7 @@ proc parseStatement {statement index knownVarsName} {
                     popNamespace
                 }
             } else {
-                checkCommand $cmd $index $argv $wordstatus $indices
+                set type [checkCommand $cmd $index $argv $wordstatus $indices]
             }
 	}
 	uplevel { # FIXA
@@ -1633,7 +1743,7 @@ proc parseStatement {statement index knownVarsName} {
 	}
 	default {
 	    if {[info exists ::syntax($cmd)]} {
-		checkCommand $cmd $index $argv $wordstatus $indices
+		set type [checkCommand $cmd $index $argv $wordstatus $indices]
 	    } else {
                 lookForCommand $cmd [currentNamespace] $index
 	    }
@@ -1644,22 +1754,21 @@ proc parseStatement {statement index knownVarsName} {
         return
     }
 
-    if {$noConstantCheck} {
-        return
-    }
-
-    # Check unmarked constants against known variables to detect missing $.
-    # The constant is considered ok if within quotes (i.e. ws=2).
-    set i 0
-    foreach ws $wordstatus var $argv {
-        if {[info exists knownVars(known,$var)]} {
-            if {$ws == 1 && [lsearch $constantsDontCheck $i] == -1} {
-                errorMsg W "Found constant \"$var\" which is also a\
-                        variable." [lindex $indices $i]
+    if {!$noConstantCheck} {
+        # Check unmarked constants against known variables to detect missing $.
+        # The constant is considered ok if within quotes (i.e. ws=2).
+        set i 0
+        foreach ws $wordstatus var $argv {
+            if {[info exists knownVars(known,$var)]} {
+                if {$ws == 1 && [lsearch $constantsDontCheck $i] == -1} {
+                    errorMsg W "Found constant \"$var\" which is also a\
+                            variable." [lindex $indices $i]
+                }
             }
+            incr i
         }
-        incr i
     }
+    return $type
 }
 
 # Split a script into individual statements
@@ -1830,6 +1939,7 @@ proc splitScript {script index statementsName indicesName knownVarsName} {
     }
 }
 
+# Returns the return type of the script
 proc parseBody {body index knownVarsName} {
     upvar $knownVarsName knownVars
 
@@ -1842,8 +1952,9 @@ proc parseBody {body index knownVarsName} {
         splitScript $body $index statements indices knownVars
     }
 
+    set type ""
     foreach statement $statements index $indices {
-	parseStatement $statement $index knownVars
+	set type [parseStatement $statement $index knownVars]
     }
     if {$::Nagelfar(onlyproc)} {
         set ::Nagelfar(cacheBody) $body
@@ -1852,6 +1963,7 @@ proc parseBody {body index knownVarsName} {
     } else {
         unset -nocomplain ::Nagelfar(cacheBody)
     }
+    return $type
 }
 
 # This is called when a proc command is encountered.
@@ -1888,9 +2000,11 @@ proc parseProc {argv indices} {
     # Initialise a knownVars array with the arguments.
     array set knownVars {}
     foreach a $args {
-        set knownVars(known,[lindex $a 0]) 1
-        set knownVars(local,[lindex $a 0]) 1
-        set knownVars(set,[lindex $a 0]) 1
+        set var [lindex $a 0]
+        set knownVars(known,$var) 1
+        set knownVars(local,$var) 1
+        set knownVars(set,$var)   1
+        set knownVars(type,$var)  ""
     }
 
     lappend knownCommands $name
@@ -2123,8 +2237,9 @@ proc parseScript {script} {
     array set knownVars {}
     foreach g $knownGlobals {
 	set knownVars(known,$g) 1
-	set knownVars(set,$g) 1
+	set knownVars(set,$g)   1
 	set knownVars(namespace,$g) ""
+	set knownVars(type,$g)      ""
     }
     set script [buildLineDb $script]
 
@@ -2176,6 +2291,7 @@ proc parseFile {filename} {
     initMsg
     parseScript $script
     flushMsg
+    #puts stderr [lsearch -all -inline $::knownCommands *::*]
 }
 
 # Add a message filter
@@ -2444,10 +2560,14 @@ proc doCheck {} {
     }
 
     catch {unset ::syntax}
+    catch {unset ::return}
     catch {unset ::subCmd}
     catch {unset ::option}
     if {[_iparray exists ::syntax]} {
         array set ::syntax [_iparray get ::syntax]
+    }
+    if {[_iparray exists ::return]} {
+        array set ::return [_iparray get ::return]
     }
     if {[_iparray exists ::subCmd]} {
         array set ::subCmd [_iparray get ::subCmd]
