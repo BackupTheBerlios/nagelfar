@@ -29,7 +29,7 @@ set apa [expr 1 + 2]
 This will make "name" a known variable and optionally set its type.
 Types are still experimental in Nagelfar. The type "varName" can
 be used to tell Nagelfar that a variable contains a variable name,
-which suppresses som warnings.
+which suppresses some warnings.
 
 Example:
 ##nagelfar variable apaName varName

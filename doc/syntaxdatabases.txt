@@ -17,7 +17,7 @@ In the GUI, all databases found are listed, and those found where Nagelfar
 is located are marked "(app)".
 
 A syntax database is created by syntaxbuild.tcl which makes
-it possible to create customized databases for the interpreter
+it possible to create customised databases for the interpreter
 where your script will run.
 
 For example, if you want to create a database for Tcl8.2:
