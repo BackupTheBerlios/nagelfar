@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.0b3+ 2004-05-01"
+set version "Version 1.0 2004-05-01"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -276,7 +276,7 @@ proc checkComment {str index knownVarsName} {
                 # FIXA, syntax for several lines
                 set line [calcLineNo $index]
                 incr line
-                addFilter "*Line *$line:*[join $rest]*"
+                addFilter "*Line *$line:*$first [join $rest]*"
             }
             default {
                 errorMsg N "Bad type in ##nagelfar comment" $index
@@ -3136,8 +3136,8 @@ proc makeWin {} {
 
     .m add cascade -label "Help" -underline 0 -menu .m.help
     menu .m.help
-    foreach label {README Messages {Syntax Databases}} \
-            file {README.txt messages.txt syntaxdatabases.txt} {
+    foreach label {README Messages {Syntax Databases} {Inline Comments}} \
+            file {README.txt messages.txt syntaxdatabases.txt inlinecomments.txt} {
         .m.help add command -label $label -command [list makeDocWin $file]
     }
     .m.help add separator
