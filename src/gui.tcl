@@ -45,6 +45,17 @@ proc fileDropDb {files} {
     updateDbSelection 1
 }
 
+# Remove a file from the database list
+proc removeDbFile {} {
+    set ixs [lsort -decreasing -integer [$::Nagelfar(dbWin) curselection]]
+    foreach ix $ixs {
+        set ::Nagelfar(allDb) [lreplace $::Nagelfar(allDb) $ix $ix]
+        set ::Nagelfar(allDbView) [lreplace $::Nagelfar(allDbView) $ix $ix]
+    }
+    updateDbSelection
+    updateDbSelection 1
+}
+
 # Browse for and add a file to check.
 proc addFile {} {
     set apa [tk_getOpenFile -title "Select file(s) to check" \
@@ -114,6 +125,10 @@ proc resultPopup {x y X Y} {
 proc updateDbSelection {{fromVar 0}} {
     if {$fromVar} {
         $::Nagelfar(dbWin) selection clear 0 end
+        # Try to keep one selected
+        if {[llength $::Nagelfar(db)] == 0} {
+            set ::Nagelfar(db) [lrange $::Nagelfar(allDb) 0 0]
+        }
         foreach f $::Nagelfar(db) {
             set i [lsearch $::Nagelfar(allDb) $f]
             if {$i >= 0} {
@@ -323,7 +338,10 @@ proc makeWin {} {
                     -listvariable ::Nagelfar(allDbView) \
                     -height 4 -width 40 -selectmode single]
     set ::Nagelfar(dbWin) $lb
+    bind $lb <Key-Delete> "removeDbFile"
     bind $lb <<ListboxSelect>> updateDbSelection
+    bind $lb <Button-1> [list focus $lb]
+    updateDbSelection 1
 
     grid .fs.l  .fs.b -sticky w -padx 2 -pady 2
     grid .fs.lb -     -sticky news
@@ -402,6 +420,12 @@ proc makeWin {} {
     menu .m
     . configure -menu .m
 
+    # File menu
+
+    .m add cascade -label "File" -underline 0 -menu .m.mf
+    menu .m.mf
+    .m.mf add command -label "Exit" -underline 1 -command exitApp
+
     # Options menu
     addOptionsMenu .m
 
@@ -446,6 +470,7 @@ proc makeWin {} {
 
     wm deiconify .
 }
+
 #############################
 # A simple file viewer/editor
 #############################
