@@ -74,6 +74,14 @@ proc epa {} {
     }
 }
 
+proc fepa {} {
+    # Commented brace {
+    if {[string length apa]} {
+        set bepa 1
+    }
+}
+}
+
 # This should be last in the file, since
 # the missing close brace disturbs anything
 # after it
