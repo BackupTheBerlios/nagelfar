@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.0b1+ 2004-02-09"
+set version "Version 1.0b2 2004-02-10"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -2262,7 +2262,12 @@ proc makeRegistryWin {} {
 
     # Registry keys
 
-    set key {HKEY_CLASSES_ROOT\*.tcl\shell\Check\command}
+    set key {HKEY_CLASSES_ROOT\.tcl\shell\Check\command}
+    set old {}
+    catch {set old [registry get {HKEY_CLASSES_ROOT\.tcl} {}]}
+    if {$old != ""} {
+        set key "HKEY_CLASSES_ROOT\\$old\\shell\\Check\\command"
+    }
 
     # Are we in a starkit?
     if {[info exists ::starkit::topdir]} {
