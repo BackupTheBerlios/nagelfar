@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 0.6
-set version "Version 0.6+ 2003-07-09"
+set version "Version 0.6+ 2003-07-10"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -81,11 +81,23 @@ proc decho {str} {
 }
 
 # Standard error message.
-proc errorMsg {msg i} {
+# severity : How severe a message is E/W/N for Error/Warning/Note
+proc errorMsg {severity msg i} {
     if {[info exists ::Nagelfar(currentMessage)] && \
             $::Nagelfar(currentMessage) != ""} {
         lappend ::Nagelfar(messages) [list $::Nagelfar(currentMessageLine) \
                 $::Nagelfar(currentMessage)]
+    }
+
+    set ::Nagelfar(currentMessage) ""
+    switch $severity {
+        E {}
+        W { if {$::Prefs(severity) == "E"} return }
+        N { if {$::Prefs(severity) != "N"} return }
+        default {
+            decho "Internal error: Bad severity '$severity' passed to errorMsg"
+            return
+        }
     }
 
     set pre ""
@@ -93,7 +105,7 @@ proc errorMsg {msg i} {
         set pre "$::currentFile: "
     }
     set line [calcLineNo $i]
-    set pre "${pre}Line [format %3d $line]: "
+    set pre "${pre}Line [format %3d $line]: $severity "
     set ::Nagelfar(indent) [string repeat " " [string length $pre]]
     set ::Nagelfar(currentMessage) $pre$msg
     set ::Nagelfar(currentMessageLine) $line
@@ -101,6 +113,7 @@ proc errorMsg {msg i} {
 
 # Continued message. Used to give extra info after an error.
 proc contMsg {msg {i {}}} {
+    if {$::Nagelfar(currentMessage) == ""} return
     append ::Nagelfar(currentMessage) "\n" $::Nagelfar(indent)
     if {$i != ""} {
         regsub -all {%L} $msg [calcLineNo $i] msg
@@ -108,7 +121,7 @@ proc contMsg {msg {i {}}} {
     append ::Nagelfar(currentMessage) $msg
 }
 
-#
+# Initialize message handling.
 proc initMsg {} {
     set ::Nagelfar(messages) {}
     set ::Nagelfar(currentMessage) ""
@@ -266,7 +279,7 @@ proc scanWord {str len index iName} {
                 if {$j == $len || [string is space [string index $str $j]]} {
                     return
                 }
-                errorMsg "Extra chars after closing $charType." \
+                errorMsg E "Extra chars after closing $charType." \
                         [expr {$index + $i}]
                 contMsg "Opening $charType of above was on line %L." \
                         [expr {$index + $si}]
@@ -379,12 +392,12 @@ proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
                     # Check ambiguity.
                     set match [lsearch -all -inline -glob $option($cmd) $arg*]
                     if {[llength $match] == 0} {
-                        errorMsg "Bad option $arg to $cmd" $index
+                        errorMsg E "Bad option $arg to $cmd" $index
                     } elseif {[llength $match] > 1} {
-                        errorMsg "Ambigous option for $cmd,\
+                        errorMsg E "Ambigous option for $cmd,\
                                 $arg -> [join $match /]" $index
                     } else {
-                        errorMsg "Shortened option for $cmd,\
+                        errorMsg W "Shortened option for $cmd,\
                                 $arg -> [lindex $match 0]" $index
                     }
 		} else {
@@ -409,7 +422,7 @@ proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
 	}
     }
     if {$skip} {
-        errorMsg "Missing value for last option." $index
+        errorMsg E "Missing value for last option." $index
     }
     #decho "options to $cmd : $replaceSyn"
     return $replaceSyn
@@ -426,7 +439,7 @@ proc splitList {str index iName} {
 
     set indices {}
     if {[catch {set n [llength $lstr]}]} {
-	errorMsg "Bad list" $index
+	errorMsg E "Bad list" $index
 	return {}
     }
     # Parse the string to get indices for each element
@@ -534,7 +547,7 @@ proc parseVar {str len index iName knownVarsName} {
 	set ei [string first "\}" $str $si]
 	if {$ei == -1} {
 	    # This should not happen.
-	    errorMsg "Could not find closing brace in variable reference." \
+	    errorMsg E "Could not find closing brace in variable reference." \
                     $index
 	}
 	set i $ei
@@ -580,7 +593,7 @@ proc parseVar {str len index iName knownVarsName} {
 	    }
 	    if {$ei == -1} {
 		# This should not happen.
-		errorMsg "Could not find closing parenthesis in variable\
+		errorMsg E "Could not find closing parenthesis in variable\
                         reference." $index
 		return
 	    }
@@ -616,7 +629,7 @@ proc parseVar {str len index iName knownVarsName} {
 	return
     }
     if {![info exists knownVars($var)]} {
-	errorMsg "Unknown variable \"$var\"" $index
+	errorMsg E "Unknown variable \"$var\"" $index
     }
     # Make use of markVariable. FIXA
     # If it's a constant array index, maybe it should be checked? FIXA
@@ -655,7 +668,7 @@ proc parseSubst {str index knownVarsName} {
 		    }
 		}
 		if {$i == $len} {
-		    errorMsg "URGA:$si\n:$str:\n:[string range $str $si end]:" $index
+		    errorMsg E "URGA:$si\n:$str:\n:[string range $str $si end]:" $index
 		}
 		incr si
 		incr i -1
@@ -683,7 +696,7 @@ proc parseExpr {str index knownVarsName} {
 # A "macro" for checkCommand to print common error message
 proc WA {} {
     upvar "cmd" cmd "index" index "argc" argc "argv" argv "indices" indices
-    errorMsg "Wrong number of arguments ($argc) to \"$cmd\"" $index
+    errorMsg E "Wrong number of arguments ($argc) to \"$cmd\"" $index
 
     set t 1
     set line [calcLineNo $index]
@@ -789,14 +802,14 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 		}
 		if {[lindex $wordstatus $i] == 0} {
                     if {$tok == "E"} {
-                        errorMsg "Warning: No braces around expression in\
+                        errorMsg W "No braces around expression in\
                                 $cmd statement." [lindex $indices $i]
                     } elseif {$::Prefs(warnBraceExpr)} {
                         # Allow pure command substitution if warnBraceExpr == 1
                         if {$::Prefs(warnBraceExpr) == 2 || \
                                 [string index [lindex $argv $i] 0] != "\[" || \
                                 [string index [lindex $argv $i] end] != "\]" } {
-                            errorMsg "Warning: No braces around expression in\
+                            errorMsg W "No braces around expression in\
                                     $cmd statement." [lindex $indices $i]
                         }
                     }
@@ -816,7 +829,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
                     if {[string match {\[list*} $arg]} {
                         #echo "(List code)"
                     } else {
-                        errorMsg "Warning: No braces around code in $cmd\
+                        errorMsg W "No braces around code in $cmd\
                                 statement." [lindex $indices $i]
                     }
 		}
@@ -829,7 +842,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
                             syntax for $cmd."
 		}
 		if {[lindex $wordstatus $i] == 0} {
-		    errorMsg "Non static subcommand to \"$cmd\"" \
+		    errorMsg N "Non static subcommand to \"$cmd\"" \
                             [lindex $indices $i]
 		} else {
 		    set arg [lindex $argv $i]
@@ -837,19 +850,19 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 			if {[lsearch $::subCmd($cmd) $arg] == -1} {
                             set ix [lsearch -glob $::subCmd($cmd) $arg*]
                             if {$ix == -1} {
-                                errorMsg "Unknown subcommand \"$arg\" to \"$cmd\""\
+                                errorMsg E "Unknown subcommand \"$arg\" to \"$cmd\""\
                                         [lindex $indices $i]
                             } else {
                                 # Check ambiguity.
                                 set match [lsearch -all -inline -glob \
                                         $::subCmd($cmd) $arg*]
                                 if {[llength $match] > 1} {
-                                    errorMsg "Ambigous subcommand for $cmd,\
+                                    errorMsg E "Ambigous subcommand for $cmd,\
                                             $arg -> [join $match /]" \
                                             [lindex $indices $i]
                                 } elseif {$::Prefs(warnShortSub)} {
                                     # Report shortened subcmd?
-                                    errorMsg "Shortened subcommand for $cmd,\
+                                    errorMsg W "Shortened subcommand for $cmd,\
                                             $arg ->\
                                             [lindex $match 0]" \
                                             [lindex $indices $i]
@@ -890,7 +903,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
                             # namespace better. FIXA
                         } elseif {[markVariable [lindex $argv $i] \
                                 [lindex $wordstatus $i] 2 $index knownVars]} {
-			    errorMsg "Unknown variable \"[lindex $argv $i]\""\
+			    errorMsg E "Unknown variable \"[lindex $argv $i]\""\
                                     $index
 			}
 		    } elseif {[string equal $tok "n"]} {
@@ -913,7 +926,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 		set oSyn [checkOptions $cmd $argv $wordstatus $indices $i $max]
                 set used [llength $oSyn]
 		if {$used == 0 && ($mod == "" || $mod == ".")} {
-		    errorMsg "Expected an option as argument $i to \"$cmd\"" \
+		    errorMsg E "Expected an option as argument $i to \"$cmd\"" \
                             [lindex $indices $i]
 		    return
 		}
@@ -935,7 +948,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
                         $max 1]
                 set used [llength $used]
 		if {$used == 0 && ($mod == "" || $mod == ".")} {
-		    errorMsg "Expected an option as argument $i to \"$cmd\"" \
+		    errorMsg E "Expected an option as argument $i to \"$cmd\"" \
 			    [lindex $indices $i]
 		    return
 		}
@@ -998,7 +1011,7 @@ proc markVariable {var ws check index knownVarsName} {
                     #return 1
                 }
             }
-	    errorMsg "Suspicious variable name \"$var\"" $index
+	    errorMsg N "Suspicious variable name \"$var\"" $index
         }
 	return 1
     }
@@ -1030,15 +1043,19 @@ proc markVariable {var ws check index knownVarsName} {
     }
 }
 
-
+# This is called when an unknown command is encountered.
+# If not encountered it is stored to be checked last.
 proc lookForCommand {cmd ns index} {
     # Get both the namespace and global possibility
     if {[string match "::*" $cmd]} {
-        set cmd1 $cmd
+        set cmd1 [string range $cmd 2 end]
         set cmd2 ""
     } else {
         set cmd1 "${ns}::$cmd"
-        set cmd2 "::$cmd"
+        if {[string match "::*" $cmd1]} {
+            set cmd1 [string range $cmd1 2 end]
+        }
+        set cmd2 $cmd
     }
 
     if {[lsearch $::knownCommands $cmd] >= 0 || \
@@ -1120,7 +1137,7 @@ proc parseStatement {statement index knownVarsName} {
 	    }
 	    # Skip the proc if any part of it is not constant
 	    if {[lsearch $wordstatus 0] >= 0} {
-		errorMsg "Non constant argument to proc \"[lindex $argv 0]\".\
+		errorMsg N "Non constant argument to proc \"[lindex $argv 0]\".\
                         Skipping." $index
 		return
 	    }
@@ -1142,7 +1159,7 @@ proc parseStatement {statement index knownVarsName} {
 		    # 2 means it is a global
 		    set knownVars($var) 2
 		} else {
-		    errorMsg "Non constant argument to $cmd: $var" $index
+		    errorMsg N "Non constant argument to $cmd: $var" $index
 		}
 	    }
             set noConstantCheck 1
@@ -1161,7 +1178,7 @@ proc parseStatement {statement index knownVarsName} {
 		    }
 		    lappend constantsDontCheck $i
 		} else {
-		    errorMsg "Non constant argument to $cmd: $var" $index
+		    errorMsg N "Non constant argument to $cmd: $var" $index
 		}
 		incr i 2
 	    }
@@ -1187,7 +1204,7 @@ proc parseStatement {statement index knownVarsName} {
 	    }
 	    for {set i 0} {$i < $argc - 1} {incr i 2} {
 		if {[lindex $wordstatus $i] == 0} {
-		    errorMsg "Warning: Non constant variable list to foreach\
+		    errorMsg W "Non constant variable list to foreach\
                             statement." [lindex $indices $i]
 		    # FIXA, maybe abort here?
 		}
@@ -1217,7 +1234,7 @@ proc parseStatement {statement index knownVarsName} {
             }
             
             if {[lindex $wordstatus end] == 0} {
-                errorMsg "Warning: No braces around body in foreach\
+                errorMsg W "No braces around body in foreach\
                         statement." $index
 	    }
 	    parseBody [lindex $argv end] [lindex $indices end] knownVars
@@ -1255,7 +1272,7 @@ proc parseStatement {statement index knownVarsName} {
 			    continue
 			}
                         if {$::Prefs(forceElse)} {
-                            errorMsg "Badly formed if statement" $index
+                            errorMsg E "Badly formed if statement" $index
                             contMsg "Found argument '[trimStr $arg]' where\
                                     else/elseif was expected."
                             return
@@ -1276,7 +1293,7 @@ proc parseStatement {statement index knownVarsName} {
 			set state else
 		    }
 		    illegal {
-			errorMsg "Badly formed if statement" $index
+			errorMsg E "Badly formed if statement" $index
 			contMsg "Found argument '[trimStr $arg]' after\
                               supposed last body."
 			return
@@ -1285,7 +1302,7 @@ proc parseStatement {statement index knownVarsName} {
 	    }
 	    if {![string equal $state "else"] \
                     && ![string equal $state "illegal"]} {
-		errorMsg "Badly formed if statement" $index
+		errorMsg E "Badly formed if statement" $index
 		contMsg "Missing one body."
 		return
 	    }
@@ -1315,12 +1332,12 @@ proc parseStatement {statement index knownVarsName} {
 
 		set swargv [splitList $arg $ix swindices]
 		if {[llength $swargv] % 2 == 1} {
-		    errorMsg "Odd number of elements in last argument to\
+		    errorMsg E "Odd number of elements in last argument to\
                             switch." $ix
 		    return
 		}
 		if {[llength $swargv] == 0} {
-		    errorMsg "Empty last argument to switch." $ix
+		    errorMsg W "Empty last argument to switch." $ix
 		    return
 		}
 		set swwordst {}
@@ -1337,14 +1354,14 @@ proc parseStatement {statement index knownVarsName} {
 	    }
 	    foreach {pat body} $swargv {ws1 ws2} $swwordst {i1 i2} $swindices {
 		if {[string equal [string index $pat 0] "#"]} {
-		    errorMsg "Warning: Switch pattern starting with #.\
+		    errorMsg W "Switch pattern starting with #.\
 			    This could be a bad comment." $i1
 		}
 		if {[string equal $body -]} {
 		    continue
 		}
 		if {$ws2 == 0} {
-		    errorMsg "Warning: No braces around code in switch\
+		    errorMsg W "No braces around code in switch\
                             statement." $i2
 		}
 		parseBody $body $i2 knownVars
@@ -1356,7 +1373,7 @@ proc parseStatement {statement index knownVarsName} {
                  parseExpr [lindex $argv 0] [lindex $indices 0] knownVars
             } else {
                 if {$::Prefs(warnBraceExpr)} {
-                    errorMsg "Warning: Expr without braces" [lindex $indices 0]
+                    errorMsg W "Expr without braces" [lindex $indices 0]
                 }
             }
 	}
@@ -1379,7 +1396,7 @@ proc parseStatement {statement index knownVarsName} {
                 }
                 # Look for unknown parts
                 if {[lsearch $wordstatus 0] >= 0} {
-                    errorMsg "Only braced namespace evals are checked." \
+                    errorMsg N "Only braced namespace evals are checked." \
                             [lindex $indices 0]
                 } else {
                     set ns [lindex $argv 1]
@@ -1420,7 +1437,7 @@ proc parseStatement {statement index knownVarsName} {
     foreach ws $wordstatus var $argv {
         if {[info exists knownVars($var)]} {
             if {$ws == 1 && [lsearch $constantsDontCheck $i] == -1} {
-                errorMsg "Found constant \"$var\" which is also a\
+                errorMsg W "Found constant \"$var\" which is also a\
                         variable." [lindex $indices $i]
             }
         }
@@ -1451,7 +1468,7 @@ proc splitScript {script index statementsName indicesName} {
             if {[regexp "^\}\\s*$" $line]} {
                 set closeBraceIx [expr {[string length $tryline] + $index}]
                 if {$newstatement} {
-                    errorMsg "Close brace first in statement." $closeBraceIx
+                    errorMsg E "Close brace first in statement." $closeBraceIx
                     reportCommentBrace 0 $closeBraceIx
                 }
                 set closeBrace [wasIndented $closeBraceIx]
@@ -1529,7 +1546,7 @@ proc splitScript {script index statementsName indicesName} {
                 if {$closeBrace != -1} {
                     set tmp [wasIndented $index]
                     if {$tmp != $closeBrace} {
-                        errorMsg "Close brace not aligned with line\
+                        errorMsg N "Close brace not aligned with line\
                                 [calcLineNo $index] ($tmp $closeBrace)" \
                                 $closeBraceIx
                     }
@@ -1544,7 +1561,7 @@ proc splitScript {script index statementsName indicesName} {
                 # If it does not end the statement, there is probably a
                 # brace mismatch.
                 # When inside a namespace eval block, this is probably ok.
-                errorMsg "Found non indented close brace that did not end\
+                errorMsg N "Found non indented close brace that did not end\
                         statement." $closeBraceIx
                 contMsg "This may indicate a brace mismatch."
             }
@@ -1552,7 +1569,7 @@ proc splitScript {script index statementsName indicesName} {
     }
     # If tryline is non empty, it did not become complete
     if {[string length $tryline] != 0} {
-        errorMsg "Could not complete statement." $index
+        errorMsg E "Could not complete statement." $index
 
         # Experiment a little to give more info.
         if {[info complete $firstline\}]} {
@@ -1609,7 +1626,7 @@ proc parseProc {argv indices} {
     global knownProcs knownCommands knownGlobals syntax
 
     if {[llength $argv] != 3} {
-	errorMsg "Wrong number of arguments to proc." [lindex $indices 0]
+	errorMsg E "Wrong number of arguments to proc." [lindex $indices 0]
 	return
     }
 
@@ -1627,7 +1644,11 @@ proc parseProc {argv indices} {
         }
     }
     set fullname ${ns}::$tail
-    #puts "proc $name -> $fullname ($cns) ($ns) ($tail)"
+    #decho "proc $name -> $fullname ($cns) ($ns) ($tail)"
+    # Do not include the first :: in the name
+    if {[string match ::* $fullname]} {
+        set fullname [string range $fullname 2 end]
+    }
     set name $fullname
 
     # Parse the arguments.
@@ -1781,10 +1802,10 @@ proc parseScript {script} {
                 [lsearch $knownProcs $cmd1] == -1 && \
                 ![info exists syntax($cmd2)] && \
                 [lsearch $knownProcs $cmd2] == -1} {
-            errorMsg "Unknown command \"$cmd\"" $index
+            errorMsg W "Unknown command \"$cmd\"" $index
         }
     }
-    #Update known globals.
+    # Update known globals.
     foreach var [array names knownVars] {
 	# Check if it has been set.
 	if {($knownVars($var) & 4) == 4} {
@@ -1890,6 +1911,11 @@ proc fileDropFile {files} {
     }
 }
 
+##syntax _ipsource x
+##syntax _ipexists l
+##syntax _ipset    v
+##syntax _iparray  s v
+
 # Execute the checks
 proc doCheck {} {
     if {[llength $::Nagelfar(db)] == 0} {
@@ -1918,17 +1944,51 @@ proc doCheck {} {
         $::Nagelfar(resultWin) delete 1.0 end
     }
 
-    # Clear the database first
-    set ::knownGlobals {}
-    set ::knownCommands {}
-    set ::knownProcs {}
+    # Load syntax database using safe interpreter
+
+    interp create -safe loadinterp
+    interp expose loadinterp source
+    interp alias {} _ipsource loadinterp source
+    interp alias {} _ipexists loadinterp info exists
+    interp alias {} _ipset    loadinterp set
+    interp alias {} _iparray  loadinterp array
+
+    foreach f $::Nagelfar(db) {
+        _ipsource $f
+    }
+
+    if {[_ipexists ::knownGlobals]} {
+        set ::knownGlobals [_ipset ::knownGlobals]
+    } else {
+        set ::knownGlobals {}
+    }
+    if {[_ipexists ::knownCommands]} {
+        set ::knownCommands [_ipset ::knownCommands]
+    } else {
+        set ::knownCommands {}
+    }
+    if {[_ipexists ::knownProcs]} {
+        set ::knownProcs [_ipset ::knownProcs]
+    } else {
+        set ::knownProcs {}
+    }
+
     catch {unset ::syntax}
     catch {unset ::subCmd}
     catch {unset ::option}
-
-    foreach f $::Nagelfar(db) {
-        uplevel #0 [list source $f]
+    if {[_iparray exists ::syntax]} {
+        array set ::syntax [_iparray get ::syntax]
     }
+    if {[_iparray exists ::subCmd]} {
+        array set ::subCmd [_iparray get ::subCmd]
+    }
+    if {[_iparray exists ::option]} {
+        array set ::option [_iparray get ::option]
+    }
+
+    interp delete loadinterp
+
+    # Do the checking
 
     set ::currentFile ""
     foreach f $::Nagelfar(files) {
@@ -1991,11 +2051,31 @@ proc updateDbSelection {{fromVar 0}} {
     }
 }
 
+# A little helper to make a scrolled window
+# It returns the name of the scrolled window
+proc Scroll {class w args} {
+    frame $w
+    eval [list $class $w.s] $args
+
+    $w.s configure -xscrollcommand [list $w.sbx set] \
+            -yscrollcommand [list $w.sby set]
+    scrollbar $w.sbx -orient horizontal -command [list $w.s xview]
+    scrollbar $w.sby -orient vertical   -command [list $w.s yview]
+
+    grid $w.s   $w.sby -sticky news
+    grid $w.sbx x      -sticky we
+    grid columnconfigure $w 0 -weight 1
+    grid rowconfigure    $w 0 -weight 1
+
+    return $w.s
+}
+
 # Create main window
 proc makeWin {} {
     option add *Menu.tearOff 0
     option add *Listbox.exportSelection 0
-    catch {font create ResultFont -family courier -size 8}
+    catch {font create ResultFont -family courier \
+            -size [lindex $::Prefs(resultFont) 1]}
 
     eval destroy [winfo children .]
     wm protocol . WM_DELETE_WINDOW exitApp
@@ -2009,7 +2089,7 @@ proc makeWin {} {
     button .fs.b -text "Add" -width 7 -command addDbFile
     listbox .fs.lb -yscrollcommand ".fs.sby set" \
             -listvariable ::Nagelfar(allDbView) \
-            -height 4 -width 40 -selectmode extended
+            -height 4 -width 40 -selectmode single
     updateDbSelection 1
     bind .fs.lb <<ListboxSelect>> updateDbSelection
     scrollbar .fs.sby -orient vertical -command ".fs.lb yview"
@@ -2045,35 +2125,16 @@ proc makeWin {} {
 
     # Result section
 
-    set ::Nagelfar(resultWin) .fr.t
     frame .fr
     button .fr.b -text "Check" -width 7 -command "doCheck"
-    button .fr.bfp -text "+" -bd 0 -padx 0 -pady 0 -highlightthickness 0 \
-            -command {
-                font configure ResultFont -size \
-                        [expr {[font configure ResultFont -size] + 1}]
-            }
-    button .fr.bfm -text "-" -bd 0 -padx 0 -pady 0 -highlightthickness 0 \
-            -command {
-                font configure ResultFont -size \
-                        [expr {[font configure ResultFont -size] - 1}]
-            }
-    text .fr.t -width 100 -height 25 -wrap none -font ResultFont \
-            -xscrollcommand ".fr.sbx set" \
-            -yscrollcommand ".fr.sby set"
-    scrollbar .fr.sbx -orient horizontal -command ".fr.t xview"
-    scrollbar .fr.sby -orient vertical -command ".fr.t yview"
+    set ::Nagelfar(resultWin) [Scroll \
+            text .fr.t -width 100 -height 25 -wrap none -font ResultFont]
 
-    grid .fr.b         -sticky w
-    grid .fr.t .fr.sby -sticky news
-    grid .fr.sbx       -sticky we
-    grid .fr.bfp -row 2 -column 1 -sticky w
-    grid .fr.bfm -row 2 -column 1 -sticky e
-    grid columnconfigure .fr 0 -weight 1
-    grid rowconfigure .fr 1 -weight 1
+    pack .fr.b -side top -anchor w
+    pack .fr.t -side top -fill both -expand 1
 
-    .fr.t tag configure error -foreground red
-    bind .fr.t <Double-Button-1> "showError ; break"
+    $::Nagelfar(resultWin) tag configure error -foreground red
+    bind $::Nagelfar(resultWin) <Double-Button-1> "showError ; break"
 
     # Use the panedwindow in 8.4
     if {[package present Tk] >= 8.4} {
@@ -2113,6 +2174,28 @@ proc makeWin {} {
 
     .m add cascade -label "Options" -underline 0 -menu .m.mo
     menu .m.mo
+
+    .m.mo add cascade -label "Result Window Font" -menu .m.mo.mo
+    menu .m.mo.mo
+    .m.mo.mo add radiobutton -label "Courier -10" \
+	    -variable ::Prefs(resultFont) -value "Courier -10" \
+	    -command {font configure ResultFont -size -10}
+    .m.mo.mo add radiobutton -label "Courier -12" \
+	    -variable ::Prefs(resultFont) -value "Courier -12" \
+	    -command {font configure ResultFont -size -12}
+    .m.mo.mo add radiobutton -label "Courier -14" \
+	    -variable ::Prefs(resultFont) -value "Courier -14" \
+	    -command {font configure ResultFont -size -14}
+
+    .m.mo add cascade -label "Severity level" -menu .m.mo.ms
+    menu .m.mo.ms
+    .m.mo.ms add radiobutton -label "Show All (N)" \
+            -variable ::Prefs(severity) -value N
+    .m.mo.ms add radiobutton -label {Show Warnings (W)} \
+            -variable ::Prefs(severity) -value W
+    .m.mo.ms add radiobutton -label {Show Errors (E)} \
+            -variable ::Prefs(severity) -value E
+
     .m.mo add checkbutton -label "Warn about shortened subcommands" \
             -variable ::Prefs(warnShortSub)
     .m.mo add cascade -label "Braced expressions" -menu .m.mo.mb
@@ -2148,8 +2231,12 @@ proc makeWin {} {
 
     .m add cascade -label "Help" -underline 0 -menu .m.mh
     menu .m.mh
+    foreach label {Messages {Syntax Databases}} \
+            file {messages.txt syntaxdatabases.txt} {
+        .m.mh add command -label $label -command [list makeDocWin $file]
+    }
+    .m.mh add separator
     .m.mh add command -label About -command makeAboutWin
-
 
     wm deiconify .
 }
@@ -2164,11 +2251,8 @@ proc editFile {filename lineNo} {
         raise .fv
     } else {
         toplevel .fv
-	if {![info exists ::Nagelfar(editFileFont)]} {
-	    set ::Nagelfar(editFileFont) "Courier -12"
-	}
 
-        text .fv.t -width 80 -height 25 -font $::Nagelfar(editFileFont) \
+        text .fv.t -width 80 -height 25 -font $::Prefs(editFileFont) \
                 -xscrollcommand ".fv.sbx set" \
                 -yscrollcommand ".fv.sby set"
         scrollbar .fv.sbx -orient horizontal -command ".fv.t xview"
@@ -2191,14 +2275,14 @@ proc editFile {filename lineNo} {
         .fv.m add cascade -label "Font" -menu .fv.m.mo
         menu .fv.m.mo
 	.fv.m.mo add radiobutton -label "Courier -10" \
-	    -variable ::Nagelfar(editFileFont) -value "Courier -10" \
-	    -command {.fv.t configure -font $::Nagelfar(editFileFont)}
+	    -variable ::Prefs(editFileFont) -value "Courier -10" \
+	    -command {.fv.t configure -font $::Prefs(editFileFont)}
 	.fv.m.mo add radiobutton -label "Courier -12" \
-	    -variable ::Nagelfar(editFileFont) -value "Courier -12" \
-	    -command {.fv.t configure -font $::Nagelfar(editFileFont)}
+	    -variable ::Prefs(editFileFont) -value "Courier -12" \
+	    -command {.fv.t configure -font $::Prefs(editFileFont)}
 	.fv.m.mo add radiobutton -label "Courier -14" \
-	    -variable ::Nagelfar(editFileFont) -value "Courier -14" \
-	    -command {.fv.t configure -font $::Nagelfar(editFileFont)}
+	    -variable ::Prefs(editFileFont) -value "Courier -14" \
+	    -command {.fv.t configure -font $::Prefs(editFileFont)}
 
         label .fv.f.ln -width 5 -textvariable ::Nagelfar(lineNo)
         pack .fv.f.ln -side right
@@ -2312,12 +2396,37 @@ proc makeAboutWin {} {
     .ab.t configure -height $last
 }
 
+proc makeDocWin {fileName} {
+    set w .doc
+    destroy .$w
+
+    toplevel $w
+    wm title $w "Nagelfar Help"
+    set t [Scroll text $w.t -width 80 -height 25 -wrap none]
+    button $w.b -text "Close" -command "destroy $w"
+
+    pack $w.b -side bottom
+    pack $w.t -side top -expand 1 -fill both
+
+    if {![file exists $::thisDir/doc/$fileName]} {
+        $t insert end "ERROR: Could not find doc file "
+        $t insert end \"$fileName\"
+        return
+    }
+    set ch [open $::thisDir/doc/$fileName r]
+    set data [read $ch]
+    close $ch
+
+    $t insert end $data
+}
+
 #########
 # Options
 #########
 
+# FIXA This is not used yet
 proc saveOptions {} {
-    set ch [open "~/.syntaxrc" w]
+    set ch [open "~/.nagelfarrc" w]
 
     foreach i [array names ::Prefs] {
         puts $ch [list set ::Prefs($i) $::Prefs($i)]
@@ -2331,10 +2440,17 @@ proc getOptions {} {
         warnShortSub 1
         forceElse 1
         noVar 0
+        severity N
+        editFileFont {Courier -12}
+        resultFont {Courier -12}
     }
 
-    if {[file exists "~/.syntaxrc"]} {
-        source "~/.syntaxrc"
+    if {[file exists "~/.nagelfarrc"]} {
+        interp create -safe loadinterp
+        interp expose loadinterp source
+        interp eval loadinterp source "~/.nagelfarrc"
+        array set ::Prefs [interp eval loadinterp array get ::Prefs]
+        interp delete loadinterp
     }
 }
 
@@ -2427,6 +2543,15 @@ if {![info exists gurka]} {
             -filter {
                 incr i
                 lappend ::Nagelfar(filter) [lindex $argv $i]
+            }
+            -severity {
+                incr i
+                set ::Prefs(severity) [lindex $argv $i]
+                if {![regexp {^[EWN]$} $::Prefs(severity)]} {
+                    puts "Bad severity level '$::Prefs(severity)',\
+                            should be E/W/N."
+                    exit
+                }
             }
             -* {
                 puts "Unknown option $arg."
