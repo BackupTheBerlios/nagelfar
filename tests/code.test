@@ -11,7 +11,6 @@ if {[file exists ${file}_i]} {
 }
 slave eval set _nagelfar_test 1
 slave eval source $file
-slave eval set ::Prefs(strictAppend) 0
 slave eval loadDatabases
 slave eval {set ::currentFile ""}
 
