@@ -23,6 +23,7 @@ proc execTestFile {args} {
             ;#2>@ stderr
 }    
 
+
 test nagelfar-1.1 {
     Command line checks
 } -setup {
@@ -32,6 +33,7 @@ test nagelfar-1.1 {
 } -body {
     execTestFile -fn _____
 } -returnCodes 1 -result {*Could not find file _____*} -match glob
+
 
 test nagelfar-2.1 {
     Basic functionality
@@ -54,6 +56,7 @@ test nagelfar-2.2 {
     execTestFile -filter *Unknown*
 } -result {Checking file _testfile_} -match glob
 
+
 test nagelfar-3.1 {
     Basic errors
 } -setup {
@@ -63,6 +66,29 @@ test nagelfar-3.1 {
 } -body {
     execTestFile
 } -result {*Unknown variable "bepa"*} -match glob
+
+test nagelfar-3.2 {
+    Basic errors
+} -setup {
+    createTestFile {
+        proc hej {a b c} {
+        }
+        set apa [hej a b]
+    }
+} -body {
+    execTestFile
+} -result {*Wrong number of arguments (2) to "hej"*} -match glob
+
+test nagelfar-3.3 {
+    Basic errors
+} -setup {
+    createTestFile {
+        list apa [list a b [list a b]] a]
+        list apa [list a b [list a b] a]]
+    }
+} -body {
+    execTestFile
+} -result {*Unescaped end bracket*Unescaped end bracket*} -match glob
 
 test nagelfar-4.1 {
     Options checking
@@ -116,5 +142,6 @@ test nagelfar-4.5 {
 } -body {
     execTestFile
 } -result {Checking file _testfile_} -match glob
+
 
 file delete _testfile_
