@@ -46,7 +46,7 @@ if 0 { # Not working yet
 # Function to get an option or subcommand list from an error message.
 proc getSubCmds {args} {
     catch {eval $args} err
-
+    
     lappend res {option .* must be (.*)$}
     lappend res {option .* should be one of (.*)$}
     lappend res {bad .* must be (.*)$}
@@ -278,6 +278,14 @@ proc buildDb {ch} {
     set syntax(history)         "s x*"
     set syntax(parray)          "v x?"
 
+    # FIXA: Type checking is still experimental
+    set return(linsert)         list
+    set return(list)            list
+    set return(llength)         int
+    set return(lrange)          list
+    set return(lreplace)        list
+    set return(lsort)           list
+
     # Syntax for Tk commands
 
     if {$useTk} {
@@ -286,6 +294,23 @@ proc buildDb {ch} {
         set syntax(image)    "s x*"
 	set syntax(winfo)    "s x x*"
         set syntax(wm)       "s x x*"
+        # FIXA: Starting on better Tk support
+        foreach class {frame button checkbutton} {
+            destroy .w
+            if {[catch {$class .w}]} continue
+            set syntax($class) "x p*"
+            set return($class) _obj,$class
+            set option($class) {}
+            foreach opt [.w configure] {
+                lappend option($class) [lindex $opt 0]
+            }
+            set syntax(_obj,$class) "s x*"
+            set subCmd(_obj,$class) [getSubCmds .w gurkmeja]
+            set syntax(_obj,$class\ configure) "o. x. p*"
+            set option(_obj,$class\ configure) $option($class)
+            set syntax(_obj,$class\ cget "o"
+            set option(_obj,$class\ cget) $option($class)
+        }
     }
 
     # Build a database of options and subcommands
@@ -370,11 +395,13 @@ proc buildDb {ch} {
 
     # Output the data
 
-    foreach a {syntax subCmd option} {
+    foreach a {syntax return subCmd option} {
         foreach i [lsort [array names $a]] {
             set v [set ${a}($i)]
             if {[llength $v] != 0} {
-                if {[lsearch $::kC [lindex [split $i] 0]] == -1} {
+                set first [lindex [split $i] 0]
+                if {![string match _* $first] && \
+                        [lsearch $::kC $first] == -1} {
                     puts stderr "Skipping ${a}($i) since $i is not known."
                 } else {
                     puts $ch [list set ::${a}($i) $v]
