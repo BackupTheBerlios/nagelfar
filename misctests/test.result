@@ -1,5 +1,5 @@
-Parsing file tests/test.syntax
-Checking file tests/test.tcl
+Parsing file test.syntax
+Checking file test.tcl
 Line   5: W Found constant "bepa" which is also a variable.
 Line   7: E Unknown variable "cep"
 Line   8: E Unknown variable "epa"
