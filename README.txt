@@ -1,7 +1,6 @@
 USAGE
 
-This tool is currently a pure command line tool.
-It is my plan to add a GUI to it one day.
+This tool is both a command line tool and a GUI tool.
 
 Typical usage:
 syntax.tcl <tcl-file>
@@ -9,10 +8,53 @@ syntax.tcl <tcl-file>
 For a usage summary:
 syntax.tcl -h
 
-Example of how to create a syntax database for your environment:
-tclsh syntaxbuild.tcl mysyntaxdb.tcl
+Multiple files can be check in one command. In that case the tool
+will remember procedures from previous files when checking a file.
+
+
+GUI
+
+If you start it without arguments or with -gui, you get GUI mode,
+provided that Tk can be found. (I.e., it is run in wish or in Tcl8.4
+where Tk is loadable)
+
+It is recommended to use Tk8.4 and TkDnd to get full effect.
+
+The GUI lists database files and lets you select one or more to use.
+Stay with one though since I have not documented how multiple may be used.
+
+The other list shows files to check. With multiple files all are checked
+in the same way as with multiple files on a command line.
+
+By doubleclicking on an error the file and line is viewed in a simple
+editor. You can edit and save the file.
+
+
+SYNTAX DATABASES
+
+The tool uses a file defining what commands are available and how they
+are used. This file is typically called syntaxdb.tcl, and is just a Tcl
+file defining variables.
+
+Any file called syntaxdb*.tcl in your current directory or in the
+directory where syntax.tcl is located are detected and possibly used as
+default database unless you specify one on the command line.
+The search order for default database is:
+ syntaxdb.tcl in current directory
+ syntaxdb*.tcl in current directory (if more than one it is unspecified which)
+ syntaxdb.tcl where syntax.tcl is located
+ syntaxdb*.tcl where syntax.tcl is located
+
+A syntax database is created by syntaxbuild.tcl which makes
+it possible to create customized databases for the interpreter
+where your script will run.
+
+For example, if you want to create a database for Tcl8.2:
+
+tclsh82 syntaxbuild.tcl syntaxdb82.tcl
+
 Then use it:
-syntax.tcl -s mysyntaxdb.tcl <tcl-file>
+syntax.tcl -s syntaxdb82.tcl <tcl-file>
 
 
 FEEDBACK
@@ -27,12 +69,6 @@ A common source of false warnings have to do with call-by-name.
 The syntax checker can be told about procedures using call-by-name
 using inline comments or separate info files. See syntax.syntax and
 tests/test.syntax for examples.
-
-
-Messages may not come in line order since a file is not parsed in a
-straight start-to-end fashion, and things are reported when they are seen.
-Specially, unknown commands are not reported until the end when
-it can be checked if such proc was defined later.
 
 
 Explanations of some error messages.
