@@ -63,9 +63,9 @@ proc buildDb {ch} {
     puts $ch "# Automatically generated syntax database."
     puts $ch "# Based on Tcl version $ver\n"
 
-    puts $ch "set knownGlobals {$kG}"
-    puts $ch "set knownCommands {$kC}"
-    puts $ch "set knownProcs {$kP}"
+    puts $ch [list set knownGlobals $kG]
+    puts $ch [list set knownCommands $kC]
+    puts $ch [list set knownProcs $kP]
     
     # Build a database of options and subcommands
     foreach cmd {info string file image} {
@@ -87,12 +87,14 @@ proc buildDb {ch} {
     # x Any
     # o Option, i.e anything starting with -
     # p Option+Any
-    # n Variable name, is set by the command.
-    # v Variable name, must exist.
-    # l Variable name, must not exist, does not get set. ?needed?
     # s Subcommand
     # e Expression
     # c Code
+    # n, v and l all marks variable names. Those arguments will not be
+    #   checked against known variables to detect missing $.
+    # n The variable does not have to exist, and is set by the command.
+    # v The variable must exist. It is not marked as set.
+    # l Does not have to exist. It will be marked as known, but not set.
 
     # Modifiers that apply to some of the above
     # ? Zero or One
@@ -137,12 +139,13 @@ proc buildDb {ch} {
     set syntax(package) "s x*"
     set syntax(clock) "s x*"
     set syntax(info) "s x*"
-    set syntax(info\ exists) "n"
+    set syntax(info\ exists) "l"
     set syntax(wm) "s x x*"
     set syntax(file) "s x x*"
+    set syntax(file\ lstat) "x n"
     set syntax(string) "s x x*"
     set syntax(array) "s n x*"
-    set syntax(array\ names) "v"
+    set syntax(array\ names) "v x?"
     set syntax(file) "s x*"
     set syntax(file\ stat) "x n"
     set syntax(update) "s."
@@ -156,12 +159,13 @@ proc buildDb {ch} {
 
     set syntax(gets) "x n?"
 
-    set syntax(append) "v x*"
+    set syntax(append) "n x*"
     set syntax(lappend) "n x*"
     set syntax(incr) "v x?"
     set syntax(regexp) "o* x x n*"
 
     set syntax(scan) "x x n n*"
+    set syntax(unset) "l l*"
 
     # Build syntax info for procs
     foreach apa $kP {
@@ -187,6 +191,12 @@ proc buildDb {ch} {
     }
 }
 
+proc buildFile {filename} {
+    set ch [open $filename w]
+    buildDb $ch
+    close $ch
+}
+
 if {!$tcl_interactive} {
     if {$argc == 0 && $tcl_platform(platform) == "windows"} {
 	set argc 1
@@ -195,9 +205,7 @@ if {!$tcl_interactive} {
     if {$argc == 0} {
 	buildDb stdout
     } else {
-	set ch [open [lindex $argv 0] w]
-	buildDb $ch
-	close $ch
+        buildFile [lindex $argv 0]
     }
     exit
 }
