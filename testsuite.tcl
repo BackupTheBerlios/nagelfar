@@ -42,8 +42,27 @@ test nagelfar-1.1 {
     }
 } -body {
     execTestFile -fn _____
-} -returnCodes 1 -result {Could not find file _____}
+} -returnCodes 1 -result {Could not find file '_____'}
 
+test nagelfar-1.2 {
+    Command line checks
+} -setup {
+    createTestFile {
+        set apa $bepa
+    }
+} -body {
+    execTestFile -encoding gurkmeja
+} -returnCodes 1 -result {*Bad encoding name: "gurkmeja"*} -match glob
+
+test nagelfar-1.3 {
+    Command line checks
+} -setup {
+    createTestFile {
+        set apa bepa
+    }
+} -body {
+    execTestFile -encoding ascii
+} -returnCodes 0 -result {%%}
 
 test nagelfar-2.1 {
     Basic functionality
@@ -457,6 +476,15 @@ test nagelfar-11.1 {
 } -body {
     execTestFile
 } -result {^%%Line\s+3:.*Line\s+4:.*Line\s+10:} -match regexp
+
+test nagelfar-11.2 {
+    Line numbers, line 1
+} -setup {
+    createTestFile {apa bepa
+    }
+} -body {
+    execTestFile
+} -result {%%Line   1: W Unknown command "apa"}
 
 test nagelfar-12.1 {
     Comments, bad in switch
