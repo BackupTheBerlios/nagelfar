@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.0.2 2004-09-02"
+set version "Version 1.0.2+ 2004-09-10"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -1465,14 +1465,12 @@ proc parseStatement {statement index knownVarsName} {
     }
 
     # If the command contains substitutions we can not determine
-    # which command it is, so we skip it.
-    # FIXA. A command with a variable may be a widget command.
+    # which command it is, so we skip it, unless the type is known
+    # to be an object.
     if {($cmdws & 1) == 0} {
         if {[string match "_obj,*" $cmdtype]} {
-            #puts X:$cmd:$cmdtype
             set cmd $cmdtype
         } else {
-            #puts Y:$cmd:$cmdtype
             return
         }
     }
@@ -1530,7 +1528,6 @@ proc parseStatement {statement index knownVarsName} {
 	    return
 	}
 	global {
-	    # FIXA, update the globals database
 	    foreach var $argv ws $wordstatus {
 		if {$ws & 1} {
                     set knownVars(known,$var)     1
@@ -1543,16 +1540,21 @@ proc parseStatement {statement index knownVarsName} {
             set noConstantCheck 1
 	}
 	variable {
-	    # FIXA, namespaces?
-	    # FIXA, qualified names?
-            # FIXA, variable ${type}::Snit_info
 	    set i 0
 	    foreach {var val} $argv {ws1 ws2} $wordstatus {
-		regexp {::([^:]+)$} $var -> var
-		if {$ws1 & 1} {
+                set ns [currentNamespace]
+                if {[regexp {^(.*)::([^:]+)$} $var -> root var]} {
+                    set ns $root
+                    if {[string match "::*" $ns]} {
+                        set ns [string range $ns 2 end]
+                    }
+                }
+                if {$ws1 & 1} {
+                    set knownVars(namespace,$var) $ns
+                }
+		if {($ws1 & 1) || [string is wordchar $var]} {
                     set knownVars(known,$var) 1
                     set knownVars(type,$var)  ""
-                    #set knownVars(namespace,$var) FIXA???
 		    if {$i < $argc - 1} {
                         set knownVars(set,$var) 1
 		    }
@@ -1617,11 +1619,11 @@ proc parseStatement {statement index knownVarsName} {
                     lappend constantsDontCheck $i
                     if {$other eq $var} { # Allow "upvar xx xx" construct
                         lappend constantsDontCheck [expr {$i - 1}]
-                    }                        
+                    }
                     if {($wsO & 1) == 0} {
                         # Is the other name a simple var subst?
-                        if {[regexp {^\$[\w()]+} $other]} {
-                            set other [string range $other 1 end]
+                        if {[regexp {^\$([\w()]+)$}  $other -> other] || \
+                            [regexp {^\${([^{}]*)}$} $other -> other]} {
                             if {[info exists knownVars(known,$other)]} {
                                 if {$level == 1} {
                                     set knownVars(upvar,$other) $var
