@@ -380,24 +380,23 @@ test nagelfar-9.1 {
 } -body {
     createTestFile {
         if 0 {
-            set y $x
+            set y $x1
         }
-        expr {$y}
-    }
-    execTestFile
-} -result {%%Line   5: E Unknown variable "y"}
-
-test nagelfar-9.2 {
-    if statement, as comment
-} -body {
-    createTestFile {
+        if {0} {
+            set y $x2
+        }
+        if { 0 } {
+            set y $x3
+        }
         if 0 then {
-            set y $x
+            set y $x4
+        } elseif "0" {
+            set y $x5
         }
         expr {$y}
     }
     execTestFile
-} -result {%%Line   5: E Unknown variable "y"}
+} -result {%%Line  16: E Unknown variable "y"}
 
 test nagelfar-10.1 {
     Brace alignment
