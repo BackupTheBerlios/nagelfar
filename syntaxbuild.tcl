@@ -147,7 +147,7 @@ proc buildDb {ch} {
     # * Zero or more
     # . One or nothing at all
 
-    # * after x, n, v or l swallows all the rest and must be last
+    # * after x swallows all the rest and must be last
     # s may only have .
     # e and c may not have any modifier
 
