@@ -8,7 +8,7 @@ Borde inte 2pass se upvar i procedurerna?
 Detektera att detta inte är en misstänkt variabel?
     if {![info exists ${type}::Snit_info]} {
 
-Detta är ok, åt minstonde ska Snit_info kännas igen.
+Detta är ok, åtminstonde ska Snit_info kännas igen.
     variable ${type}::Snit_info
 
 Detta fås ofta fel, kanske ha en flagga för att ta bort den?
@@ -17,3 +17,16 @@ snit.tcl: Line 1825: N Suspicious # char. Possibly a bad comment.
 Kanske kunna sätta kommando-rads-options i ##nagelfar ?
 Så att .syntax-filen kan anpassa till filen.  Kräver
 option-stack för att inte påverka andra filer?
+
+
+Från Uwe:
+
+FEATURE
+o use ctext to hightlight the tcl source code
+   for this purpose I have made a syntax definition file for tcl
+   ctext is the original version vom tklib CVS
+Slow and ugly, maybe fixable.
+Currently, automatically uses ctext if available but do not provide it.
+
+o only save a file if it has been edited
+
