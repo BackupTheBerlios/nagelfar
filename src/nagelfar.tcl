@@ -28,7 +28,7 @@ set debug 1
 package require Tcl 8.4
 
 package provide app-nagelfar 0.8
-set version "Version 0.8+ 2003-11-20"
+set version "Version 0.8+ 2003-12-11"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -2159,7 +2159,9 @@ proc doCheck {} {
         }
     }
 
-    if {[llength $::Nagelfar(files)] == 0} {
+    set int [info exists ::Nagelfar(checkEdit)]
+
+    if {!$int && [llength $::Nagelfar(files)] == 0} {
         tk_messageBox -title "Nagelfar Error" -type ok -icon error \
                 -message "No files to check"
         return
@@ -2169,7 +2171,9 @@ proc doCheck {} {
         busyCursor
     }
 
-    set ::Nagelfar(editFile) ""
+    if {!$int} {
+        set ::Nagelfar(editFile) ""
+    }
     if {[info exists ::Nagelfar(resultWin)]} {
         $::Nagelfar(resultWin) configure -state normal
         $::Nagelfar(resultWin) delete 1.0 end
@@ -2222,25 +2226,31 @@ proc doCheck {} {
     # Do the checking
 
     set ::currentFile ""
-    foreach f $::Nagelfar(files) {
-        if {$::Nagelfar(gui) || [llength $::Nagelfar(files)] > 1} {
-            set ::currentFile $f
-        }
-        set syntaxfile [file rootname $f].syntax
-        if {[file exists $syntaxfile]} {
-            echo "Parsing file $syntaxfile"
-            parseFile $syntaxfile
-        }
-        if {$f == $syntaxfile} continue
-        if {[file exists $f]} {
-            echo "Checking file $f"
-            parseFile $f
-        } else {
-            if {$::Nagelfar(gui)} {
-                tk_messageBox -title "Nagelfar Error" -type ok -icon error \
-                        -message "Could not find file $f"
+    if {$int} {
+        initMsg
+        parseScript $::Nagelfar(checkEdit)
+        flushMsg
+    } else {
+        foreach f $::Nagelfar(files) {
+            if {$::Nagelfar(gui) || [llength $::Nagelfar(files)] > 1} {
+                set ::currentFile $f
+            }
+            set syntaxfile [file rootname $f].syntax
+            if {[file exists $syntaxfile]} {
+                echo "Parsing file $syntaxfile"
+                parseFile $syntaxfile
+            }
+            if {$f == $syntaxfile} continue
+            if {[file exists $f]} {
+                echo "Checking file $f"
+                parseFile $f
             } else {
-                puts stderr "Could not find file $f"
+                if {$::Nagelfar(gui)} {
+                    tk_messageBox -title "Nagelfar Error" -type ok -icon error \
+                            -message "Could not find file $f"
+                } else {
+                    puts stderr "Could not find file $f"
+                }
             }
         }
     }
@@ -2262,6 +2272,8 @@ proc showError {{lineNo {}}} {
 
     if {[regexp {^(.*): Line\s+(\d+):} $line -> fileName fileLine]} {
         editFile $fileName $fileLine
+    } elseif {[regexp {^Line\s+(\d+):} $line -> fileLine]} {
+        editFile "" $fileLine
     }
 }
 
@@ -2469,13 +2481,7 @@ proc progressBar {w} {
 
 # Create main window
 proc makeWin {} {
-    option add *Menu.tearOff 0
-    option add *Listbox.exportSelection 0
-    if {$::tcl_platform(platform) == "windows"} {
-        option add *Panedwindow.sashRelief flat
-        option add *Panedwindow.sashWidth 4
-        option add *Panedwindow.sashPad 0
-    }
+    defaultGuiOptions
 
     catch {font create ResultFont -family courier \
             -size [lindex $::Prefs(resultFont) 1]}
@@ -2612,6 +2618,13 @@ proc makeWin {} {
     .m.mo add checkbutton -label "Enforce else keyword" \
             -variable ::Prefs(forceElse)
 
+    # Tools menu
+
+    .m add cascade -label "Tools" -underline 0 -menu .m.mt
+    menu .m.mt
+    .m.mt add command -label "Edit Window" -underline 0 \
+            -command {editFile "" 0}
+
     # Debug menu
 
     if {$::debug == 1} {
@@ -2655,6 +2668,7 @@ proc editFile {filename lineNo} {
         set w $::Nagelfar(editWin)
     } else {
         toplevel .fv
+        wm title .fv "Nagelfar Editor"
 
         set w [Scroll both text .fv.t \
                        -width 80 -height 25 -font $::Prefs(editFileFont)]
@@ -2672,6 +2686,13 @@ proc editFile {filename lineNo} {
         .fv.m.mf add command -label "Save"  -underline 0 -command "saveFile"
         .fv.m.mf add separator
         .fv.m.mf add command -label "Close"  -underline 0 -command "closeFile"
+
+        .fv.m add cascade -label "Edit" -underline 0 -menu .fv.m.me
+        menu .fv.m.me
+        .fv.m.me add command -label "Clear/Paste" -underline 6 \
+                -command "clearAndPaste"
+        .fv.m.me add command -label "Check" -underline 0 \
+                -command "checkEditWin"
 
         .fv.m add cascade -label "Font" -underline 3 -menu .fv.m.mo
         menu .fv.m.mo
@@ -2705,8 +2726,9 @@ proc editFile {filename lineNo} {
         }
     }
 
-    if {![info exists ::Nagelfar(editFile)] || \
-            $filename != $::Nagelfar(editFile)} {
+    if {$filename != "" && \
+            (![info exists ::Nagelfar(editFile)] || \
+            $filename != $::Nagelfar(editFile))} {
         $w delete 1.0 end
         set ::Nagelfar(editFile) $filename
         wm title .fv [file tail $filename]
@@ -2770,6 +2792,26 @@ proc closeFile {} {
     set ::Nagelfar(editFile) ""
 }
 
+proc clearAndPaste {} {
+    set w $::Nagelfar(editWin)
+    $w delete 1.0 end
+    focus $w
+    
+    if {$::tcl_platform(platform) == "windows"} {
+        event generate $w <<Paste>>
+    } else {
+        $w insert 1.0 [selection get]
+    }
+}
+
+proc checkEditWin {} {
+    set w $::Nagelfar(editWin)
+    
+    set script [$w get 1.0 end]
+    set ::Nagelfar(checkEdit) $script
+    doCheck
+    unset ::Nagelfar(checkEdit)
+}
 
 ######
 # Help
@@ -2890,6 +2932,27 @@ proc fileRelative {dir file} {
         lappend newpath ".."
     }
     return [eval file join $newpath [lrange $filepath $t end]]
+}
+
+proc defaultGuiOptions {} {
+    catch {package require griffin}
+
+    if {[tk windowingsystem]=="x11"} {
+        option add *Menu.activeBorderWidth 1
+        option add *Menu.borderWidth 1       
+        
+        option add *Menu.tearOff 0
+        option add *Listbox.exportSelection 0
+        option add *Listbox.borderWidth 1
+        option add *Listbox.highlightThickness 1
+        option add *Font "Helvetica -12"
+    }
+
+    if {$::tcl_platform(platform) == "windows"} {
+        option add *Panedwindow.sashRelief flat
+        option add *Panedwindow.sashWidth 4
+        option add *Panedwindow.sashPad 0
+    }
 }
 
 ################################
