@@ -1,6 +1,6 @@
 #!/bin/sh
 #----------------------------------------------------------------------
-#  Syntax.tcl, a syntax checker for Tcl.
+#  nagelfar.tcl, a syntax checker for Tcl.
 #  Copyright (c) 1999-2003, Peter Spjuth  (peter.spjuth@space.se)
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -24,11 +24,11 @@
 # the next line restarts using tclsh \
 exec tclsh "$0" "$@"
 
-set debug 1
-set version "Version 0.5+ 2003-07-08"
+set debug 0
+set version "Version 0.6 2003-07-08"
 set thisScript [file join [pwd] [info script]]
 set thisDir    [file dirname $thisScript]
-set ::Syntax(tcl84) [expr {[info tclversion] >= 8.4}]
+set ::Nagelfar(tcl84) [expr {[info tclversion] >= 8.4}]
 
 # Support for FreeWrap 5.5
 if {[info procs ::freewrap::unpack] != ""} {
@@ -68,8 +68,8 @@ if {[info procs ::freewrap::unpack] != ""} {
 
 # Moved out message handling to make it more flexible
 proc echo {str} {
-    if {[info exists ::Syntax(resultWin)]} {
-        $::Syntax(resultWin) insert end $str\n
+    if {[info exists ::Nagelfar(resultWin)]} {
+        $::Nagelfar(resultWin) insert end $str\n
     } else {
         puts $str
     }
@@ -78,8 +78,8 @@ proc echo {str} {
 
 # Debug output
 proc decho {str} {
-    if {[info exists ::Syntax(resultWin)]} {
-        $::Syntax(resultWin) insert end $str\n error
+    if {[info exists ::Nagelfar(resultWin)]} {
+        $::Nagelfar(resultWin) insert end $str\n error
     } else {
         puts stderr $str
     }
@@ -88,10 +88,10 @@ proc decho {str} {
 
 # Standard error message.
 proc errorMsg {msg i} {
-    if {[info exists ::Syntax(currentMessage)] && \
-            $::Syntax(currentMessage) != ""} {
-        lappend ::Syntax(messages) [list $::Syntax(currentMessageLine) \
-                $::Syntax(currentMessage)]
+    if {[info exists ::Nagelfar(currentMessage)] && \
+            $::Nagelfar(currentMessage) != ""} {
+        lappend ::Nagelfar(messages) [list $::Nagelfar(currentMessageLine) \
+                $::Nagelfar(currentMessage)]
     }
 
     set pre ""
@@ -100,39 +100,39 @@ proc errorMsg {msg i} {
     }
     set line [calcLineNo $i]
     set pre "${pre}Line [format %3d $line]: "
-    set ::Syntax(indent) [string repeat " " [string length $pre]]
-    set ::Syntax(currentMessage) $pre$msg
-    set ::Syntax(currentMessageLine) $line
+    set ::Nagelfar(indent) [string repeat " " [string length $pre]]
+    set ::Nagelfar(currentMessage) $pre$msg
+    set ::Nagelfar(currentMessageLine) $line
 }
 
 # Continued message. Used to give extra info after an error.
 proc contMsg {msg {i {}}} {
-    append ::Syntax(currentMessage) "\n" $::Syntax(indent)
+    append ::Nagelfar(currentMessage) "\n" $::Nagelfar(indent)
     if {$i != ""} {
         regsub -all {%L} $msg [calcLineNo $i] msg
     }
-    append ::Syntax(currentMessage) $msg
+    append ::Nagelfar(currentMessage) $msg
 }
 
 #
 proc initMsg {} {
-    set ::Syntax(messages) {}
-    set ::Syntax(currentMessage) ""
-    set ::Syntax(commentbrace) {}
+    set ::Nagelfar(messages) {}
+    set ::Nagelfar(currentMessage) ""
+    set ::Nagelfar(commentbrace) {}
 }
 
 # Called after a file has been parsed, to flush messages
 proc flushMsg {} {
-    if {[info exists ::Syntax(currentMessage)] && \
-            $::Syntax(currentMessage) != ""} {
-        lappend ::Syntax(messages) [list $::Syntax(currentMessageLine) \
-                $::Syntax(currentMessage)]
+    if {[info exists ::Nagelfar(currentMessage)] && \
+            $::Nagelfar(currentMessage) != ""} {
+        lappend ::Nagelfar(messages) [list $::Nagelfar(currentMessageLine) \
+                $::Nagelfar(currentMessage)]
     }
-    set msgs [lsort -integer -index 0 $::Syntax(messages)]
+    set msgs [lsort -integer -index 0 $::Nagelfar(messages)]
     foreach msg $msgs {
         set text [lindex $msg 1]
         set print 1
-        foreach filter $::Syntax(filter) {
+        foreach filter $::Nagelfar(filter) {
             if {[string match $filter $text]} {
                 set print 0
                 break
@@ -149,7 +149,7 @@ proc reportCommentBrace {fromIx toIx} {
     set fromLn [calcLineNo $fromIx]
     set toLn   [calcLineNo $toIx]
     set new {}
-    foreach {n lineNo} $::Syntax(commentbrace) {
+    foreach {n lineNo} $::Nagelfar(commentbrace) {
         if {$fromLn <= $lineNo && $lineNo <= $toLn} {
             contMsg "Unbalanced brace in comment in line $lineNo."
         } else {
@@ -157,7 +157,7 @@ proc reportCommentBrace {fromIx toIx} {
         }
     }
     # Only report it once
-    set ::Syntax(commentbrace) $new
+    set ::Nagelfar(commentbrace) $new
 }
 
 # Trim a string to fit within a length.
@@ -201,7 +201,7 @@ proc checkPossibleComment {str lineNo} {
     set n1 [llength [split $str \{]]
     set n2 [llength [split $str \}]]
     if {$n1 != $n2} {
-        lappend ::Syntax(commentbrace) [expr {$n1 - $n2}] $lineNo
+        lappend ::Nagelfar(commentbrace) [expr {$n1 - $n2}] $lineNo
     }
 }
 
@@ -215,15 +215,15 @@ proc checkComment {str index} {
 
 # Handle a stack of current namespaces.
 proc currentNamespace {} {
-    lindex $::Syntax(namespaces) end
+    lindex $::Nagelfar(namespaces) end
 }
 
 proc pushNamespace {ns} {
-    lappend ::Syntax(namespaces) $ns
+    lappend ::Nagelfar(namespaces) $ns
 }
 
 proc popNamespace {} {
-    set ::Syntax(namespaces) [lrange $::Syntax(namespaces) 0 end-1]
+    set ::Nagelfar(namespaces) [lrange $::Nagelfar(namespaces) 0 end-1]
 }
 
 # Move "i" forward to the first non whitespace char
@@ -827,7 +827,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
                                 # Just do it if 8.4 is available since
                                 # its simple.
                                 set match [list [lindex $::subCmd($cmd) $ix]]
-                                if {$::Syntax(tcl84)} {
+                                if {$::Nagelfar(tcl84)} {
                                     set match [lsearch -all -inline -glob \
                                             $::subCmd($cmd) $arg*]
                                 }
@@ -1202,7 +1202,7 @@ proc parseStatement {statement index knownVarsName} {
 	    parseBody [lindex $argv end] [lindex $indices end] knownVars
             # Clean up
             foreach fVar $varsAdded {
-                unset -nocomplain ::foreachVar($fVar)
+                catch {unset ::foreachVar($fVar)}
             }
 	}
 	if {
@@ -1807,16 +1807,16 @@ proc usage {} {
 proc busyCursor {} {
     if {![info exists ::oldcursor]} {
         set ::oldcursor  [. cget -cursor]
-        set ::oldcursor2 [$::Syntax(resultWin) cget -cursor]
+        set ::oldcursor2 [$::Nagelfar(resultWin) cget -cursor]
     }
 
     . config -cursor watch
-    $::Syntax(resultWin) config -cursor watch
+    $::Nagelfar(resultWin) config -cursor watch
 }
 
 proc normalCursor {} {
     . config -cursor $::oldcursor
-    $::Syntax(resultWin) config -cursor $::oldcursor2
+    $::Nagelfar(resultWin) config -cursor $::oldcursor2
 }
 
 proc exitApp {} {
@@ -1828,16 +1828,16 @@ proc addDbFile {} {
     set apa [tk_getOpenFile -title "Select db file"]
     if {$apa == ""} return
 
-    lappend ::Syntax(db) $apa
-    lappend ::Syntax(allDb) $apa
+    lappend ::Nagelfar(db) $apa
+    lappend ::Nagelfar(allDb) $apa
     updateDbSelection 1
 }
 
 # File drop using TkDnd
 proc fileDropDb {files} {
     foreach file $files {
-        lappend ::Syntax(db) $file
-        lappend ::Syntax(allDb) $file
+        lappend ::Nagelfar(db) $file
+        lappend ::Nagelfar(allDb) $file
     }
     updateDbSelection 1
 }
@@ -1849,29 +1849,29 @@ proc addFile {} {
             -filetypes {{{Tcl File} {.tcl}} {{All Files} {.*}}}]
     if {$apa == ""} return
 
-    lappend ::Syntax(files) $apa
+    lappend ::Nagelfar(files) $apa
 }
 
 # Remove a file from the list to check
 proc removeFile {} {
     set ixs [lsort -decreasing -integer [.ff.lb curselection]]
     foreach ix $ixs {
-        set ::Syntax(files) [lreplace $::Syntax(files) $ix $ix]
+        set ::Nagelfar(files) [lreplace $::Nagelfar(files) $ix $ix]
     }
 }
 
 # File drop using TkDnd
 proc fileDropFile {files} {
     foreach file $files {
-        lappend ::Syntax(files) $file
+        lappend ::Nagelfar(files) $file
     }
 }
 
 # Execute the checks
 proc doCheck {} {
-    if {[llength $::Syntax(db)] == 0} {
-        if {$::Syntax(gui)} {
-            tk_messageBox -title "Syntax Error" -type ok -icon error \
+    if {[llength $::Nagelfar(db)] == 0} {
+        if {$::Nagelfar(gui)} {
+            tk_messageBox -title "Nagelfar Error" -type ok -icon error \
                     -message "No syntax database file selected"
             return
         } else {
@@ -1880,19 +1880,19 @@ proc doCheck {} {
         }
     }
 
-    if {[llength $::Syntax(files)] == 0} {
-        tk_messageBox -title "Syntax Error" -type ok -icon error \
+    if {[llength $::Nagelfar(files)] == 0} {
+        tk_messageBox -title "Nagelfar Error" -type ok -icon error \
                 -message "No files to check"
         return
     }
 
-    if {$::Syntax(gui)} {
+    if {$::Nagelfar(gui)} {
         busyCursor
     }
 
-    set ::Syntax(editFile) ""
-    if {[info exists ::Syntax(resultWin)]} {
-        $::Syntax(resultWin) delete 1.0 end
+    set ::Nagelfar(editFile) ""
+    if {[info exists ::Nagelfar(resultWin)]} {
+        $::Nagelfar(resultWin) delete 1.0 end
     }
 
     # Clear the database first
@@ -1903,13 +1903,13 @@ proc doCheck {} {
     catch {unset ::subCmd}
     catch {unset ::options}
 
-    foreach f $::Syntax(db) {
+    foreach f $::Nagelfar(db) {
         uplevel #0 [list source $f]
     }
 
     set ::currentFile ""
-    foreach f $::Syntax(files) {
-        if {$::Syntax(gui) || [llength $::Syntax(files)] > 1} {
+    foreach f $::Nagelfar(files) {
+        if {$::Nagelfar(gui) || [llength $::Nagelfar(files)] > 1} {
             set ::currentFile $f
         }
         set syntaxfile [file rootname $f].syntax
@@ -1921,22 +1921,22 @@ proc doCheck {} {
             echo "Checking file $f"
             parseFile $f
         } else {
-            if {$::Syntax(gui)} {
-                tk_messageBox -title "Syntax Error" -type ok -icon error \
+            if {$::Nagelfar(gui)} {
+                tk_messageBox -title "Nagelfar Error" -type ok -icon error \
                         -message "Could not find file $f"
             } else {
                 puts stderr "Could not find file $f"
             }
         }
     }
-    if {$::Syntax(gui)} {
+    if {$::Nagelfar(gui)} {
         normalCursor
     }
 }
 
 # This shows the file and the line from an error in the result window.
 proc showError {{lineNo {}}} {
-    set w $::Syntax(resultWin) 
+    set w $::Nagelfar(resultWin) 
     if {$lineNo == ""} {
         set lineNo [lindex [split [$w index current] .] 0]
     }
@@ -1952,8 +1952,8 @@ proc showError {{lineNo {}}} {
 proc updateDbSelection {{fromVar 0}} {
     if {$fromVar} {
         .fs.lb selection clear 0 end
-        foreach f $::Syntax(db) {
-            set i [lsearch $::Syntax(allDb) $f]
+        foreach f $::Nagelfar(db) {
+            set i [lsearch $::Nagelfar(allDb) $f]
             if {$i >= 0} {
                 .fs.lb selection set $i
             }
@@ -1961,9 +1961,9 @@ proc updateDbSelection {{fromVar 0}} {
         return
     }
 
-    set ::Syntax(db) {}
+    set ::Nagelfar(db) {}
     foreach ix [.fs.lb curselection] {
-        lappend ::Syntax(db) [lindex $::Syntax(allDb) $ix]
+        lappend ::Nagelfar(db) [lindex $::Nagelfar(allDb) $ix]
     }
 }
 
@@ -1971,10 +1971,11 @@ proc updateDbSelection {{fromVar 0}} {
 proc makeWin {} {
     option add *Menu.tearOff 0
     option add *Listbox.exportSelection 0
+    catch {font create ResultFont -family courier -size 8}
 
     eval destroy [winfo children .]
     wm protocol . WM_DELETE_WINDOW exitApp
-    wm title . "Tcl Syntax Checker"
+    wm title . "Nagelfar: Tcl Syntax Checker"
     wm withdraw .
 
     # Syntax file section
@@ -1982,7 +1983,7 @@ proc makeWin {} {
     frame .fs
     label .fs.l -text "Syntax database files"
     button .fs.b -text "Add" -width 7 -command addDbFile
-    listbox .fs.lb -yscrollcommand ".fs.sby set" -listvariable ::Syntax(allDb) \
+    listbox .fs.lb -yscrollcommand ".fs.sby set" -listvariable ::Nagelfar(allDb) \
             -height 4 -width 40 -selectmode extended
     updateDbSelection 1
     bind .fs.lb <<ListboxSelect>> updateDbSelection
@@ -2000,7 +2001,7 @@ proc makeWin {} {
     label .ff.l -text "Tcl files to check"
     button .ff.b -text "Add" -width 7 -command addFile
     listbox .ff.lb -yscrollcommand ".ff.sby set" \
-            -listvariable ::Syntax(files) \
+            -listvariable ::Nagelfar(files) \
             -height 4 -width 40
     scrollbar .ff.sby -orient vertical -command ".ff.lb yview"
     bind .ff.lb <Key-Delete> "removeFile"
@@ -2019,10 +2020,20 @@ proc makeWin {} {
 
     # Result section
 
-    set ::Syntax(resultWin) .fr.t
+    set ::Nagelfar(resultWin) .fr.t
     frame .fr
     button .fr.b -text "Check" -width 7 -command "doCheck"
-    text .fr.t -width 100 -height 25 -wrap none -font "Courier 8" \
+    button .fr.bfp -text "+" -bd 0 -padx 0 -pady 0 -highlightthickness 0 \
+            -command {
+                font configure ResultFont -size \
+                        [expr {[font configure ResultFont -size] + 1}]
+            }
+    button .fr.bfm -text "-" -bd 0 -padx 0 -pady 0 -highlightthickness 0 \
+            -command {
+                font configure ResultFont -size \
+                        [expr {[font configure ResultFont -size] - 1}]
+            }
+    text .fr.t -width 100 -height 25 -wrap none -font ResultFont \
             -xscrollcommand ".fr.sbx set" \
             -yscrollcommand ".fr.sby set"
     scrollbar .fr.sbx -orient horizontal -command ".fr.t xview"
@@ -2031,6 +2042,8 @@ proc makeWin {} {
     grid .fr.b         -sticky w
     grid .fr.t .fr.sby -sticky news
     grid .fr.sbx       -sticky we
+    grid .fr.bfp -row 2 -column 1 -sticky w
+    grid .fr.bfm -row 2 -column 1 -sticky e
     grid columnconfigure .fr 0 -weight 1
     grid rowconfigure .fr 1 -weight 1
 
@@ -2126,11 +2139,11 @@ proc editFile {filename lineNo} {
         raise .fv
     } else {
         toplevel .fv
-	if {![info exists ::Syntax(editFileFont)]} {
-	    set ::Syntax(editFileFont) "Courier -12"
+	if {![info exists ::Nagelfar(editFileFont)]} {
+	    set ::Nagelfar(editFileFont) "Courier -12"
 	}
 
-        text .fv.t -width 80 -height 25 -font $::Syntax(editFileFont) \
+        text .fv.t -width 80 -height 25 -font $::Nagelfar(editFileFont) \
                 -xscrollcommand ".fv.sbx set" \
                 -yscrollcommand ".fv.sby set"
         scrollbar .fv.sbx -orient horizontal -command ".fv.t xview"
@@ -2153,38 +2166,38 @@ proc editFile {filename lineNo} {
         .fv.m add cascade -label "Font" -menu .fv.m.mo
         menu .fv.m.mo
 	.fv.m.mo add radiobutton -label "Courier -10" \
-	    -variable ::Syntax(editFileFont) -value "Courier -10" \
-	    -command {.fv.t configure -font $::Syntax(editFileFont)}
+	    -variable ::Nagelfar(editFileFont) -value "Courier -10" \
+	    -command {.fv.t configure -font $::Nagelfar(editFileFont)}
 	.fv.m.mo add radiobutton -label "Courier -12" \
-	    -variable ::Syntax(editFileFont) -value "Courier -12" \
-	    -command {.fv.t configure -font $::Syntax(editFileFont)}
+	    -variable ::Nagelfar(editFileFont) -value "Courier -12" \
+	    -command {.fv.t configure -font $::Nagelfar(editFileFont)}
 	.fv.m.mo add radiobutton -label "Courier -14" \
-	    -variable ::Syntax(editFileFont) -value "Courier -14" \
-	    -command {.fv.t configure -font $::Syntax(editFileFont)}
+	    -variable ::Nagelfar(editFileFont) -value "Courier -14" \
+	    -command {.fv.t configure -font $::Nagelfar(editFileFont)}
 
-        label .fv.f.ln -width 5 -textvariable ::Syntax(lineNo)
+        label .fv.f.ln -width 5 -textvariable ::Nagelfar(lineNo)
         pack .fv.f.ln -side right
 
         bind .fv.t <Any-Key> {
             after idle {
-                set ::Syntax(lineNo) [lindex [split [.fv.t index insert] .] 0]
+                set ::Nagelfar(lineNo) [lindex [split [.fv.t index insert] .] 0]
             }
         }
         wm protocol .fv WM_DELETE_WINDOW closeFile
         .fv.t tag configure hl -background yellow
-        if {[info exists ::Syntax(editFileGeom)]} {
-            wm geometry .fv $::Syntax(editFileGeom)
+        if {[info exists ::Nagelfar(editFileGeom)]} {
+            wm geometry .fv $::Nagelfar(editFileGeom)
         } else {
             after idle {after 1 {
-                set ::Syntax(editFileOrigGeom) [wm geometry .fv]
+                set ::Nagelfar(editFileOrigGeom) [wm geometry .fv]
             }}
         }
     }
 
-    if {![info exists ::Syntax(editFile)] || \
-            $filename != $::Syntax(editFile)} {
+    if {![info exists ::Nagelfar(editFile)] || \
+            $filename != $::Nagelfar(editFile)} {
         .fv.t delete 1.0 end
-        set ::Syntax(editFile) $filename
+        set ::Nagelfar(editFile) $filename
         wm title .fv [file tail $filename]
 
         # Try to figure out eol style
@@ -2196,16 +2209,16 @@ proc editFile {filename lineNo} {
         set crCnt [expr {[llength [split $data \r]] - 1}]
         set lfCnt [expr {[llength [split $data \n]] - 1}]
         if {$crCnt == 0 && $lfCnt > 0} {
-            set ::Syntax(editFileTranslation) lf
+            set ::Nagelfar(editFileTranslation) lf
         } elseif {$crCnt > 0 && $crCnt == $lfCnt} {
-            set ::Syntax(editFileTranslation) crlf
+            set ::Nagelfar(editFileTranslation) crlf
         } elseif {$lfCnt == 0 && $crCnt > 0} {
-            set ::Syntax(editFileTranslation) cr
+            set ::Nagelfar(editFileTranslation) cr
         } else {
-            set ::Syntax(editFileTranslation) auto
+            set ::Nagelfar(editFileTranslation) auto
         }
             
-        #puts "EOL $::Syntax(editFileTranslation)"
+        #puts "EOL $::Nagelfar(editFileTranslation)"
 
         set ch [open $filename r]
         set data [read $ch]
@@ -2217,7 +2230,7 @@ proc editFile {filename lineNo} {
     .fv.t tag add hl $lineNo.0 $lineNo.end
     .fv.t mark set insert $lineNo.0
     focus .fv.t
-    set ::Syntax(lineNo) $lineNo
+    set ::Nagelfar(lineNo) $lineNo
     #update idletasks
     after 1 {after idle {.fv.t see insert}}
 }
@@ -2225,24 +2238,24 @@ proc editFile {filename lineNo} {
 proc saveFile {} {
     if {[tk_messageBox -parent .fv -title "Save File" -type okcancel \
             -icon question \
-            -message "Save file\n$::Syntax(editFile)"] != "ok"} {
+            -message "Save file\n$::Nagelfar(editFile)"] != "ok"} {
         return
     }
-    set ch [open $::Syntax(editFile) w]
-    fconfigure $ch -translation $::Syntax(editFileTranslation)
+    set ch [open $::Nagelfar(editFile) w]
+    fconfigure $ch -translation $::Nagelfar(editFileTranslation)
     puts -nonewline $ch [.fv.t get 1.0 end-1char]
     close $ch
 }
 
 proc closeFile {} {
-    if {[info exists ::Syntax(editFileGeom)] || \
-            ([info exists ::Syntax(editFileOrigGeom)] && \
-             $::Syntax(editFileOrigGeom) != [wm geometry .fv])} {
-        set ::Syntax(editFileGeom) [wm geometry .fv]
+    if {[info exists ::Nagelfar(editFileGeom)] || \
+            ([info exists ::Nagelfar(editFileOrigGeom)] && \
+             $::Nagelfar(editFileOrigGeom) != [wm geometry .fv])} {
+        set ::Nagelfar(editFileGeom) [wm geometry .fv]
     }
 
     destroy .fv
-    set ::Syntax(editFile) ""
+    set ::Nagelfar(editFile) ""
 }
 
 
@@ -2300,14 +2313,14 @@ proc getOptions {} {
 # Global code is only run first time to allow re-sourcing
 if {![info exists gurka]} {
     set gurka 1
-    set ::Syntax(db) {}
-    set ::Syntax(files) {}
-    set ::Syntax(gui) 0
-    set ::Syntax(filter) {}
+    set ::Nagelfar(db) {}
+    set ::Nagelfar(files) {}
+    set ::Nagelfar(gui) 0
+    set ::Nagelfar(filter) {}
     getOptions
 
     # Locate default syntax database(s)
-    set ::Syntax(allDb) {}
+    set ::Nagelfar(allDb) {}
     set apa {}
     lappend apa [file join [pwd] syntaxdb.tcl]
     eval lappend apa [glob -nocomplain [file join [pwd] syntaxdb*.tcl]]
@@ -2323,8 +2336,8 @@ if {![info exists gurka]} {
     }
 
     foreach file $apa {
-        if {[file exists $file] && [lsearch $::Syntax(allDb) $file] == -1} {
-            lappend ::Syntax(allDb) $file
+        if {[file exists $file] && [lsearch $::Nagelfar(allDb) $file] == -1} {
+            lappend ::Nagelfar(allDb) $file
         }
     }
     
@@ -2338,11 +2351,11 @@ if {![info exists gurka]} {
             }
             -s {
                 incr i
-                lappend ::Syntax(db) [lindex $argv $i]
-                lappend ::Syntax(allDb) [lindex $argv $i]
+                lappend ::Nagelfar(db) [lindex $argv $i]
+                lappend ::Nagelfar(allDb) [lindex $argv $i]
             }
             -gui {
-                set ::Syntax(gui) 1
+                set ::Nagelfar(gui) 1
             }
             -novar {
                 set ::Prefs(noVar) 1
@@ -2358,29 +2371,29 @@ if {![info exists gurka]} {
             }
             -filter {
                 incr i
-                lappend ::Syntax(filter) [lindex $argv $i]
+                lappend ::Nagelfar(filter) [lindex $argv $i]
             }
             -* {
                 puts "Unknown option $arg."
                 usage
             }
             default {
-                lappend ::Syntax(files) $arg
+                lappend ::Nagelfar(files) $arg
             }
         }
     }
 
     # Use default database if none were given
-    if {[llength $::Syntax(db)] == 0} {
-        if {[llength $::Syntax(allDb)] != 0} {
-            lappend ::Syntax(db) [lindex $::Syntax(allDb) 0]
+    if {[llength $::Nagelfar(db)] == 0} {
+        if {[llength $::Nagelfar(allDb)] != 0} {
+            lappend ::Nagelfar(db) [lindex $::Nagelfar(allDb) 0]
         }
     }
 
     # If there is no file specified, try invoking a GUI
-    if {$::Syntax(gui) || [llength $::Syntax(files)] == 0} {
+    if {$::Nagelfar(gui) || [llength $::Nagelfar(files)] == 0} {
         if {[catch {package require Tk}]} {
-            if {$::Syntax(gui)} {
+            if {$::Nagelfar(gui)} {
                 puts stderr "Failed to start GUI"
                 exit 1
             } else {
@@ -2388,7 +2401,7 @@ if {![info exists gurka]} {
                 exit 1
             }
         }
-        set ::Syntax(gui) 1
+        set ::Nagelfar(gui) 1
         makeWin
         vwait forever
         exit
