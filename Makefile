@@ -56,7 +56,7 @@ check:
 	@./nagelfar.tcl nagelfar.tcl
 
 test:
-	@./tests/all.tcl
+	@./tests/all.tcl $(TESTFLAGS)
 
 test85:
 	@$(TCLSH85) ./tests/all.tcl
