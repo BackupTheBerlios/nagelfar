@@ -21,7 +21,8 @@ I have started to dust it off and I'll try to work some on it.
 The tool have finally got a name, Nagelfar, and it works rather well and
 can catch a lot of common errors.
 <br>
-It has reached version 0.7 and is available under GPL.
+It has reached version 0.7 and is available under GPL. It requires Tcl/Tk 8.4
+to run.
 <p>
 Any feedback, good or bad, can be sent to
 &lt;peter <i>dot</i> spjuth <i>at</i> space <i>dot</i> se&gt;
@@ -31,8 +32,9 @@ Any feedback, good or bad, can be sent to
 
 <a name="SyntaxDownload"></a><h3>Download</h3>
 
+Nagelfar requires Tcl/Tk 8.4 to run.<br>
 Version 0.7:<br>
-<a href="nagelfar06.tar.gz">Main distribution</a><br>
+<a href="nagelfar07.tar.gz">Main distribution</a><br>
 <a href="nagelfar.kit">Starkit</a><br>
 <a href="nagelfar">Starpack for Linux (x86)</a><br>
 <a href="nagelfar.solaris">Starpack for Solaris (sparc)</a><br>
@@ -42,7 +44,10 @@ Version 0.7:<br>
 <ul>
   <li>Written in pure Tcl.</li>
   <li>It's picky. It prefers to warn if it is uncertain.</li>
-  <li>It can be extended to test scripts for applications using Tcl as script language.</li>
+  <li>It can be extended to test scripts for applications using Tcl as
+      script language.</li>
+  <li>Severity level filter and glob matching filters to remove errors
+      known to be ok.</li>
 </ul>
 
 To get a feeling of what it can do, here is a test script that is part of 
@@ -140,45 +145,56 @@ The result of checking the above is:
 <pre>
 Parsing file tests/test.syntax
 Checking file tests/test.tcl
-Line   5: Found constant "bepa" which is also a variable.
-Line   7: Unknown variable "cep"
-Line   8: Unknown variable "epa"
-Line  10: Suspicious variable name "$depa"
-Line  11: Suspicious variable name "$cepa"
-Line  13: Wrong number of arguments (3) to "set"
-Line  13: Found constant "bepa" which is also a variable.
-Line  13: Found constant "cepa" which is also a variable.
-Line  18: Badly formed if statement
-          Found argument 'elsif' where else/elseif was expected.
-Line  24: Unknown subcommand "gurka" to "info"
-Line  31: Warning: Switch pattern starting with #. This could be a bad comment.
-Line  31: Unknown command "This"
-Line  31: Unknown command "bad"
-Line  34: Unknown command "miffo"
-Line  54: Suspicious variable name "$bepa"
-Line  55: Unknown variable "$apa"
-Line  60: Could not complete statement.
-          One double quote would complete the first line
-          One double quote would complete the script body at line 61.
-Line  66: Could not complete statement.
-          One close bracket would complete the first line
-          One close bracket would complete the script body at line 67.
-Line  69: Wrong number of arguments (4) to "proc"
-          Argument 4 at line 71
-Line  73: Close brace not aligned with line 69 (0 4)
-Line  74: Close brace first in statement.
-Line  74: Unknown command "}"
-Line  78: Could not complete statement.
-          One close brace would complete the first line
-          One close brace would complete the script body at line 84.
-          Assuming completeness for further processing.
-Line  80: Wrong number of arguments (1) to "if"
-Line  83: Found non indented close brace that did not end statement.
-          This may indicate a brace mismatch.
-Line  83: Close brace not aligned with line 80 (4 0)
+Line   5: W Found constant "bepa" which is also a variable.
+Line   7: E Unknown variable "cep"
+Line   8: E Unknown variable "epa"
+Line  10: N Suspicious variable name "$depa"
+Line  11: N Suspicious variable name "$cepa"
+Line  13: E Wrong number of arguments (3) to "set"
+Line  13: W Found constant "bepa" which is also a variable.
+Line  13: W Found constant "cepa" which is also a variable.
+Line  18: E Badly formed if statement
+            Found argument 'elsif' where else/elseif was expected.
+Line  24: E Unknown subcommand "gurka" to "info"
+Line  31: W Switch pattern starting with #. This could be a bad comment.
+Line  31: W Unknown command "This"
+Line  31: W Unknown command "bad"
+Line  34: W Unknown command "miffo"
+Line  54: N Suspicious variable name "$bepa"
+Line  55: N Suspicious variable name "$apa"
+Line  60: E Could not complete statement.
+            One double quote would complete the first line
+            One double quote would complete the script body at line 61.
+Line  66: E Could not complete statement.
+            One close bracket would complete the first line
+            One close bracket would complete the script body at line 67.
+Line  69: E Wrong number of arguments (4) to "proc"
+            Argument 4 at line 71
+Line  73: N Close brace not aligned with line 69 (0 4)
+Line  74: E Close brace first in statement.
+Line  74: W Unknown command "}"
+Line  78: E Could not complete statement.
+            One close brace would complete the first line
+            One close brace would complete the script body at line 84.
+            Assuming completeness for further processing.
+Line  80: E Wrong number of arguments (1) to "if"
+Line  83: N Found non indented close brace that did not end statement.
+            This may indicate a brace mismatch.
+Line  83: N Close brace not aligned with line 80 (4 0)
 </pre>
 
 <a name="SyntaxChanges"></a><h3>Changes</h3>
+Changes in v0.7 (2003-07-23):<br>
+<ul>
+  <li> Tclkit support. Removed FreeWrap support.</li>
+  <li> Requires Tcl/Tk 8.4.</li>
+  <li> More knowledge about options in syntax databases.</li>
+  <li> Some GUI polish including a progress bar and context menu.</li>
+  <li> Fixed a bug where the script's own procs were not checked properly.</li>
+  <li> Added a severity level to each message (Note/Warning/Error) and a
+       severity level filter on output.</li>
+</ul>
+<br>
 Changes in v0.6 (2003-07-08):<br>
 <ul>
   <li> The application got its name.</li>
