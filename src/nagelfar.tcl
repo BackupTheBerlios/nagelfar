@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.0.1 2004-06-13"
+set version "Version 1.0.1+ 2004-07-16"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -451,6 +451,9 @@ proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
         return {}
     }
     set check [info exists option($cmd)]
+    if {!$check && $::Nagelfar(dbpicky)} {
+        errorMsg N "DB: Missing options for command $cmd" 0
+    }
     set i 0
     set used 0
     set skip 0
@@ -488,15 +491,21 @@ proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
                     }
                     if {[llength $match] == 0} {
                         errorMsg E "Bad option $arg to $cmd" $index
+                        set item ""
                     } elseif {[llength $match] > 1} {
                         errorMsg E "Ambigous option for $cmd,\
                                 $arg -> [join $match /]" $index
+                        set item ""
                     } else {
                         errorMsg W "Shortened option for $cmd,\
                                 $arg -> [lindex $match 0]" $index
+                        
+                        set item "$cmd [lindex $match 0]"
                     }
-		} else {
+                } else {
                     set item "$cmd [lindex $option($cmd) $ix]"
+                }
+                if {$item ne ""} {
                     if {[info exists option($item)]} {
                         set skip 1
                         if {[regexp {^[lnvc]$} $option($item)]} {
@@ -509,7 +518,7 @@ proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
                 set skip 0
 		break
 	    }
-	} else {
+	} else { # If not -*
 	    break
 	}
     }
@@ -727,6 +736,9 @@ proc parseVar {str len index iName knownVarsName} {
         if {[info exists knownVars(local,$var)]} {
             errorMsg E "Unknown variable \"$var\"" $index
         }
+    }
+    if {$vararr && [info exists knownVars(type,$var\($varindex\))]} {
+        return [set knownVars(type,$var\($varindex\))]
     }
     if {[info exists knownVars(type,$var)]} {
         return $knownVars(type,$var)
@@ -1116,7 +1128,9 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                                 set arg [lindex $::subCmd($cmd) $ix]
                             }
 			}
-		    }
+		    } elseif {$::Nagelfar(dbpicky)} {
+                        errorMsg N "DB: Missing subcommands for $cmd" 0
+                    }
 		    # Are there any syntax definition for this subcommand?
 		    set sub "$cmd $arg"
 		    if {[info exists ::syntax($sub)]} {
@@ -1128,7 +1142,9 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                         }
 			set i $argc
 			break
-		    }
+		    } elseif {$::Nagelfar(dbpicky)} {
+                        #errorMsg N "DB: Missing syntax for subcommand $sub" 0
+                    }
 		}
 		incr i
 	    }
@@ -1295,7 +1311,11 @@ proc markVariable {var ws wordtype check index knownVarsName typeName} {
 		return 1
 	    }
 	}
-        set type $knownVars(type,$varBase)
+	if {[info exists knownVars(type,$var)]} {
+            set type $knownVars(type,$var)
+        } else {
+            set type $knownVars(type,$varBase)
+        }
 	return 0
     } else {
 	if {![info exists knownVars(known,$varBase)]} {
@@ -1328,6 +1348,7 @@ proc markVariable {var ws wordtype check index knownVarsName typeName} {
 
 # This is called when an unknown command is encountered.
 # If not encountered it is stored to be checked last.
+# Returns the resolved name with qualifier.
 proc lookForCommand {cmd ns index} {
     # Get both the namespace and global possibility
     if {[string match "::*" $cmd]} {
@@ -1342,16 +1363,17 @@ proc lookForCommand {cmd ns index} {
     }
 
     if {[lsearch $::knownCommands $cmd] >= 0} {
-        return
+        return $cmd
     }
     if {[lsearch $::knownCommands $cmd1] >= 0} {
-        return
+        return $cmd1
     }
     if {$cmd2 != "" && [lsearch $::knownCommands $cmd2] >= 0} {
-        return
+        return $cmd2
     }
 
     lappend ::unknownCommands [list $cmd $cmd1 $cmd2 $index]
+    return ""
 }
 
 # Parse one statement and check the syntax of the command
@@ -1360,8 +1382,14 @@ proc parseStatement {statement index knownVarsName} {
     upvar $knownVarsName knownVars
     set words [splitStatement $statement $index indices]
     if {[llength $words] == 0} {return}
+
     if {$::Nagelfar(onlyproc)} {
-        if {[lindex $words 0] != "proc"} {
+        if {[lindex $words 0] eq "proc"} {
+            # OK
+        } elseif {[lindex $words 0] eq "namespace" && \
+                [lindex $words 1] eq "eval"} {
+            # OK
+        } else {
             return ""
         }
     }
@@ -1464,7 +1492,9 @@ proc parseStatement {statement index knownVarsName} {
     switch -glob -- $cmd {
 	proc {
 	    if {$argc != 3} {
-		WA
+                if {!$::Nagelfar(onlyproc)} { # Messages in second pass
+                    WA
+                }
 		return
 	    }
 	    # Skip the proc if any part of it is not constant
@@ -1834,14 +1864,18 @@ proc parseStatement {statement index knownVarsName} {
             if {([lindex $wordstatus 0] & 1) && \
                     [string match "ev*" [lindex $argv 0]]} {
                 if {$argc < 3} {
-                    WA
+                    if {!$::Nagelfar(onlyproc)} { # Messages in second pass
+                        WA
+                    }
                     return
                 }
                 # Look for unknown parts
                 if {!([lindex $wordstatus 1] & 1) || \
                         !([lindex $wordstatus 2] & 1)} {
-                    errorMsg N "Only braced namespace evals are checked." \
-                            [lindex $indices 0]
+                    if {!$::Nagelfar(onlyproc)} { # Messages in second pass
+                        errorMsg N "Only braced namespace evals are checked." \
+                                [lindex $indices 0]
+                    }
                 } else {
                     set ns [lindex $argv 1]
                     if {![string match "::*" $ns]} {
@@ -1862,9 +1896,17 @@ proc parseStatement {statement index knownVarsName} {
 	default {
 	    if {[info exists ::syntax($cmd)]} {
 		set type [checkCommand $cmd $index $argv $wordstatus \
-                                  $wordtype $indices]
+                        $wordtype $indices]
 	    } else {
-                lookForCommand $cmd [currentNamespace] $index
+                # Resolve commands in namespace
+                set rescmd [lookForCommand $cmd [currentNamespace] $index]
+                if {$rescmd != "" && [info exists ::syntax($rescmd)]} {
+                    set type [checkCommand $rescmd $index $argv $wordstatus \
+                            $wordtype $indices]
+                } elseif {$::Nagelfar(dbpicky)} {
+                    errorMsg N "DB: Missing syntax for command $cmd" \
+                            [lindex $indices 0]
+                }
 	    }
 	}
     }
@@ -2064,9 +2106,9 @@ proc parseBody {body index knownVarsName} {
 
     # Cache the splitScript result to optimise 2-pass checking.
     if {[info exists ::Nagelfar(cacheBody)] && \
-            [string equal $::Nagelfar(cacheBody) $body]} {
-        set statements $::Nagelfar(cacheStatements)
-        set indices $::Nagelfar(cacheIndices)
+            [info exists ::Nagelfar(cacheBody,$body)]} {
+        set statements $::Nagelfar(cacheStatements,$body)
+        set indices $::Nagelfar(cacheIndices,$body)
     } else {
         splitScript $body $index statements indices knownVars
     }
@@ -2076,9 +2118,10 @@ proc parseBody {body index knownVarsName} {
 	set type [parseStatement $statement $index knownVars]
     }
     if {$::Nagelfar(onlyproc)} {
-        set ::Nagelfar(cacheBody) $body
-        set ::Nagelfar(cacheStatements) $statements
-        set ::Nagelfar(cacheIndices) $indices
+        set ::Nagelfar(cacheBody) 1
+        set ::Nagelfar(cacheBody,$body) 1
+        set ::Nagelfar(cacheStatements,$body) $statements
+        set ::Nagelfar(cacheIndices,$body) $indices
     } else {
         unset -nocomplain ::Nagelfar(cacheBody)
     }
@@ -2210,6 +2253,8 @@ proc parseProc {argv indices} {
                     incr prevmax $n
                 } elseif {$mod == "*"} {
                     set prevunlim 1
+                } elseif {$mod == "."} {
+                    incr prevmax $n
                 }
             }
         }
@@ -2625,7 +2670,8 @@ proc fileDropFile {files} {
 ##nagelfar syntax _ipexists l
 ##nagelfar syntax _ipset    v
 ##nagelfar syntax _iparray  s v
-
+##nagelfar subcmd _iparray  exists get
+ 
 # Load syntax database using safe interpreter
 proc loadDatabases {} {
     interp create -safe loadinterp
@@ -3181,8 +3227,8 @@ proc makeWin {} {
 
     .m add cascade -label "Help" -underline 0 -menu .m.help
     menu .m.help
-    foreach label {README Messages {Syntax Databases} {Inline Comments}} \
-            file {README.txt messages.txt syntaxdatabases.txt inlinecomments.txt} {
+    foreach label {README Messages {Syntax Databases} {Inline Comments} {Call By Name} {Syntax Tokens}} \
+            file {README.txt messages.txt syntaxdatabases.txt inlinecomments.txt call-by-name.txt syntaxtokens.txt} {
         .m.help add command -label $label -command [list makeDocWin $file]
     }
     .m.help add separator
@@ -3396,23 +3442,52 @@ proc makeAboutWin {} {
     $w.t configure -state disabled
 }
 
+# Insert a text file into a text widget.
+# Any XML-style tags in the file are used as tags in the text window.
+proc insertTaggedText {w file} {
+    set ch [open $file r]
+    set data [read $ch]
+    close $ch
+
+    set tags {}
+    while {$data != ""} {
+        if {[regexp {^([^<]*)<(/?)([^>]+)>(.*)$} $data -> pre sl tag post]} {
+            $w insert end [subst -nocommands -novariables $pre] $tags
+            set i [lsearch $tags $tag]
+            if {$sl != ""} {
+                # Remove tag
+                if {$i >= 0} {
+                    set tags [lreplace $tags $i $i]
+                }
+            } else {
+                # Add tag
+                lappend tags $tag
+            }
+            set data $post
+        } else {
+            $w insert end [subst -nocommands -novariables $data] $tags
+            set data ""
+        }
+    }
+}
+
 proc makeDocWin {fileName} {
     set w [helpWin .doc "Nagelfar Help"]
     set t [Scroll both \
                    text $w.t -width 80 -height 25 -wrap none -font ResultFont]
     pack $w.t -side top -expand 1 -fill both
 
+    # Set up tags
+    $t tag configure ul -underline 1
+
     if {![file exists $::thisDir/doc/$fileName]} {
         $t insert end "ERROR: Could not find doc file "
         $t insert end \"$fileName\"
         return
     }
-    set ch [open $::thisDir/doc/$fileName r]
-    set data [read $ch]
-    close $ch
+    insertTaggedText $t $::thisDir/doc/$fileName
 
-    $t insert end $data
-    focus $t
+    #focus $t
     $t configure -state disabled
 }
 
@@ -3505,8 +3580,9 @@ if {![info exists gurka]} {
     set ::Nagelfar(files) {}
     set ::Nagelfar(gui) 0
     set ::Nagelfar(filter) {}
-    set ::Nagelfar(2pass) 0
+    set ::Nagelfar(2pass) 1
     set ::Nagelfar(encoding) system
+    set ::Nagelfar(dbpicky) 0
     getOptions
 
     # Locate default syntax database(s)
@@ -3568,6 +3644,9 @@ if {![info exists gurka]} {
             }
             -novar {
                 set ::Prefs(noVar) 1
+            }
+            -dbpicky { # A debug thing to help make a more complete database
+                set ::Nagelfar(dbpicky) 1
             }
             -Wexpr* {
                 set ::Prefs(warnBraceExpr) [string range $arg 6 end]
