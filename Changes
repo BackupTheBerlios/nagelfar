@@ -1,7 +1,10 @@
+Version 0.4
+
 2002-11-14
  Added option to skip variable check.
  Added option to enforce 'else' keyword.
  Check ambiguity in shortened subcommands.
+ Improved some messages.
 
 Version 0.3
 
