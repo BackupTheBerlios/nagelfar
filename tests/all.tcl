@@ -30,8 +30,12 @@ proc execTestFile {args} {
     array unset xx -fn
     set flags $xx(-flags)
     array unset xx -flags
-
-    set res [eval [list exec [info nameofexecutable] nagelfar.tcl $fn] \
+    
+    set file nagelfar.tcl
+    if {[file exists ${file}_i]} {
+        set file ${file}_i
+    }
+    set res [eval [list exec [info nameofexecutable] $file $fn] \
             [array get xx] $flags] ;#2>@ stderr
     # Simplify result by shortening standard result
     regsub {Checking file _testfile_\n?} $res "%%" res
