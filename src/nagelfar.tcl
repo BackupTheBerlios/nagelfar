@@ -24,8 +24,8 @@
 # the next line restarts using tclsh \
 exec tclsh "$0" "$@"
 
-set debug 1
-set version "Version 0.3+ 2002-11-14"
+set debug 0
+set version "Version 0.4 2002-11-14"
 set thisScript [file join [pwd] [info script]]
 set thisDir    [file dirname $thisScript]
 set ::Syntax(tcl84) [expr {[info tclversion] >= 8.4}]
