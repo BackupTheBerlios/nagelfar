@@ -443,7 +443,6 @@ proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
     return $replaceSyn
 }
 
-##syntax splitList x x n
 # Make a list of a string. This is easy, just treat it as a list.
 # But we must keep track of indices, so our own parsing is needed too.
 proc splitList {str index iName} {
@@ -546,7 +545,6 @@ proc splitList {str index iName} {
     return $lstr
 }
 
-##syntax parseVar x x x n n
 # Parse a variable name, check for existance
 # This is called when a $ is encountered
 # "i" points to the first char after $
@@ -646,11 +644,16 @@ proc parseVar {str len index iName knownVarsName} {
     if {![info exists knownVars(known,$var)]} {
 	errorMsg E "Unknown variable \"$var\"" $index
     }
+    if {![info exists knownVars(set,$var)]} {
+        set knownVars(read,$var) 1
+        if {[info exists knownVars(local,$var)]} {
+            errorMsg E "Unknown variable \"$var\"" $index
+        }
+    }
     # Make use of markVariable. FIXA
     # If it's a constant array index, maybe it should be checked? FIXA
 }
 
-##syntax parseSubst x x n
 # Check for substitutions in a word
 # Check any variables referenced, and parse any commands within brackets.
 # Returns 1 if the string is constant, i.e. no substitutions
@@ -706,7 +709,6 @@ proc parseSubst {str index knownVarsName} {
     return $result
 }
 
-##syntax parseExpr x x n
 # Parse an expression
 proc parseExpr {str index knownVarsName} {
     upvar $knownVarsName knownVars
@@ -1052,7 +1054,6 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
     }
 }
 
-##syntax markVariable x x x x n
 # Central function to handle known variable names.
 # If check is 2, check if it is known, return 1 if unknown
 # If check is 1, mark the variable as known and set
@@ -1166,7 +1167,6 @@ proc lookForCommand {cmd ns index} {
     lappend ::unknownCommands [list $cmd $cmd1 $cmd2 $index]
 }
 
-##syntax parseStatement x x n
 # Parse one statement and check the syntax of the command
 proc parseStatement {statement index knownVarsName} {
     upvar $knownVarsName knownVars
@@ -1305,8 +1305,10 @@ proc parseStatement {statement index knownVarsName} {
                     # Warn here? FIXA
                     errorMsg N "Non constant level to $cmd: $level" $index
                     set hasLevel 1
+                    set level ""
+                } else {
+                    set level 1
                 }
-                set level ""
             }
             if {$hasLevel} {
                 set tmp [lrange $argv 1 end]
@@ -1317,7 +1319,7 @@ proc parseStatement {statement index knownVarsName} {
                 set tmpWS $wordstatus
                 set i 1
             }
-            #miffo
+
 	    foreach {other var} $tmp {wsO wsV} $tmpWS {
                 if {$wsV == 0} {
                     # The variable name contains substitutions
@@ -1325,6 +1327,18 @@ proc parseStatement {statement index knownVarsName} {
                 } else {
                     set knownVars(known,$var) 1
                     lappend constantsDontCheck $i
+                    if {$wsO == 0} {
+                        # Is the other name a simple var subst?
+                        if {[regexp {^\$[\w()]+} $other]} {
+                            set other [string range $other 1 end]
+                            if {[info exists knownVars(known,$other)]} {
+                                # FIXA: level #0 for global
+                                if {$level == 1} {
+                                    set knownVars(upvar,$other) $var
+                                }
+                            }
+                        }
+                    }
                 }
 		incr i 2
 	    }
@@ -1342,7 +1356,7 @@ proc parseStatement {statement index knownVarsName} {
 		}
 		lappend constantsDontCheck $i
 		foreach var [lindex $argv $i] {
-		    markVariable $var 1 0 $index knownVars
+		    markVariable $var 1 1 $index knownVars
 		}
 	    }
             # FIXA: Experimental foreach check...
@@ -1577,7 +1591,6 @@ proc parseStatement {statement index knownVarsName} {
     }
 }
 
-##syntax splitScript x x n n
 # Split a script into individual statements
 proc splitScript {script index statementsName indicesName} {
     upvar $statementsName statements $indicesName indices
@@ -1744,7 +1757,6 @@ proc splitScript {script index statementsName indicesName} {
     }
 }
 
-##syntax parseBody x x n
 proc parseBody {body index knownVarsName} {
     upvar $knownVarsName knownVars
 
@@ -1787,34 +1799,70 @@ proc parseProc {argv indices} {
 
     # Parse the arguments.
     # Initialise a knownVars array with the arguments.
-    # Build a syntax description for the procedure.
-    set min 0
-    set unlim 0
     array set knownVars {}
     foreach a $args {
-	if {[llength $a] != 1} {
-	    set knownVars(known,[lindex $a 0]) 1
-	    set knownVars(local,[lindex $a 0]) 1
-	    continue
-	}
-	if {[string equal $a "args"]} {
-	    set unlim 1
+        set knownVars(known,[lindex $a 0]) 1
+        set knownVars(local,[lindex $a 0]) 1
+        set knownVars(set,[lindex $a 0]) 1
+    }
+
+    lappend knownProcs $name
+    lappend knownCommands $name
+
+#    decho "Note: parsing procedure $name"
+    pushNamespace $ns
+    parseBody $body [lindex $indices 2] knownVars
+    popNamespace
+
+    #foreach item [array names knownVars upvar,*] {
+    #    puts "upvar '$item' '$knownVars($item)'"
+    #}
+
+    # Build a syntax description for the procedure.
+    # Parse the arguments.
+    set upvar 0
+    set unlim 0
+    set min 0
+    set newsyntax {}
+    foreach a $args {
+        set var [lindex $a 0]
+        set type x
+
+        # Check for any upvar in the proc
+        if {[info exists knownVars(upvar,$var)]} {
+            set other $knownVars(upvar,$var)
+            if {[info exists knownVars(read,$other)]} {
+                set type v
+            } elseif {[info exists knownVars(set,$other)]} {
+                set type n
+            } else {
+                set type l
+            }
+            set upvar 1
+        }
+	if {[string equal $var "args"]} {
+            set unlim 1
+	    set type x*
+        } elseif {[llength $a] == 2} {
+            append type .
 	} else {
             incr min
         }
-	set knownVars(known,$a) 1
-	set knownVars(local,$a) 1
+        lappend newsyntax $type
     }
 
-    if {$unlim} {
-        set newsyntax [list r $min]
-    } elseif {$min == [llength $args]} {
-        set newsyntax $min
-    } else {
-        set newsyntax [list r $min [llength $args]]
+    if {!$upvar} {
+        if {$unlim} {
+            set newsyntax [list r $min]
+        } elseif {$min == [llength $args]} {
+            set newsyntax $min
+        } else {
+            set newsyntax [list r $min [llength $args]]
+        }
     }
 
     if {[info exists syntax($name)]} {
+        #decho "Prev: '$syntax($name)'  New: '$newsyntax'"
         # Check if it matches previously defined syntax
         set prevmin 0
         set prevmax 0
@@ -1852,15 +1900,9 @@ proc parseProc {argv indices} {
             contMsg "Previous '$syntax($name)'  New '$newsyntax'"
         }
     } else {
+        #decho "Syntax for '$name' : '$newsyntax'"
         set syntax($name) $newsyntax
     }
-    lappend knownProcs $name
-    lappend knownCommands $name
-
-#    decho "Note: parsing procedure $name"
-    pushNamespace $ns
-    parseBody $body [lindex $indices 2] knownVars
-    popNamespace
 
     # Update known globals with those that were set in the proc.
     # I.e. anyone with set == 1 and namespace == "" should be
