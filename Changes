@@ -1,3 +1,8 @@
+Version 0.7
+
+2003-07-23
+ Minor fixes in gui.
+ 
 2003-07-13
  Added a progress bar and a context menu in the gui.
  Added a severity level filter on messages.
