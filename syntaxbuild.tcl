@@ -202,6 +202,7 @@ proc buildDb {ch} {
     set syntax(source)           1
     set syntax(split)           "r 1 2"
     set syntax(string)          "s x x*"
+    set syntax(string\ is)      "x o* x"
     set syntax(subst)           "o* x"
     # "switch" is handled specially
     set syntax(tell)             1
@@ -235,33 +236,65 @@ proc buildDb {ch} {
 
     # Build a database of options and subcommands
 
-    # Get subcommands for commands that can't use the standard form
+    # subCmd(cmd) contains a list of all allowed subcommands
+
+    # Get subcommands for commands that can't use the standard loop below
     set subCmd(wm) [getSubCmds wm gurkmeja .]
-    set subCmd(array) [getSubCmds array gurkmeja apa]
 
     # Get subcommands for any commands defining "s"
     foreach cmd [array names syntax] {
-        if {![info exists subCmd($cmd)] && \
-                [lsearch -glob $syntax($cmd) "s*"] >= 0} {
-            set subCmd($cmd) [getSubCmds $cmd gurkmeja]
+        if {[info exists subCmd($cmd)]} continue
+        set syn $syntax($cmd)
+        set oi [lsearch -glob $syn "s*"]
+        if {$oi >= 0} {
+            set syn [lreplace $syn $oi $oi gurkmeja]
+            set opts [eval getSubCmds $cmd $syn]
+            if {[llength $opts] > 0} {
+                set subCmd($cmd) $opts
+                #puts "AutoSub: $cmd $subCmd($cmd)"
+            } else {
+                #puts "Failed AutoSub: $cmd"
+            }
         }
     }
 
-    # Get options
-    foreach cmd {glob switch} {
-        set option($cmd) [getSubCmds $cmd -gurkmeja]
-    }
-    foreach cmd {lsort subst} {
-        set option($cmd) [getSubCmds $cmd -gurkmeja g]
-    }
+    # option(cmd) contains a list of all allowed options
+    # option(cmd subcmd) defines options for subcommands
+
+    # Get options for commands that can't use the standard loop below.
+    set option(switch)     [getSubCmds switch -gurkmeja]
     set option(fconfigure) [getSubCmds fconfigure stdin -gurkmeja]
-    set option(lsearch) [getSubCmds lsearch -gurkmeja g g]
+    set option(fcopy)      [getSubCmds fcopy stdin stdout -gurkmeja x]
+
+    # Get options for any commands defining "o*" or "p*"
+    foreach cmd [array names syntax] {
+        if {[info exists option($cmd)]} continue
+        set syn $syntax($cmd)
+        set oi [lsearch -glob $syn "o*"]
+        if {$oi >= 0} {
+            set syn [lreplace $syn $oi $oi -gurkmeja]
+        }
+        set pi [lsearch -glob $syn "p*"]
+        if {$pi >= 0} {
+            set syn [lreplace $syn $pi $pi -gurkmeja apa]
+        }
+        if {$oi >= 0 || $pi >= 0} {
+            set opts [eval getSubCmds $cmd $syn]
+            if {[llength $opts] > 0} {
+                set option($cmd) $opts
+                #puts "Autoopt: $cmd $option($cmd)"
+            }
+        }
+    }
 
     # The default for options is not to take a value unless 'p' is
     # used in the syntax definition.
-    # If an index can be found below, it takes a value.
+    # If option(cmd opt) is set, the option is followed by a value.
+    # The value of option(cmd opt) may be any of the syntax chars cnvl
+    # and will be used to check the option.
     set option(lsort\ -index) 1
     set option(lsort\ -command) 1
+    set option(string\ is\ -failindex) n
 
     # Build syntax info for procs
     foreach apa $::kP {
