@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.0+ 2004-06-13"
+set version "Version 1.0.1 2004-06-13"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -1366,41 +1366,64 @@ proc parseStatement {statement index knownVarsName} {
         }
     }
 
-    # FIXA: handle {expand} here
     set type ""
     set words2 {}
     set wordstatus {}
     set wordtype {}
     set indices2 {}
     foreach word $words index $indices {
+        set ws 0
+        set wtype ""
+        if {[string length $word] > 8 && [string match "{expand}*" $word]} {
+            set ws 8
+            set word [string range $word 8 end]
+        }
         set char [string index $word 0]
         if {[string equal $char "\{"]} {
-            lappend words2 [string range $word 1 end-1]
-            lappend wordstatus 3 ;# Braced & constant
-            lappend wordtype ""
+            incr ws 3 ;# Braced & constant
+            set word [string range $word 1 end-1]
 	    incr index
         } else {
-	    set ws 0
             if {[string equal $char "\""]} {
                 set word [string range $word 1 end-1]
 		incr index
-		set ws 4
+		incr ws 4
             }
-	    lappend words2 $word
             if {[parseSubst $word $index wtype knownVars]} {
                 # A constant
                 incr ws 1
             }
+        }
+        if {($ws & 9) == 9} {
+            # An expanded constant, unlikely but we can just as well handle it
+            if {[catch {llength $word}]} {
+                errorMsg E "Expanded word is not a valid list." $index
+            } else {
+                foreach apa $word {
+                    lappend words2 $apa
+                    lappend wordstatus 1
+                    lappend wordtype ""
+                    # For now I don't bother to track correct indices
+                    lappend indices2 $index
+                }
+            }
+        } else {
+            lappend words2 $word
             lappend wordstatus $ws
             lappend wordtype $wtype
+            lappend indices2 $index
         }
-	lappend indices2 $index
     }
 
     set cmd [lindex $words2 0]
     set index [lindex $indices2 0]
     set cmdtype [lindex $wordtype 0]
     set cmdws [lindex $wordstatus 0]
+
+    # Expanded command, nothing to check...
+    if {($cmdws & 8)} {
+        return
+    }
 
     # If the command contains substitutions we can not determine
     # which command it is, so we skip it.
@@ -1421,6 +1444,13 @@ proc parseStatement {statement index knownVarsName} {
     set indices [lrange $indices2 1 end]
     set argc [llength $argv]
 
+    # FIXA: handle {expand} better
+    foreach ws $wordstatus {
+        if {$ws & 8} {
+            return
+        }
+    }
+ 
     # The parsing below can pass information to the constants checker
     # This list primarily consists of args that are supposed to be variable
     # names without a $ in front.
@@ -2629,7 +2659,12 @@ proc loadDatabases {} {
     } else {
         set ::Nagelfar(dbTclVersion) [package present Tcl]
     }
-    if {[package vcompare $::Nagelfar(dbTclVersion) 8.5] >= 0} {
+    # {expand} requires that Nagelfar is run in 8.5 since the checks for
+    # it does not work otherwise.
+    # It also naturally requires an 8.5 database to indicate that it is
+    # checking 8.5 scripts
+    if {[package vcompare $::Nagelfar(dbTclVersion) 8.5] >= 0 && \
+            [package vcompare [package present Tcl] 8.5] >= 0} {
         set ::Nagelfar(allowExpand) 1
     } else {
         set ::Nagelfar(allowExpand) 0
