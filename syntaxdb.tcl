@@ -1,7 +1,8 @@
 # Automatically generated syntax database.
-# Generated with syntaxbuild Revision: 1.19 
-# Based on Tcl/Tk version 8.4.4
+# Generated with syntaxbuild Revision: 1.20 
 
+lappend ::dbInfo {Tcl 8.4.6 unix, Tk 8.4.6 x11}
+set ::dbTclVersion 8.4
 set ::knownGlobals {argc argv argv0 auto_index auto_oldpath auto_path env errorCode errorInfo tcl_interactive tcl_libPath tcl_library tcl_nonwordchars tcl_patchLevel tcl_pkgPath tcl_platform tcl_rcFileName tcl_version tcl_wordchars tk_library tk_patchLevel tk_strictMotif tk_version}
 set ::knownCommands {. after append array auto_execok auto_import auto_load auto_load_index auto_mkindex auto_mkindex_old auto_qualify auto_reset bell binary bind bindtags break button canvas case catch cd checkbutton clipboard clock close concat continue destroy encoding entry eof error eval event exec exit expr fblocked fconfigure fcopy file fileevent flush focus font for foreach format frame gets glob global grab grid history if image incr info interp join label labelframe lappend lindex linsert list listbox llength load lower lrange lreplace lsearch lset lsort menu menubutton message namespace open option pack package panedwindow parray pid pkg_compareExtension pkg_mkIndex place proc puts pwd radiobutton raise read regexp regsub rename return scale scan scrollbar seek selection send set socket source spinbox split string subst switch tclLdAout tclLog tclPkgSetup tclPkgUnknown tcl_endOfWord tcl_findLibrary tcl_startOfNextWord tcl_startOfPreviousWord tcl_wordBreakAfter tcl_wordBreakBefore tell text time tk tk_chooseColor tk_chooseDirectory tk_getOpenFile tk_getSaveFile tk_menuSetFocus tk_messageBox tk_popup tk_textCopy tk_textCut tk_textPaste tkwait toplevel trace unknown unset update uplevel upvar variable vwait while winfo wm}
 set ::syntax(_obj,button) {s x*}
