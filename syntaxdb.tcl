@@ -1,5 +1,5 @@
 # Automatically generated syntax database.
-# Generated with syntaxbuild Revision: 1.16 
+# Generated with syntaxbuild Revision: 1.17 
 # Based on Tcl/Tk version 8.4.4
 
 set ::knownGlobals {argc argv argv0 auto_index auto_oldpath auto_path env errorCode errorInfo tcl_interactive tcl_libPath tcl_library tcl_nonwordchars tcl_patchLevel tcl_pkgPath tcl_platform tcl_rcFileName tcl_version tcl_wordchars tk_library tk_patchLevel tk_strictMotif tk_version}
@@ -56,7 +56,7 @@ set {::syntax(info exists)} l
 set ::syntax(interp) {s x*}
 set ::syntax(join) {r 1 2}
 set ::syntax(lappend) {n x*}
-set ::syntax(lindex) 2
+set ::syntax(lindex) {r 2}
 set ::syntax(linsert) {r 3}
 set ::syntax(list) {r 0}
 set ::syntax(llength) 1
@@ -64,6 +64,7 @@ set ::syntax(load) {r 1 3}
 set ::syntax(lrange) 3
 set ::syntax(lreplace) {r 3}
 set ::syntax(lsearch) {o* x x}
+set ::syntax(lset) {n x x x*}
 set ::syntax(lsort) {o* x}
 set ::syntax(namespace) {s x*}
 set ::syntax(open) {r 1 3}
