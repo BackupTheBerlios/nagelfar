@@ -1,3 +1,20 @@
+Version 1.0b1
+
+2004-01-29
+ Some cleanup and optimisations. Added more subcommands to syntaxbuild.
+
+2004-01-07
+ Added a check for bad comments in constant lists.
+
+2003-12-20
+ Improved speed by 35%.
+ Added a 2-pass proc checking to improve things when procs are used
+ before they are declarated in a file.
+
+2003-12-16
+ Recognise if 0 {...} as a comment.
+ Inline comment ##variable to tell checker about a variable.
+
 Version 0.9
 
 2003-12-11
