@@ -1,14 +1,62 @@
-setup:
-	cd nagelfar.vfs/lib ;\
-	ln -sf /home/peter/tclkit/griffin.vfs/lib/griffin ;\
-	ln -sf /home/peter/tkdnd/lib/tkdnd1.0
-	cd nagelfar.vfs/lib/app-nagelfar ;\
-	ln -sf ../../../doc ;\
-	ln -sf ../../../nagelfar.tcl ;\
-	ln -sf ../../../syntaxdb.tcl
+all: setup misctest db
+
+#----------------------------------------------------------------
+# Setup symbolic links from the VFS to the real files
+#----------------------------------------------------------------
+
+nagelfar.vfs/lib/app-nagelfar/nagelfar.tcl:
+	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../nagelfar.tcl
+nagelfar.vfs/lib/app-nagelfar/syntaxdb.tcl:
+	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../syntaxdb.tcl
+nagelfar.vfs/lib/app-nagelfar/doc:
+	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../doc
+nagelfar.vfs/lib/griffin:
+	cd nagelfar.vfs/lib ; ln -s /home/peter/tclkit/griffin.vfs/lib/griffin
+nagelfar.vfs/lib/tkdnd1.0:
+	cd nagelfar.vfs/lib ; ln -s /home/peter/tclkit/griffin.vfs/lib/tkdnd1.0
+
+links: nagelfar.vfs/lib/app-nagelfar/nagelfar.tcl \
+	nagelfar.vfs/lib/app-nagelfar/syntaxdb.tcl \
+	nagelfar.vfs/lib/app-nagelfar/doc \
+	nagelfar.vfs/lib/griffin \
+	nagelfar.vfs/lib/tkdnd1.0
+
+setup: links
+
+#----------------------------------------------------------------
+# Testing
+#----------------------------------------------------------------
+
+selftest:
+	@./nagelfar.tcl nagelfar.tcl
 
 test:
 	@./tests/all.tcl
+
+#----------------------------------------------------------------
+# Generating test examples
+#----------------------------------------------------------------
+
+misctests/test.result: misctests/test.tcl nagelfar.tcl
+	@cd misctests; ../nagelfar.tcl test.tcl > test.result
+
+misctests/test.html: misctests/test.tcl misctests/htmlize.tcl
+	cd misctests; ./htmlize.tcl
+
+misctest: misctests/test.result misctests/test.html
+
+#----------------------------------------------------------------
+# Generating database
+#----------------------------------------------------------------
+
+syntaxdb.tcl: syntaxbuild.tcl
+	@~/tcl/install/bin/wish8.4 syntaxbuild.tcl syntaxdb.tcl
+
+db: syntaxdb.tcl
+
+#----------------------------------------------------------------
+# Packaging/Releasing
+#----------------------------------------------------------------
 
 wrap:
 	sdx wrap nagelfar.kit
