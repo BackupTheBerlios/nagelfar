@@ -24,11 +24,11 @@
 # the next line restarts using tclsh \
 exec tclsh "$0" "$@"
 
-set debug 1
+set debug 0
 package require Tcl 8.4
 
-package provide app-nagelfar 0.7
-set version "Version 0.7.2 2003-08-11"
+package provide app-nagelfar 0.8
+set version "Version 0.8 2003-08-14"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -1041,7 +1041,8 @@ proc markVariable {var ws check index knownVarsName} {
 	if {![info exists knownVars($varBase)]} {
 	    return 1
 	}
-	if {$varArray && $varIndexWs != 0} {
+	if {$varArray && $varIndexWs != 0 && \
+                ($knownVars($varBase) & 8) != 8} {
 	    if {![info exists knownVars($var)]} {
 		return 1
 	    }
@@ -1178,8 +1179,8 @@ proc parseStatement {statement index knownVarsName} {
 	    # FIXA, update the globals database
 	    foreach var $argv ws $wordstatus {
 		if {$ws} {
-		    # 2 means it is a global
-		    set knownVars($var) 2
+		    # 2 means it is a global, 8 non-local
+		    set knownVars($var) 10
 		} else {
 		    errorMsg N "Non constant argument to $cmd: $var" $index
 		}
@@ -1194,9 +1195,9 @@ proc parseStatement {statement index knownVarsName} {
 		regexp {::([^:]+)$} $var -> var
 		if {$ws1} {
 		    if {$i >= $argc - 1} {
-			set knownVars($var) 1
+			set knownVars($var) 8
 		    } else {
-			set knownVars($var) 5
+			set knownVars($var) 12
 		    }
 		    lappend constantsDontCheck $i
 		} else {
@@ -1214,7 +1215,7 @@ proc parseStatement {statement index knownVarsName} {
 		set i 1
 	    }
 	    foreach {other var} $tmp {
-		set knownVars($var) 1
+		set knownVars($var) 8
 		lappend constantsDontCheck $i
 		incr i 2
 	    }
@@ -1576,8 +1577,10 @@ proc splitScript {script index statementsName indicesName} {
 		incr index [string length $tryline]
 		set tryline ""
                 set newstatement 1
-	    } elseif {!$closeBrace && \
-                    ![string match "namespace eval*" $tryline]} {
+	    } elseif {$closeBrace == 0 && \
+                    ![string match "namespace eval*" $tryline] && \
+                    ![string match "if *" $tryline] && \
+                    ![string match "*tcl_platform*" $tryline]} {
                 # A close brace that is not indented is typically the end of
                 # a global statement, like "proc".
                 # If it does not end the statement, there is probably a
@@ -1705,22 +1708,35 @@ proc parseProc {argv indices} {
         set prevmin 0
         set prevmax 0
         set prevunlim 0
-        foreach token $syntax($name) {
-            set tok [string index $token 0]
-            set mod [string index $token 1]
-            set n [expr {$tok == "p" ? 2 : 1}]
-            if {$mod == ""} {
-                incr prevmin $n
-                incr prevmax $n
-            } elseif {$mod == "?"} {
-                incr prevmax $n
-            } elseif {$mod == "*"} {
+        if {[string is integer $syntax($name)]} {
+            set prevmin $syntax($name)
+            set prevmax $syntax($name)
+        } elseif {[string match "r*" $syntax($name)]} {
+            set prevmin [lindex $syntax($name) 1]
+            set prevmax [lindex $syntax($name) 2]
+            if {$prevmax == ""} {
+                set prevmax $prevmin
                 set prevunlim 1
             }
+        } else {
+            foreach token $syntax($name) {
+                set tok [string index $token 0]
+                set mod [string index $token 1]
+                set n [expr {$tok == "p" ? 2 : 1}]
+                if {$mod == ""} {
+                    incr prevmin $n
+                    incr prevmax $n
+                } elseif {$mod == "?"} {
+                    incr prevmax $n
+                } elseif {$mod == "*"} {
+                    set prevunlim 1
+                }
+            }
         }
-        if {$prevunlim != $unlim || $prevmax != [llength $args]\
+        if {$prevunlim != $unlim || \
+                ($prevunlim == 0 && $prevmax != [llength $args]) \
                 || $prevmin != $min} {
-            errorMsg W "Procedure \"$name\" do not match previous definition" \
+            errorMsg W "Procedure \"$name\" does not match previous definition" \
                     [lindex $indices 0]
             contMsg "Previous '$syntax($name)'  New '$newsyntax'"
         }
@@ -1740,9 +1756,10 @@ proc parseProc {argv indices} {
     # 1: local
     # 2: global
     # 4: Has been set.
+    # 8: nonlocal
     # I.e. anyone marked 6 should be added to known globals.
     foreach var [array names knownVars] {
-	if {$knownVars($var) == 6} {
+	if {($knownVars($var) & 6) == 6} {
 #	    decho "Set global $var in proc $name."
 	    if {[lsearch $knownGlobals $var] == -1} {
 		lappend knownGlobals $var
@@ -1838,7 +1855,7 @@ proc parseScript {script} {
     set unknownCommands {}
     array set knownVars {}
     foreach g $knownGlobals {
-	set knownVars($g) 6
+	set knownVars($g) 14
     }
     set script [buildLineDb $script]
     pushNamespace {}
