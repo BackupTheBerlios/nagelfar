@@ -1521,9 +1521,12 @@ proc parseStatement {statement index knownVarsName} {
                         if {[regexp {^\$[\w()]+} $other]} {
                             set other [string range $other 1 end]
                             if {[info exists knownVars(known,$other)]} {
-                                # FIXA: level #0 for global
                                 if {$level == 1} {
                                     set knownVars(upvar,$other) $var
+                                } elseif {$level eq "#0"} {
+                                    # FIXA: level #0 for global
+                                    set knownVars(upvar,$other) $var
+                                    set knownVars(set,$var) 1 ;# FIXA?
                                 }
                             }
                         }
@@ -1554,7 +1557,7 @@ proc parseStatement {statement index knownVarsName} {
                         knownVars wtype
             } else {
 		WA
-		return ""
+		set wtype ""
 	    }
             lappend constantsDontCheck 0
             set type $wtype
@@ -2242,6 +2245,9 @@ proc buildLineDb {str} {
 
     set result ""
     set lines [split $str \n]
+    if {[lindex $lines end] eq ""} {
+        set lines [lrange $lines 0 end-1]
+    }
     set newlineIx {}
     set indentInfo {}
     # This is a trick to get "sp" and "nl" to get an internal string rep.
