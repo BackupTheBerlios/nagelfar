@@ -19,6 +19,17 @@ test tokens-1.1 {
     execTestFile
 } -result {%%}
 
+test tokens-1.2 {
+    Modifier ?
+} -body {
+    createTestFile {
+        ##nagelfar syntax gurka o? x
+        ##nagelfar option gurka -flag -wiggle
+        gurka -flag -wiggle hopp
+    }
+    execTestFile
+} -result {%%Line   4: E Wrong number of arguments (3) to "gurka"}
+
 test tokens-2.1 {
     Token p*
 } -body {
