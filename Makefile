@@ -69,30 +69,36 @@ test85:
 # Coverage
 #----------------------------------------------------------------
 
+# Source files for code coverage
+SRCFILES = nagelfar.tcl
+IFILES   = $(SRCFILES:.tcl=.tcl_i)
+LOGFILES = $(SRCFILES:.tcl=.tcl_log)
+MFILES   = $(SRCFILES:.tcl=.tcl_m)
+
 # Instrument source file for code coverage
-nagelfar.tcl_i: nagelfar.tcl
-	@./nagelfar.tcl -instrument nagelfar.tcl
+%.tcl_i: %.tcl
+	@./nagelfar.tcl -instrument $<
 
 # Target to prepare for code coverage run. Makes sure log file is clear.
-instrument: nagelfar.tcl_i
-	@rm -f nagelfar.tcl_log
+instrument: $(IFILES)
+	@rm -f $(LOGFILES)
 
 # Run tests to create log file.
-nagelfar.tcl_log: nagelfar.tcl_i
+testcover $(LOGFILES): $(IFILES)
 	@./tests/all.tcl $(TESTFLAGS)
 	@$(TCLSH85) ./tests/all.tcl -match expand-*
 
 # Create markup file for better view of result
-nagelfar.tcl_m: nagelfar.tcl_log
-	@./nagelfar.tcl -markup nagelfar.tcl
+%.tcl_m: %.tcl_log 
+	@./nagelfar.tcl -markup $*.tcl
 
 # View code coverage result
-icheck: nagelfar.tcl_m
-	@eskil -noparse ./nagelfar.tcl ./nagelfar.tcl_m &
+icheck: $(MFILES)
+	@for i in $(SRCFILES) ; do eskil -noparse $$i $${i}_m & done
 
 # Remove code coverage files
 clean:
-	@rm -f nagelfar.tcl_log nagelfar.tcl_i nagelfar.tcl_m
+	@rm -f $(LOGFILES) $(IFILES) $(MFILES)
 
 #----------------------------------------------------------------
 # Generating test examples
