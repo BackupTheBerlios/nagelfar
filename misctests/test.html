@@ -84,15 +84,23 @@
 <span style="color: #808080"> 74</span>      }
 <span style="color: #808080"> 75</span>  }
 <span style="color: #808080"> 76</span>  
-<span style="color: #808080"> 77</span>  <span style="color: #b22222"># This should be last in the file, since</span>
-<span style="color: #808080"> 78</span>  <span style="color: #b22222"># the missing close brace disturbs anything</span>
-<span style="color: #808080"> 79</span>  <span style="color: #b22222"># after it</span>
-<span style="color: #808080"> 80</span>  proc depa {} {
-<span style="color: #808080"> 81</span>      <span style="color: #b22222"># Missing close brace</span>
-<span style="color: #808080"> 82</span>      if {[string length apa] {
-<span style="color: #808080"> 83</span>          set bepa 1
-<span style="color: #808080"> 84</span>      }
-<span style="color: #808080"> 85</span>  }
+<span style="color: #808080"> 77</span>  proc fepa {} {
+<span style="color: #808080"> 78</span>      <span style="color: #b22222"># Commented brace {</span>
+<span style="color: #808080"> 79</span>      if {[string length apa]} {
+<span style="color: #808080"> 80</span>          set bepa 1
+<span style="color: #808080"> 81</span>      }
+<span style="color: #808080"> 82</span>  }
+<span style="color: #808080"> 83</span>  }
+<span style="color: #808080"> 84</span>  
+<span style="color: #808080"> 85</span>  <span style="color: #b22222"># This should be last in the file, since</span>
+<span style="color: #808080"> 86</span>  <span style="color: #b22222"># the missing close brace disturbs anything</span>
+<span style="color: #808080"> 87</span>  <span style="color: #b22222"># after it</span>
+<span style="color: #808080"> 88</span>  proc depa {} {
+<span style="color: #808080"> 89</span>      <span style="color: #b22222"># Missing close brace</span>
+<span style="color: #808080"> 90</span>      if {[string length apa] {
+<span style="color: #808080"> 91</span>          set bepa 1
+<span style="color: #808080"> 92</span>      }
+<span style="color: #808080"> 93</span>  }
 </pre></td>
 <td style="vertical-align: top; white-space: nowrap;"><pre>
 Parsing file test.syntax
@@ -170,18 +178,24 @@ Line  70: E Wrong number of arguments (4) to "proc"
 
 Line  74: N Close brace not aligned with line 70 (0 4)
 Line  75: E Close brace first in statement.
-Line  75: W Unknown command "}"
 
 
 
-Line  80: E Could not complete statement.
+
+
+
+Line  82: E Close brace first in statement.
+            Unbalanced brace in comment in line 78.
+
+
+
+
+Line  88: E Could not complete statement.
             One close brace would complete the first line
-            One close brace would complete the script body at line 86.
+            One close brace would complete the script body at line 94.
             Assuming completeness for further processing.
-Line  82: E Wrong number of arguments (1) to "if"
-Line  85: N Found non indented close brace that did not end statement.
-            This may indicate a brace mismatch.
-Line  85: N Close brace not aligned with line 82 (4 0)
+Line  90: E Wrong number of arguments (1) to "if"
+Line  93: N Close brace not aligned with line 90 (4 0)
 </pre></td>
 </tr>
 </tbody>
