@@ -212,6 +212,7 @@ proc buildDb {ch} {
     set syntax(trace)           "s x x*"
     set syntax(trace\ variable) "n x x"
     set syntax(trace\ vinfo)    "l"
+    set syntax(trace\ vdelete)  "v x*"
     set syntax(unset)           "l l*"
     set syntax(update)          "s."
     # "uplevel" is handled specially
