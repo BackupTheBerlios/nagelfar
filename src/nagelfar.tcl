@@ -1,5 +1,7 @@
 #Syntax.tcl a syntax checker for Tcl.
 #Made by Peter Spjuth, Aug 1999
+#
+# $Id$
 
 #Hmm, there must be an easier way to express this...
 source [file join [file dirname [file join [pwd] [info script]]] syntaxdb.tcl]
