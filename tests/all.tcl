@@ -5,6 +5,9 @@
 # the next line restarts using tclsh \
 exec tclsh "$0" "$@"
 
+set thisScript [file normalize [file join [pwd] [info script]]]
+set thisDir    [file dirname $thisScript]
+
 package require tcltest 2.2
 namespace import tcltest::*
 tcltest::configure -verbose "body error"
@@ -33,6 +36,9 @@ proc execTestFile {args} {
     return $res
 }    
 
+proc cleanupTestFile {} {
+    file delete -force _testfile_
+}
 
 test nagelfar-1.1 {
     Command line checks
@@ -696,4 +702,4 @@ test nagelfar-18.1 {
     execTestFile
 } -result {%%}
 
-file delete _testfile_
+cleanupTestFile
