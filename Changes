@@ -1,3 +1,21 @@
+Version 1.0.2
+
+2004-09-02
+ Allow [upvar xx xx] construct.
+ Added database browser.
+ Track interp alias "commands".
+
+2004-08-13
+ Empty namespace eval bodies could give silly warnings.
+ Optimised splitScript.
+
+2004-07-16
+ Fixed a bug when checking shortened options.
+ Array variabled did not track types correctly.
+ Parse namespace eval in first pass to get a more complete pass.
+ Always do 2-pass analysis.
+ Fixed a bug in resolving procs in namespaces.
+
 Version 1.0.1
 
 2004-06-13
