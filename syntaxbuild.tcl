@@ -324,12 +324,25 @@ proc buildDb {ch} {
     if {$useTk} {
         # "bind" is handled specially
         set syntax(console)  "r 1"
+        set syntax(destroy)  "x*"
+        set syntax(event)    "s x*"
+        set syntax(focus)    "o? x?"
+        set syntax(font)     "s x*"
         set syntax(image)    "s x*"
+        set syntax(grid)     "x x*"
+        set syntax(lower)    "x x?"
+        set syntax(option)   "s x*"
+        set syntax(pack)     "x x*"
+        set syntax(place)    "x x*"
+        set syntax(raise)    "x x?"
+        set syntax(selection) "s x*"
+        set syntax(tk)       "s x*"
 	set syntax(winfo)    "s x x*"
         set syntax(wm)       "s x x*"
         # FIXA: Starting on better Tk support
         foreach class {frame entry label button checkbutton radiobutton \
-                listbox labelframe spinbox panedwindow} {
+                listbox labelframe spinbox panedwindow toplevel menu \
+                scrollbar text canvas scale menubutton} {
             destroy .w
             if {[catch {$class .w}]} continue
             set syntax($class) "x p*"
