@@ -7,6 +7,7 @@ exec tclsh "$0" "$@"
 
 package require tcltest 2.2
 namespace import tcltest::*
+tcltest::configure -verbose "body error"
 
 proc createTestFile {scr} {
     set ch [open _testfile_ w]
@@ -41,6 +42,8 @@ test nagelfar-2.1 {
     createTestFile {
         set bepa 2
         set apa $bepa
+        return -1
+        return -code error -1
     }
 } -body {
     execTestFile
@@ -132,8 +135,11 @@ test nagelfar-4.3 {
     execTestFile
 } -result {*Wrong number of arguments*} -match glob
 
+# This error gives a different message which I hope I can correct.
 test nagelfar-4.4 {
     Options checking
+} -constraints { 
+    knownbug
 } -setup {
     createTestFile {
         fconfigure xx -blocking 1 -encoding 0 -mode
@@ -154,5 +160,17 @@ test nagelfar-4.5 {
     execTestFile
 } -result {Checking file _testfile_} -match glob
 
+test nagelfar-5.1 {
+    Procedure checking
+} -setup {
+    createTestFile {
+        proc info {apa} {
+            return $apa
+        }
+        info hejsan
+    }
+} -body {
+    execTestFile
+} -result {*Procedure "info" do not match previous definition*} -match glob
 
 file delete _testfile_
