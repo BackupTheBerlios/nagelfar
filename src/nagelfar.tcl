@@ -1,19 +1,26 @@
 #!/bin/sh
+#--------------------------------------------------------------
 # Syntax.tcl, a syntax checker for Tcl.
-# Made by Peter Spjuth, Aug 1999
+# Copyright (c) 1999, Peter Spjuth
 #
 # $Id$
+#--------------------------------------------------------------
 # the next line restarts using wish \
 exec wish "$0" "$@"
 
-# Hmm, there must be an easier way to express this...
-source [file join [file dirname [file join [pwd] [info script]]] syntaxdb.tcl]
+# Collect default syntax data
+set defknownGlobals  [info globals]
+set defknownCommands [info commands]
+set defknownProcs    [info procs]
+
+set thisscript [file join [pwd] [info script]]
+set thisdir    [file dirname $thisscript]
 
 # TODO: Handle widgets -command options, bind code and other callbacks
 #       Handle namespaces and qualified vars
 #       Handle multiple files. Remember variables.
 #       Everything marked FIXA
-#       Give this program a silly name.
+#       Give this program a silly name. (maybe Psyche, Peter's SYntax CHEcker)
 #       Optimise. It's still slow.
 
 # Arguments to many procedures:
@@ -47,10 +54,11 @@ proc timestamp {str} {
     set _timestamp_ $apa
 }
 
+# A tool to collect profiling data
 proc profile {str script} {
     global profiledata
     if {![info exists profiledata($str)]} {
-        set profiledata($str) 0
+        set profiledata($str)   0
         set profiledata($str,n) 0
     }
     set apa [clock clicks]
@@ -59,14 +67,17 @@ proc profile {str script} {
     incr profiledata($str,n)
 }
 
-# Allow syntax information in comments
+# This is called when a comment is encountered.
+# It allows syntax information to be stored in comments
 proc checkComment {str index} {
-    set str [string trimleft $str]
-
     if {[string match "##syntax *" $str]} {
 	set ::syntax([lindex $str 1]) [lrange $str 2 end]
     }
-    #Also check for unmatched braces. FIXA
+    # FIXA
+    # I would also like some check for unmatched braces.
+    # That can't be done here since this is called after the
+    # script is split, and the split will fail on an unmatched brace
+    # Maybe splitScript can take care of it?
 }
 
 ##syntax skipWS x x n
@@ -246,7 +257,13 @@ proc splitStatement {statement index indicesName} {
     set words {}
     set i 0
     skipWS $statement $len i
+    if {$i != 0 && $i < $len} {
+        # This should not happen
+	decho "Whitespace in splitStatement. [calcLineNo $index]"
+    }
     if {[string index $statement $i] == "#"} {
+        # This should not happen
+	decho "A comment slipped through to splitStatement. [calcLineNo $index]"
 	return {}
     }
     while {$i < $len} {
@@ -624,7 +641,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 		    echo "Modifier \"$mod\" is not supported for \"e\" in\
                             syntax for $cmd."
 		}
-		if {[lindex $wordstatus $i] == 0} {
+		if {[lindex $wordstatus $i] == 0 && $::Prefs(warnBraceExpr)} {
 		    echo "Warning: No braces around expression."
 		    echo "  $cmd statement in line\
                             [calcLineNo [lindex $indices $i]]"
@@ -741,7 +758,9 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 }
 
 ##syntax markVariable x x x n
-# Mark a variable as known
+# Central function to handle known variable names.
+# If check is 1, check if it is known, return 1 if unknown
+# If check is 0, mark the variable as known and set
 proc markVariable {var ws check knownVarsName} {
     upvar $knownVarsName knownVars
     
@@ -778,9 +797,17 @@ proc markVariable {var ws check knownVarsName} {
 	return 0
     } else {
 	if {$varBaseWs != 0} {
-	    set knownVars($varBase) 1
+	    if {[info exists knownVars($varBase)]} {
+		set knownVars($varBase) [expr {$knownVars($varBase) | 4}]
+	    } else {
+		set knownVars($varBase) 5
+	    }
 	    if {$varArray && $varIndexWs != 0} {
-		set knownVars($var) 1
+		if {[info exists knownVars($var)]} {
+		    set knownVars($var) [expr {$knownVars($var) | 4}]
+		} else {
+		    set knownVars($var) $knownVars($varBase)
+		}
 	    }
 	}
     }
@@ -863,7 +890,8 @@ proc parseStatement {statement index knownVarsName} {
 	    # FIXA, update the globals database
 	    foreach var $argv ws $wordstatus {
 		if {$ws} {
-		    set knownVars($var) 1
+		    # 2 means it is a global
+		    set knownVars($var) 2
 		} else {
 		    echo "Non constant argument to $cmd in line\
                             [calcLineNo $index]: $var"
@@ -876,7 +904,11 @@ proc parseStatement {statement index knownVarsName} {
 	    set i 0
 	    foreach {var val} $argv {ws1 ws2} $wordstatus {
 		if {$ws1} {
-		    set knownVars($var) 1
+		    if {$i >= $argc - 1} { 
+			set knownVars($var) 1
+		    } else {
+			set knownVars($var) 5
+		    }
 		    lappend constantsDontCheck $i
 		} else {
 		    echo "Non constant argument to $cmd in line\
@@ -923,9 +955,8 @@ proc parseStatement {statement index knownVarsName} {
 		    # FIXA, maybe abort here?
 		}
 		lappend constantsDontCheck $i
-		# FIXA, check for an array
 		foreach var [lindex $argv $i] {
-		    set knownVars($var) 1
+		    markVariable $var 1 0 knownVars
 		}
 	    }
 	    if {[lindex $wordstatus end] == 0} {
@@ -939,6 +970,7 @@ proc parseStatement {statement index knownVarsName} {
 		WA
 		return
 	    }
+	    # Build a syntax string that fits this if statement
 	    set state expr
 	    set ifsyntax {}
             foreach arg $argv ws $wordstatus index $indices {
@@ -1051,8 +1083,10 @@ proc parseStatement {statement index knownVarsName} {
             if {$argc == 1 && [lindex $wordstatus 0] == 2} {
                  parseExpr [lindex $argv 0] [lindex $indices 0] knownVars
             } else {
-                echo "Expr without braces in line\
-                        [calcLineNo [lindex $indices 0]]"
+                if {$::Prefs(warnBraceExpr)} {
+                    echo "Expr without braces in line\
+                            [calcLineNo [lindex $indices 0]]"
+                }
             }
 	}
 	eval { # FIXA
@@ -1091,17 +1125,16 @@ proc parseStatement {statement index knownVarsName} {
 # Split a script into individual statements
 proc splitScript {script index statementsName indicesName} {
     upvar $statementsName statements $indicesName indices
-    
-    set commentre {^\s*#}
 
     set statements {}
     set indices {}
     set lines [split $script \n]
     set tryline ""
+    string length $tryline
 
     foreach line $lines {
 	append line \n
-	while {[string bytelength $line] != 0} {
+	while {![string equal $line ""]} {
 	    # Move everything up to the next semicolon, newline or eof to tryline
 	    set i [string first \; $line]
 	    if {$i != -1} {
@@ -1117,7 +1150,8 @@ proc splitScript {script index statementsName indicesName} {
 	    # If we split at a ; we must check that it really may be an end
 	    if {$splitchar == ";"} {
 		# Comment lines don't end with ;
-		if {[regexp $commentre $tryline]} {continue}
+		#if {[regexp {^\s*#} $tryline]} {continue}
+                if {[string index [string trimleft $tryline] 0] == "#"} continue
 		
 		# Look for \'s before the ;
 		# If there is an odd number of \, the ; is ignored
@@ -1128,8 +1162,21 @@ proc splitScript {script index statementsName indicesName} {
 		    if {($i - $t) % 2 == 1} {continue}
 		}
 	    }
+	    # Check if it's a complete line
 	    if {[info complete $tryline]} {
-		if {[regexp $commentre $tryline]} {
+                # Remove leading space, keep track of index
+                if {[string is space -failindex i $tryline]} {
+                    # Only space, discard the line
+                    incr index [string length $tryline]
+                    set tryline ""
+                    continue
+                } else {
+                    if {$i != 0} {
+                        set tryline [string range $tryline $i end]
+                        incr index $i
+                    }
+                }
+                if {[string index $tryline 0] == "#"} {
 		    # Check and discard comments
 		    checkComment $tryline $index
 		} else {
@@ -1159,7 +1206,7 @@ proc splitScript {script index statementsName indicesName} {
 proc parseBody {body index knownVarsName} {
     upvar $knownVarsName knownVars
 
-    splitScript $body $index statements indices
+    profile splitScript {splitScript $body $index statements indices}
 
     foreach statement $statements index $indices {
 	parseStatement $statement $index knownVars
@@ -1181,14 +1228,14 @@ proc parseProc {argv indices} {
     array set knownVars {}
     foreach a $args {
 	if {[llength $a] != 1} {
-	    set knownVars([lindex $a 0]) 1
+	    set knownVars([lindex $a 0]) 5
 	    continue
 	}
 	if {[string equal $a "args"]} {
 	    set maxn 1
 	}
 	incr minn
-	set knownVars($a) 1
+	set knownVars($a) 5
     }
     if {![info exists syntax($name)]} {
 	if {$maxn} {
@@ -1203,6 +1250,7 @@ proc parseProc {argv indices} {
 
 #    decho "Note: parsing procedure $name"
     parseBody $body [lindex $indices 2] knownVars
+    #FIXA, kolla vilka globals som har satts?
 }
 
 # Given an index in the original string, calculate its line number.
@@ -1218,8 +1266,9 @@ proc calcLineNo {i} {
 }
 
 # Build a database of newlines to be able to calculate line numbers.
-# Also replace all escaped newlines with a space. Later processing
-# is greatly simplified if it does not need to bother with those.
+# Also replace all escaped newlines with a space, and remove all 
+# whitespace from the start of lines. Later processing is greatly 
+# simplified if it does not need to bother with those.
 proc buildLineDb {str} {
     global newlineIx
     
@@ -1234,6 +1283,7 @@ proc buildLineDb {str} {
     set nl [string range \n 0 0]
 
     foreach line $lines {
+	set line [string trimleft $line]
         # Count backslashes to determine if it's escaped
         if {[string index $line end] == "\\"} {
 	    set len [string length $line]
@@ -1263,7 +1313,7 @@ proc parseScript {script} {
     array set unknownCommands {}
     array set knownVars {}
     foreach g $knownGlobals {
-	set knownVars($g) 1
+	set knownVars($g) 6
     }
     set script [buildLineDb $script]
     parseBody $script 0 knownVars
@@ -1290,41 +1340,84 @@ proc parseFile {filename} {
 }
 
 proc usage {} {
-    puts {Usage: syntax.tcl [-s dbfile] scriptfile ...}
+    puts {Usage: syntax.tcl [-noexpr] [-s dbfile] scriptfile ...}
+    puts { -noexpr turns of warnings about expressions without braces.}
     exit
 }
 
 # End of procs, global code here
 
+# Locate default syntax database
+set defaultDb ""
+foreach file [list [file join [pwd] syntaxdb.tcl] \
+        [file join $thisdir syntaxdb.tcl]] {
+    if {[file exists $file]} {
+        set defaultDb $file
+        break
+    }
+}
+
+# Things to run only the first time.
 if {![info exists gurka]} {
     set gurka 1
+    set Prefs(warnBraceExpr) 1
     if {$argc >= 1} {
         set dbfiles {}
         set files {}
         for {set i 0} {$i < $argc} {incr i} {
             set arg [lindex $argv $i]
-            if {[string match $arg -h*]} {
-                usage
+            switch -glob -- $arg {
+                -h* {
+                    usage
+                }
+                -s {
+                    incr i
+                    lappend dbfile [lindex $argv $i]
+                }
+                -noexpr {
+                    set Prefs(warnBraceExpr) 0
+                }
+                -* {
+                    puts "Unknown option $arg."
+                    usage
+                }
+                default {
+                    lappend files $arg
+                }
             }
-            if {[string equal $arg -s]} {
-                incr i
-                lappend dbfile [lindex $argv $i]
-            } elseif {[string match $arg -*]} {
-                puts "Unknown option $arg."
-                usage
+        }
+	if {[llength $dbfiles] == 0} {
+            if {$defaultDb == ""} {
+                puts "No syntax database file."
+                set knownGlobals  $defknownGlobals
+                set knownCommands $defknownKCommands
+                set knownProcs    $defknownProcs
             } else {
-                lappend files $arg
-            }
-        }
-        foreach f $dbfiles {
-            source $f
-        }
+                source $defaultDb
+            } 
+        } else {
+	    foreach f $dbfiles {
+		source $f
+	    }
+	}
         foreach f $files {
             parseFile $f
         }
         exit
+    } else {
+        #We have no arguments. Just try to load the syntaxDb.
+        if {$defaultDb == ""} {
+            puts "No syntax database file."
+            set knownGlobals  $defknownGlobals
+            set knownCommands $defknownKCommands
+            set knownProcs    $defknownProcs
+        } else {
+            source $defaultDb
+        } 
     }
 }
+
+# Below here are test stuff.
 
 if {[catch {package present Tk}]} {
     set wehavetk 0
@@ -1357,6 +1450,8 @@ proc comTest {file} {
 
     close $ch
 }
+
+#Test stuff
 
 proc pt {{n 0}} {
     if {$n == 0} {
@@ -1425,4 +1520,5 @@ proc pprofile {} {
 
 #pt
 #parseFile syntax1.tcl
+#parseFile unicode.tcl
 #parray profiledata
