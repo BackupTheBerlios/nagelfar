@@ -24,8 +24,8 @@
 # the next line restarts using tclsh \
 exec tclsh "$0" "$@"
 
-set debug 0
-set version "Version 0.2 2002-08-28"
+set debug 1
+set version "Version 0.2+ 2002-08-29"
 set thisScript [file join [pwd] [info script]]
 set thisDir    [file dirname $thisScript]
 
@@ -76,9 +76,9 @@ proc decho {str} {
 # Standard error message.
 proc errorMsg {msg i} {
     if {[info exists ::Syntax(currentMessage)] && \
-                $::Syntax(currentMessage) != ""} {
+            $::Syntax(currentMessage) != ""} {
         lappend ::Syntax(messages) [list $::Syntax(currentMessageLine) \
-                                            $::Syntax(currentMessage)]
+                $::Syntax(currentMessage)]
     }
 
     set pre ""
@@ -106,9 +106,9 @@ proc initMsg {} {
 # Called after a file has been parsed, to flush messages
 proc flushMsg {} {
     if {[info exists ::Syntax(currentMessage)] && \
-                $::Syntax(currentMessage) != ""} {
+            $::Syntax(currentMessage) != ""} {
         lappend ::Syntax(messages) [list $::Syntax(currentMessageLine) \
-                                            $::Syntax(currentMessage)]
+                $::Syntax(currentMessage)]
     }
     set msgs [lsort -integer -index 0 $::Syntax(messages)]
     foreach msg $msgs {
@@ -289,6 +289,7 @@ proc splitStatement {statement index indicesName} {
 # Look for options in a command's arguments.
 # Check them against the list in the option database, if any.
 # Returns the number of arguments "used".
+# If 'pair' is set, all options should take a value.
 proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
     global option
 
@@ -311,9 +312,22 @@ proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
 	    incr used
 	    set skip $pair
 	    if {$ws != 0  && $check} {
-		if {[lsearch $option($cmd) $arg] == -1} {
-		    errorMsg "Bad option $arg to $cmd" $index
+                set ix [lsearch $option($cmd) $arg]
+		if {$ix == -1} {
+                    set ix [lsearch -glob $option($cmd) $arg*]
+                    if {$ix == -1} {
+                        errorMsg "Bad option $arg to $cmd" $index
+                    } else {
+                        errorMsg "Shortened option for $cmd,\
+                                $arg ->\
+                                [lindex $option($cmd) $ix]" \
+                                [lindex $indices $i]
+                    }
 		}
+                if {$ix != -1 && \
+                     [info exists "option($cmd [lindex $option($cmd) $ix])"]} {
+                    set skip 1
+                }
 	    }
 	    if {[string equal $arg "--"]} {
 		break
@@ -611,14 +625,39 @@ proc WA {} {
 # Check a command that have a syntax defined in the database
 # This is called from parseStatement, and was moved out to be able
 # to call it recursively.
+# 'firsti' says at which index in argv et.al. the arguments begin.
 proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
     upvar constantsDontCheck constantsDontCheck knownVars knownVars
 
     set argc [llength $argv]
     set syn $::syntax($cmd)
 #    decho "Checking $cmd against syntax $syn"
+    
+    # Check if the syntax definition has multiple entries
+    if {[string index [lindex $syn 0] end] == ":"} {
+        set na [expr {$argc - $firsti}]
+        set newsyn {}
+        set state search
+        foreach tok $syn {
+            if {$state == "search"} {
+                if {$tok == ":" || $tok == "${na}:"} {
+                    set state copy
+                }
+            } elseif {$state == "copy"} {
+                if {[string index $tok end] == ":"} {
+                    break
+                }
+                lappend newsyn $tok
+            }
+        }
+        if {[llength $newsyn] == 0} {
+            echo "Can't parse syntax definition for \"$cmd\": \"$syn\""
+            return
+        }
+        set syn $newsyn
+    }
 
-    if {[string is integer $syn]} {
+    if {[string is integer -strict $syn]} {
 	if {($argc - $firsti) != $syn} {
 	    WA
 	}
@@ -633,7 +672,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
     }
 
     set i $firsti
-    foreach token $::syntax($cmd) {
+    foreach token $syn {
 	set tok [string index $token 0]
 	set mod [string index $token 1]
 	# Basic checks for modifiers
@@ -662,18 +701,24 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 		    incr i
 		}
 	    }
+            E -
 	    e { # An expression
 		if {![string equal $mod ""]} {
-		    echo "Modifier \"$mod\" is not supported for \"e\" in\
+		    echo "Modifier \"$mod\" is not supported for \"$tok\" in\
                             syntax for $cmd."
 		}
-		if {[lindex $wordstatus $i] == 0 && $::Prefs(warnBraceExpr)} {
-                    # Allow pure command substitution if warnBraceExpr == 1
-                    if {$::Prefs(warnBraceExpr) == 2 || \
-                            [string index [lindex $argv $i] 0] != "\[" || \
-                            [string index [lindex $argv $i] end] != "\]" } {
+		if {[lindex $wordstatus $i] == 0} {
+                    if {$tok == "E"} {
                         errorMsg "Warning: No braces around expression in\
                                 $cmd statement." [lindex $indices $i]
+                    } elseif {$::Prefs(warnBraceExpr)} {
+                        # Allow pure command substitution if warnBraceExpr == 1
+                        if {$::Prefs(warnBraceExpr) == 2 || \
+                                [string index [lindex $argv $i] 0] != "\[" || \
+                                [string index [lindex $argv $i] end] != "\]" } {
+                            errorMsg "Warning: No braces around expression in\
+                                    $cmd statement." [lindex $indices $i]
+                        }
                     }
                 }
 		parseExpr [lindex $argv $i] [lindex $indices $i] knownVars
@@ -715,8 +760,8 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
                                 errorMsg "Unknown subcommand \"$arg\" to \"$cmd\""\
                                         [lindex $indices $i]
                             } else {
-                                #Check ambiguity? FIXA
-                                #Report shortened subcmd?
+                                # Check ambiguity? FIXA
+                                # Report shortened subcmd?
                                 if {$::Prefs(warnShortSub)} {
                                     errorMsg "Shortened subcommand for $cmd,\
                                             $arg ->\
@@ -996,21 +1041,6 @@ proc parseStatement {statement index knownVarsName} {
 		incr i 2
 	    }
 	}
-	set {
-	    # Set gets a different syntax string depending on the
-	    # number of arguments.
-	    # If more commands needs this, maybe a general way to
-	    # express it in the syntax db should be implemented. FIXA?
-	    if {$argc == 1} {
-                set ::syntax(set) "v"
-            } elseif {$argc == 2} {
-                set ::syntax(set) "n x"
-            } else {
-		WA
-		return
-	    }
-	    checkCommand $cmd $index $argv $wordstatus $indices
-	}
 	foreach {
 	    if {$argc < 3 || ($argc % 2) == 0} {
 		WA
@@ -1123,7 +1153,11 @@ proc parseStatement {statement index knownVarsName} {
                             switch." $ix
 		    return
 		}
-		set swwordstatus {}
+		if {[llength $swargv] == 0} {
+		    errorMsg "Empty last argument to switch." $ix
+		    return
+		}
+		set swwordst {}
 		foreach word $swargv {
 		    lappend swwordst 1
 		}
@@ -1151,8 +1185,8 @@ proc parseStatement {statement index knownVarsName} {
 	    }
 	}
 	expr { # FIXA
-            #Take care of the standard case of a brace enclosed expr.
-            if {$argc == 1 && [lindex $wordstatus 0] == 2} {
+            # Take care of the standard case of a brace enclosed expr.
+            if {$argc == 1 && [lindex $wordstatus 0] != 0} {
                  parseExpr [lindex $argv 0] [lindex $indices 0] knownVars
             } else {
                 if {$::Prefs(warnBraceExpr)} {
@@ -1599,8 +1633,8 @@ proc fileDropDb {files} {
 # Browse for and add a file to check.
 proc addFile {} {
     set apa [tk_getOpenFile -title "Select file to check" \
-                     -defaultextension .tcl \
-                     -filetypes {{{Tcl File} {.tcl}} {{All Files} {.*}}}]
+            -defaultextension .tcl \
+            -filetypes {{{Tcl File} {.tcl}} {{All Files} {.*}}}]
     if {$apa == ""} return
 
     lappend ::Syntax(files) $apa
@@ -1910,8 +1944,9 @@ proc editFile {filename lineNo} {
         pack .fv.f.ln -side right
 
         bind .fv.t <Any-Key> {
-            after idle {set ::Syntax(lineNo) \
-                                [lindex [split [.fv.t index insert] .] 0]}
+            after idle {
+                set ::Syntax(lineNo) [lindex [split [.fv.t index insert] .] 0]
+            }
         }
         wm protocol .fv WM_DELETE_WINDOW closeFile
         .fv.t tag configure hl -background yellow
@@ -1925,7 +1960,7 @@ proc editFile {filename lineNo} {
     }
 
     if {![info exists ::Syntax(editFile)] || \
-                $filename != $::Syntax(editFile)} {
+            $filename != $::Syntax(editFile)} {
         .fv.t delete 1.0 end
         set ::Syntax(editFile) $filename
         wm title .fv [file tail $filename]
@@ -1967,8 +2002,8 @@ proc editFile {filename lineNo} {
 
 proc saveFile {} {
     if {[tk_messageBox -parent .fv -title "Save File" -type okcancel \
-                 -icon question \
-                 -message "Save file\n$::Syntax(editFile)"] != "ok"} {
+            -icon question \
+            -message "Save file\n$::Syntax(editFile)"] != "ok"} {
         return
     }
     set ch [open $::Syntax(editFile) w]
@@ -1979,8 +2014,8 @@ proc saveFile {} {
 
 proc closeFile {} {
     if {[info exists ::Syntax(editFileGeom)] || \
-                ([info exists ::Syntax(editFileOrigGeom)] && \
-                         $::Syntax(editFileOrigGeom) != [wm geometry .fv])} {
+            ([info exists ::Syntax(editFileOrigGeom)] && \
+             $::Syntax(editFileOrigGeom) != [wm geometry .fv])} {
         set ::Syntax(editFileGeom) [wm geometry .fv]
     }
 
