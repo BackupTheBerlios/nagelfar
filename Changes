@@ -1,3 +1,12 @@
+Version 0.5
+
+2003-02-14
+ Made it possible to use TkDnd when Freewrapped.
+
+2003-02-09
+ Support for Freewrap 5.5.
+ Polished GUI and code. Now it can check itself without warnings.
+
 Version 0.4
 
 2002-11-14
