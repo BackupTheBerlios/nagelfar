@@ -1,3 +1,9 @@
+#----------------------------------------------------------------------
+# Make file for Nagelfar
+#----------------------------------------------------------------------
+# $Revision$
+#----------------------------------------------------------------------
+
 # Path to the TclKits used for creating StarPacks.
 TCLKIT = /home/peter/tclkit
 TCLKIT_LINUX   = $(TCLKIT)/tclkit-linux-x86
@@ -9,9 +15,10 @@ GRIFFIN = /home/peter/tclkit/griffin.vfs/lib/griffin
 TKDND   = /home/peter/tkdnd/lib/tkdnd1.0
 
 # Path to the interpreter used for generating the syntax database
-TCLSHDB = ~/tcl/install/bin/wish8.4
+TCLSHDB  = ~/tcl/install/bin/wish8.4
 TCLSHDB2 = ~/tcl/install/bin/wish8.5
-TCLSH85 = ~/tcl/install/bin/tclsh8.5
+DB2NAME  = syntaxdb85.tcl
+TCLSH85  = ~/tcl/install/bin/tclsh8.5
 
 all: setup misctest db
 
@@ -42,7 +49,10 @@ setup: links
 # Testing
 #----------------------------------------------------------------
 
-selftest:
+spell:
+	@cat doc/*.txt | ispell -d british -l | sort -u
+
+check:
 	@./nagelfar.tcl nagelfar.tcl
 
 test:
@@ -69,12 +79,12 @@ misctest: misctests/test.result misctests/test.html
 #----------------------------------------------------------------
 
 syntaxdb.tcl: syntaxbuild.tcl $(TCLSHDB)
-	@$(TCLSHDB) syntaxbuild.tcl syntaxdb.tcl
+	$(TCLSHDB) syntaxbuild.tcl syntaxdb.tcl
 
-syntaxdb85.tcl: syntaxbuild.tcl $(TCLSHDB2)
-	@$(TCLSHDB2) syntaxbuild.tcl syntaxdb85.tcl
+$(DB2NAME): syntaxbuild.tcl $(TCLSHDB2)
+	$(TCLSHDB2) syntaxbuild.tcl $(DB2NAME)
 
-db: syntaxdb.tcl syntaxdb85.tcl
+db: syntaxdb.tcl $(DB2NAME)
 
 #----------------------------------------------------------------
 # Packaging/Releasing
