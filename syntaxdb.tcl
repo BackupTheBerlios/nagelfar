@@ -1,5 +1,5 @@
 # Automatically generated syntax database.
-# Generated with syntaxbuild Revision: 1.20 
+# Generated with syntaxbuild Revision: 1.21 
 
 lappend ::dbInfo {Tcl 8.4.6 unix, Tk 8.4.6 x11}
 set ::dbTclVersion 8.4
@@ -8,6 +8,9 @@ set ::knownCommands {. after append array auto_execok auto_import auto_load auto
 set ::syntax(_obj,button) {s x*}
 set {::syntax(_obj,button cget)} o
 set {::syntax(_obj,button configure)} {o. x. p*}
+set ::syntax(_obj,canvas) {s x*}
+set {::syntax(_obj,canvas cget)} o
+set {::syntax(_obj,canvas configure)} {o. x. p*}
 set ::syntax(_obj,checkbutton) {s x*}
 set {::syntax(_obj,checkbutton cget)} o
 set {::syntax(_obj,checkbutton configure)} {o. x. p*}
@@ -26,15 +29,33 @@ set {::syntax(_obj,labelframe configure)} {o. x. p*}
 set ::syntax(_obj,listbox) {s x*}
 set {::syntax(_obj,listbox cget)} o
 set {::syntax(_obj,listbox configure)} {o. x. p*}
+set ::syntax(_obj,menu) {s x*}
+set {::syntax(_obj,menu cget)} o
+set {::syntax(_obj,menu configure)} {o. x. p*}
+set ::syntax(_obj,menubutton) {s x*}
+set {::syntax(_obj,menubutton cget)} o
+set {::syntax(_obj,menubutton configure)} {o. x. p*}
 set ::syntax(_obj,panedwindow) {s x*}
 set {::syntax(_obj,panedwindow cget)} o
 set {::syntax(_obj,panedwindow configure)} {o. x. p*}
 set ::syntax(_obj,radiobutton) {s x*}
 set {::syntax(_obj,radiobutton cget)} o
 set {::syntax(_obj,radiobutton configure)} {o. x. p*}
+set ::syntax(_obj,scale) {s x*}
+set {::syntax(_obj,scale cget)} o
+set {::syntax(_obj,scale configure)} {o. x. p*}
+set ::syntax(_obj,scrollbar) {s x*}
+set {::syntax(_obj,scrollbar cget)} o
+set {::syntax(_obj,scrollbar configure)} {o. x. p*}
 set ::syntax(_obj,spinbox) {s x*}
 set {::syntax(_obj,spinbox cget)} o
 set {::syntax(_obj,spinbox configure)} {o. x. p*}
+set ::syntax(_obj,text) {s x*}
+set {::syntax(_obj,text cget)} o
+set {::syntax(_obj,text configure)} {o. x. p*}
+set ::syntax(_obj,toplevel) {s x*}
+set {::syntax(_obj,toplevel cget)} o
+set {::syntax(_obj,toplevel configure)} {o. x. p*}
 set ::syntax(after) {r 1}
 set ::syntax(append) {n x*}
 set ::syntax(array) {s v x?}
@@ -56,6 +77,7 @@ set ::syntax(binary) {s x*}
 set {::syntax(binary scan)} {x x n n*}
 set ::syntax(break) 0
 set ::syntax(button) {x p*}
+set ::syntax(canvas) {x p*}
 set ::syntax(catch) {c n?}
 set ::syntax(cd) {r 0 1}
 set ::syntax(checkbutton) {x p*}
@@ -67,6 +89,7 @@ set {::syntax(clock seconds)} 0
 set ::syntax(close) 1
 set ::syntax(concat) {r 0}
 set ::syntax(continue) 0
+set ::syntax(destroy) x*
 set ::syntax(encoding) {s x*}
 set {::syntax(encoding convertfrom)} {r 1 2}
 set {::syntax(encoding convertto)} {r 1 2}
@@ -75,6 +98,7 @@ set {::syntax(encoding system)} {r 0 1}
 set ::syntax(entry) {x p*}
 set ::syntax(eof) 1
 set ::syntax(error) {r 1 3}
+set ::syntax(event) {s x*}
 set ::syntax(exec) {o* x x*}
 set ::syntax(exit) {r 0 1}
 set ::syntax(fblocked) 1
@@ -86,11 +110,14 @@ set {::syntax(file lstat)} {x n}
 set {::syntax(file stat)} {x n}
 set ::syntax(fileevent) {x x x?}
 set ::syntax(flush) 1
+set ::syntax(focus) {o? x?}
+set ::syntax(font) {s x*}
 set ::syntax(for) {c E c c}
 set ::syntax(format) {r 1}
 set ::syntax(frame) {x p*}
 set ::syntax(gets) {x n?}
 set ::syntax(glob) {o* x x*}
+set ::syntax(grid) {x x*}
 set ::syntax(history) {s x*}
 set ::syntax(image) {s x*}
 set ::syntax(incr) {v x?}
@@ -108,29 +135,39 @@ set ::syntax(list) {r 0}
 set ::syntax(listbox) {x p*}
 set ::syntax(llength) 1
 set ::syntax(load) {r 1 3}
+set ::syntax(lower) {x x?}
 set ::syntax(lrange) 3
 set ::syntax(lreplace) {r 3}
 set ::syntax(lsearch) {o* x x}
 set ::syntax(lset) {n x x x*}
 set ::syntax(lsort) {o* x}
+set ::syntax(menu) {x p*}
+set ::syntax(menubutton) {x p*}
 set ::syntax(namespace) {s x*}
 set ::syntax(open) {r 1 3}
+set ::syntax(option) {s x*}
+set ::syntax(pack) {x x*}
 set ::syntax(package) {s x*}
 set ::syntax(panedwindow) {x p*}
 set ::syntax(parray) {v x?}
 set ::syntax(pid) {r 0 1}
 set ::syntax(pkg_compareExtension) {r 1 2}
 set ::syntax(pkg_mkIndex) {r 0}
+set ::syntax(place) {x x*}
 set ::syntax(puts) {1: x : o? x x?}
 set ::syntax(pwd) 0
 set ::syntax(radiobutton) {x p*}
+set ::syntax(raise) {x x?}
 set ::syntax(read) {r 1 2}
 set ::syntax(regexp) {o* x x n*}
 set ::syntax(regsub) {o* x x x n}
 set ::syntax(rename) 2
 set ::syntax(return) {p* x?}
+set ::syntax(scale) {x p*}
 set ::syntax(scan) {x x n*}
+set ::syntax(scrollbar) {x p*}
 set ::syntax(seek) {r 2 3}
+set ::syntax(selection) {s x*}
 set ::syntax(set) {1: v : n x}
 set ::syntax(socket) {r 2}
 set ::syntax(source) 1
@@ -170,7 +207,9 @@ set ::syntax(tcl_startOfPreviousWord) 2
 set ::syntax(tcl_wordBreakAfter) 2
 set ::syntax(tcl_wordBreakBefore) 2
 set ::syntax(tell) 1
+set ::syntax(text) {x p*}
 set ::syntax(time) {r 1 2}
+set ::syntax(tk) {s x*}
 set ::syntax(tk_chooseColor) {r 0}
 set ::syntax(tk_chooseDirectory) {r 0}
 set ::syntax(tk_getOpenFile) {r 0}
@@ -181,6 +220,7 @@ set ::syntax(tk_popup) {r 3 4}
 set ::syntax(tk_textCopy) 1
 set ::syntax(tk_textCut) 1
 set ::syntax(tk_textPaste) 1
+set ::syntax(toplevel) {x p*}
 set ::syntax(trace) {s x x*}
 set {::syntax(trace add)} {s x x x}
 set {::syntax(trace add command)} {x x x}
@@ -206,6 +246,7 @@ set ::syntax(winfo) {s x x*}
 set ::syntax(wm) {s x x*}
 
 set ::return(button) _obj,button
+set ::return(canvas) _obj,canvas
 set ::return(checkbutton) _obj,checkbutton
 set ::return(entry) _obj,entry
 set ::return(frame) _obj,frame
@@ -218,32 +259,50 @@ set ::return(llength) int
 set ::return(lrange) list
 set ::return(lreplace) list
 set ::return(lsort) list
+set ::return(menu) _obj,menu
+set ::return(menubutton) _obj,menubutton
 set ::return(panedwindow) _obj,panedwindow
 set ::return(radiobutton) _obj,radiobutton
+set ::return(scale) _obj,scale
+set ::return(scrollbar) _obj,scrollbar
 set ::return(spinbox) _obj,spinbox
+set ::return(text) _obj,text
+set ::return(toplevel) _obj,toplevel
 
 set ::subCmd(_obj,button) {cget configure flash invoke}
+set ::subCmd(_obj,canvas) {addtag bbox bind canvasx canvasy cget configure coords create dchars delete dtag find focus gettags icursor index insert itemcget itemconfigure lower move postscript raise scale scan select type xview yview}
 set ::subCmd(_obj,checkbutton) {cget configure deselect flash invoke select toggle}
 set ::subCmd(_obj,entry) {bbox cget configure delete get icursor index insert scan selection validate xview}
 set ::subCmd(_obj,frame) {cget configure}
 set ::subCmd(_obj,label) {cget configure}
 set ::subCmd(_obj,labelframe) {cget configure}
 set ::subCmd(_obj,listbox) {activate bbox cget configure curselection delete get index insert itemcget itemconfigure nearest scan see selection size xview yview}
+set ::subCmd(_obj,menu) {activate add cget clone configure delete entrycget entryconfigure index insert invoke post postcascade type unpost yposition}
+set ::subCmd(_obj,menubutton) {cget configure}
 set ::subCmd(_obj,panedwindow) {add cget configure forget identify panecget paneconfigure panes proxy sash}
 set ::subCmd(_obj,radiobutton) {cget configure deselect flash invoke select}
+set ::subCmd(_obj,scale) {cget configure coords get identify set}
+set ::subCmd(_obj,scrollbar) {activate cget configure delta fraction get identify set}
 set ::subCmd(_obj,spinbox) {bbox cget configure delete get icursor identify index insert invoke scan selection set validate xview}
+set ::subCmd(_obj,text) {bbox cget compare configure debug delete dlineinfo dump edit get image index insert mark scan search see tag window xview yview}
+set ::subCmd(_obj,toplevel) {cget configure}
 set ::subCmd(array) {anymore donesearch exists get names nextelement set size startsearch statistics unset}
 set ::subCmd(binary) {format scan}
 set ::subCmd(clock) {clicks format scan seconds}
 set ::subCmd(encoding) {convertfrom convertto names system}
+set ::subCmd(event) {add delete generate info}
 set ::subCmd(file) {atime attributes channels copy delete dirname executable exists extension isdirectory isfile join link lstat mtime mkdir nativename normalize owned pathtype readable readlink rename rootname separator size split stat system tail type volumes writable}
+set ::subCmd(font) {actual configure create delete families measure metrics names}
 set ::subCmd(history) {add change clear event info keep nextid redo}
 set ::subCmd(image) {create delete height inuse names type types width}
 set ::subCmd(info) {args body cmdcount commands complete default exists functions globals hostname level library loaded locals nameofexecutable patchlevel procs script sharedlibextension tclversion vars}
 set ::subCmd(interp) {alias aliases create delete eval exists expose hide hidden issafe invokehidden marktrusted recursionlimit slaves share target transfer}
 set ::subCmd(namespace) {children code current delete eval exists export forget import inscope origin parent qualifiers tail which}
+set ::subCmd(option) {add clear get readfile}
 set ::subCmd(package) {forget ifneeded names present provide require unknown vcompare versions vsatisfies}
+set ::subCmd(selection) {clear get handle own}
 set ::subCmd(string) {bytelength compare equal first index is last length map match range repeat replace tolower toupper totitle trim trimleft trimright wordend wordstart}
+set ::subCmd(tk) {appname caret scaling useinputmethods windowingsystem}
 set ::subCmd(trace) {add info remove variable vdelete vinfo}
 set {::subCmd(trace add)} {execution command variable}
 set {::subCmd(trace info)} {execution command variable}
@@ -255,6 +314,8 @@ set ::subCmd(wm) {aspect attributes client colormapwindows command deiconify foc
 set {::option(_obj,button cget)} {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -default -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -justify -overrelief -padx -pady -relief -repeatdelay -repeatinterval -state -takefocus -text -textvariable -underline -width -wraplength}
 set {::option(_obj,button configure)} {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -default -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -justify -overrelief -padx -pady -relief -repeatdelay -repeatinterval -state -takefocus -text -textvariable -underline -width -wraplength}
 set {::option(_obj,button configure -textvariable)} n
+set {::option(_obj,canvas cget)} {-background -bd -bg -borderwidth -closeenough -confine -cursor -height -highlightbackground -highlightcolor -highlightthickness -insertbackground -insertborderwidth -insertofftime -insertontime -insertwidth -offset -relief -scrollregion -selectbackground -selectborderwidth -selectforeground -state -takefocus -width -xscrollcommand -xscrollincrement -yscrollcommand -yscrollincrement}
+set {::option(_obj,canvas configure)} {-background -bd -bg -borderwidth -closeenough -confine -cursor -height -highlightbackground -highlightcolor -highlightthickness -insertbackground -insertborderwidth -insertofftime -insertontime -insertwidth -offset -relief -scrollregion -selectbackground -selectborderwidth -selectforeground -state -takefocus -width -xscrollcommand -xscrollincrement -yscrollcommand -yscrollincrement}
 set {::option(_obj,checkbutton cget)} {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -indicatoron -justify -offrelief -offvalue -onvalue -overrelief -padx -pady -relief -selectcolor -selectimage -state -takefocus -text -textvariable -underline -variable -width -wraplength}
 set {::option(_obj,checkbutton configure)} {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -indicatoron -justify -offrelief -offvalue -onvalue -overrelief -padx -pady -relief -selectcolor -selectimage -state -takefocus -text -textvariable -underline -variable -width -wraplength}
 set {::option(_obj,checkbutton configure -textvariable)} n
@@ -272,17 +333,32 @@ set {::option(_obj,labelframe configure)} {-bd -borderwidth -class -fg -font -fo
 set {::option(_obj,listbox cget)} {-activestyle -background -bd -bg -borderwidth -cursor -disabledforeground -exportselection -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -relief -selectbackground -selectborderwidth -selectforeground -selectmode -setgrid -state -takefocus -width -xscrollcommand -yscrollcommand -listvariable}
 set {::option(_obj,listbox configure)} {-activestyle -background -bd -bg -borderwidth -cursor -disabledforeground -exportselection -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -relief -selectbackground -selectborderwidth -selectforeground -selectmode -setgrid -state -takefocus -width -xscrollcommand -yscrollcommand -listvariable}
 set {::option(_obj,listbox configure -listvariable)} n
+set {::option(_obj,menu cget)} {-activebackground -activeborderwidth -activeforeground -background -bd -bg -borderwidth -cursor -disabledforeground -fg -font -foreground -postcommand -relief -selectcolor -takefocus -tearoff -tearoffcommand -title -type}
+set {::option(_obj,menu configure)} {-activebackground -activeborderwidth -activeforeground -background -bd -bg -borderwidth -cursor -disabledforeground -fg -font -foreground -postcommand -relief -selectcolor -takefocus -tearoff -tearoffcommand -title -type}
+set {::option(_obj,menubutton cget)} {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -cursor -direction -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -indicatoron -justify -menu -padx -pady -relief -compound -state -takefocus -text -textvariable -underline -width -wraplength}
+set {::option(_obj,menubutton configure)} {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -cursor -direction -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -indicatoron -justify -menu -padx -pady -relief -compound -state -takefocus -text -textvariable -underline -width -wraplength}
+set {::option(_obj,menubutton configure -textvariable)} n
 set {::option(_obj,panedwindow cget)} {-background -bd -bg -borderwidth -cursor -handlepad -handlesize -height -opaqueresize -orient -relief -sashcursor -sashpad -sashrelief -sashwidth -showhandle -width}
 set {::option(_obj,panedwindow configure)} {-background -bd -bg -borderwidth -cursor -handlepad -handlesize -height -opaqueresize -orient -relief -sashcursor -sashpad -sashrelief -sashwidth -showhandle -width}
 set {::option(_obj,radiobutton cget)} {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -indicatoron -justify -offrelief -overrelief -padx -pady -relief -selectcolor -selectimage -state -takefocus -text -textvariable -underline -value -variable -width -wraplength}
 set {::option(_obj,radiobutton configure)} {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -indicatoron -justify -offrelief -overrelief -padx -pady -relief -selectcolor -selectimage -state -takefocus -text -textvariable -underline -value -variable -width -wraplength}
 set {::option(_obj,radiobutton configure -textvariable)} n
 set {::option(_obj,radiobutton configure -variable)} n
+set {::option(_obj,scale cget)} {-activebackground -background -bigincrement -bd -bg -borderwidth -command -cursor -digits -fg -font -foreground -from -highlightbackground -highlightcolor -highlightthickness -label -length -orient -relief -repeatdelay -repeatinterval -resolution -showvalue -sliderlength -sliderrelief -state -takefocus -tickinterval -to -troughcolor -variable -width}
+set {::option(_obj,scale configure)} {-activebackground -background -bigincrement -bd -bg -borderwidth -command -cursor -digits -fg -font -foreground -from -highlightbackground -highlightcolor -highlightthickness -label -length -orient -relief -repeatdelay -repeatinterval -resolution -showvalue -sliderlength -sliderrelief -state -takefocus -tickinterval -to -troughcolor -variable -width}
+set {::option(_obj,scale configure -variable)} n
+set {::option(_obj,scrollbar cget)} {-activebackground -activerelief -background -bd -bg -borderwidth -command -cursor -elementborderwidth -highlightbackground -highlightcolor -highlightthickness -jump -orient -relief -repeatdelay -repeatinterval -takefocus -troughcolor -width}
+set {::option(_obj,scrollbar configure)} {-activebackground -activerelief -background -bd -bg -borderwidth -command -cursor -elementborderwidth -highlightbackground -highlightcolor -highlightthickness -jump -orient -relief -repeatdelay -repeatinterval -takefocus -troughcolor -width}
 set {::option(_obj,spinbox cget)} {-activebackground -background -bd -bg -borderwidth -buttonbackground -buttoncursor -buttondownrelief -buttonuprelief -command -cursor -disabledbackground -disabledforeground -exportselection -fg -font -foreground -format -from -highlightbackground -highlightcolor -highlightthickness -increment -insertbackground -insertborderwidth -insertofftime -insertontime -insertwidth -invalidcommand -invcmd -justify -relief -readonlybackground -repeatdelay -repeatinterval -selectbackground -selectborderwidth -selectforeground -state -takefocus -textvariable -to -validate -validatecommand -values -vcmd -width -wrap -xscrollcommand}
 set {::option(_obj,spinbox configure)} {-activebackground -background -bd -bg -borderwidth -buttonbackground -buttoncursor -buttondownrelief -buttonuprelief -command -cursor -disabledbackground -disabledforeground -exportselection -fg -font -foreground -format -from -highlightbackground -highlightcolor -highlightthickness -increment -insertbackground -insertborderwidth -insertofftime -insertontime -insertwidth -invalidcommand -invcmd -justify -relief -readonlybackground -repeatdelay -repeatinterval -selectbackground -selectborderwidth -selectforeground -state -takefocus -textvariable -to -validate -validatecommand -values -vcmd -width -wrap -xscrollcommand}
 set {::option(_obj,spinbox configure -textvariable)} n
+set {::option(_obj,text cget)} {-autoseparators -background -bd -bg -borderwidth -cursor -exportselection -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -insertbackground -insertborderwidth -insertofftime -insertontime -insertwidth -maxundo -padx -pady -relief -selectbackground -selectborderwidth -selectforeground -setgrid -spacing1 -spacing2 -spacing3 -state -tabs -takefocus -undo -width -wrap -xscrollcommand -yscrollcommand}
+set {::option(_obj,text configure)} {-autoseparators -background -bd -bg -borderwidth -cursor -exportselection -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -insertbackground -insertborderwidth -insertofftime -insertontime -insertwidth -maxundo -padx -pady -relief -selectbackground -selectborderwidth -selectforeground -setgrid -spacing1 -spacing2 -spacing3 -state -tabs -takefocus -undo -width -wrap -xscrollcommand -yscrollcommand}
+set {::option(_obj,toplevel cget)} {-bd -borderwidth -class -menu -relief -screen -use -background -bg -colormap -container -cursor -height -highlightbackground -highlightcolor -highlightthickness -padx -pady -takefocus -visual -width}
+set {::option(_obj,toplevel configure)} {-bd -borderwidth -class -menu -relief -screen -use -background -bg -colormap -container -cursor -height -highlightbackground -highlightcolor -highlightthickness -padx -pady -takefocus -visual -width}
 set ::option(button) {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -default -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -justify -overrelief -padx -pady -relief -repeatdelay -repeatinterval -state -takefocus -text -textvariable -underline -width -wraplength}
 set {::option(button -textvariable)} n
+set ::option(canvas) {-background -bd -bg -borderwidth -closeenough -confine -cursor -height -highlightbackground -highlightcolor -highlightthickness -insertbackground -insertborderwidth -insertofftime -insertontime -insertwidth -offset -relief -scrollregion -selectbackground -selectborderwidth -selectforeground -state -takefocus -width -xscrollcommand -xscrollincrement -yscrollcommand -yscrollincrement}
 set ::option(checkbutton) {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -indicatoron -justify -offrelief -offvalue -onvalue -overrelief -padx -pady -relief -selectcolor -selectimage -state -takefocus -text -textvariable -underline -variable -width -wraplength}
 set {::option(checkbutton -textvariable)} n
 set {::option(checkbutton -variable)} n
@@ -294,6 +370,7 @@ set ::option(exec) {-keepnewline --}
 set ::option(fconfigure) {-blocking -buffering -buffersize -encoding -eofchar -translation -mode -queue -ttystatus -xchar}
 set ::option(fcopy) {-size -command}
 set {::option(file attributes)} {-group -owner -permissions}
+set ::option(focus) {-displayof -force -lastfor}
 set ::option(frame) {-bd -borderwidth -class -relief -background -bg -colormap -container -cursor -height -highlightbackground -highlightcolor -highlightthickness -padx -pady -takefocus -visual -width}
 set ::option(glob) {-directory -join -nocomplain -path -tails -types --}
 set {::option(glob -directory)} 1
@@ -309,6 +386,9 @@ set {::option(lsearch -start)} 1
 set ::option(lsort) {-ascii -command -decreasing -dictionary -increasing -index -integer -real -unique}
 set {::option(lsort -command)} 1
 set {::option(lsort -index)} 1
+set ::option(menu) {-activebackground -activeborderwidth -activeforeground -background -bd -bg -borderwidth -cursor -disabledforeground -fg -font -foreground -postcommand -relief -selectcolor -takefocus -tearoff -tearoffcommand -title -type}
+set ::option(menubutton) {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -cursor -direction -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -indicatoron -justify -menu -padx -pady -relief -compound -state -takefocus -text -textvariable -underline -width -wraplength}
+set {::option(menubutton -textvariable)} n
 set ::option(panedwindow) {-background -bd -bg -borderwidth -cursor -handlepad -handlesize -height -opaqueresize -orient -relief -sashcursor -sashpad -sashrelief -sashwidth -showhandle -width}
 set ::option(radiobutton) {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -indicatoron -justify -offrelief -overrelief -padx -pady -relief -selectcolor -selectimage -state -takefocus -text -textvariable -underline -value -variable -width -wraplength}
 set {::option(radiobutton -textvariable)} n
@@ -318,6 +398,9 @@ set {::option(regexp -start)} 1
 set ::option(regsub) {-all -nocase -expanded -line -linestop -lineanchor -start --}
 set {::option(regsub -start)} 1
 set ::option(return) {-code -errorcode -errorinfo}
+set ::option(scale) {-activebackground -background -bigincrement -bd -bg -borderwidth -command -cursor -digits -fg -font -foreground -from -highlightbackground -highlightcolor -highlightthickness -label -length -orient -relief -repeatdelay -repeatinterval -resolution -showvalue -sliderlength -sliderrelief -state -takefocus -tickinterval -to -troughcolor -variable -width}
+set {::option(scale -variable)} n
+set ::option(scrollbar) {-activebackground -activerelief -background -bd -bg -borderwidth -command -cursor -elementborderwidth -highlightbackground -highlightcolor -highlightthickness -jump -orient -relief -repeatdelay -repeatinterval -takefocus -troughcolor -width}
 set ::option(spinbox) {-activebackground -background -bd -bg -borderwidth -buttonbackground -buttoncursor -buttondownrelief -buttonuprelief -command -cursor -disabledbackground -disabledforeground -exportselection -fg -font -foreground -format -from -highlightbackground -highlightcolor -highlightthickness -increment -insertbackground -insertborderwidth -insertofftime -insertontime -insertwidth -invalidcommand -invcmd -justify -relief -readonlybackground -repeatdelay -repeatinterval -selectbackground -selectborderwidth -selectforeground -state -takefocus -textvariable -to -validate -validatecommand -values -vcmd -width -wrap -xscrollcommand}
 set {::option(spinbox -textvariable)} n
 set {::option(string compare)} {-nocase -length}
@@ -330,4 +413,6 @@ set {::option(string map)} -nocase
 set {::option(string match)} -nocase
 set ::option(subst) {-nobackslashes -nocommands -novariables}
 set ::option(switch) {-exact -glob -regexp --}
+set ::option(text) {-autoseparators -background -bd -bg -borderwidth -cursor -exportselection -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -insertbackground -insertborderwidth -insertofftime -insertontime -insertwidth -maxundo -padx -pady -relief -selectbackground -selectborderwidth -selectforeground -setgrid -spacing1 -spacing2 -spacing3 -state -tabs -takefocus -undo -width -wrap -xscrollcommand -yscrollcommand}
+set ::option(toplevel) {-bd -borderwidth -class -menu -relief -screen -use -background -bg -colormap -container -cursor -height -highlightbackground -highlightcolor -highlightthickness -padx -pady -takefocus -visual -width}
 
