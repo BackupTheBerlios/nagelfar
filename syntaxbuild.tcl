@@ -33,6 +33,10 @@ if 0 { # Not working yet
         set exports [namespace eval $ns {namespace export}]
         foreach pat $exports {
             foreach p [info commands ${ns}::$pat] {
+                # Do not include the first :: in the name
+                if {[string match ::* $p]} {
+                    set p [string range $p 2 end]
+                }
                 lappend ::kC $p
             }
         }
@@ -193,7 +197,11 @@ proc buildDb {ch} {
     set syntax(interp)          "s x*"
     set syntax(join)            "r 1 2"
     set syntax(lappend)         "n x*"
-    set syntax(lindex)           2
+    if {[catch {lindex apa 0 0}]} {
+        set syntax(lindex)       2        ;# Pre 8.4
+    } else {
+        set syntax(lindex)      "r 2"
+    }
     set syntax(linsert)         "r 3"
     set syntax(list)            "r 0"
     set syntax(llength)          1
@@ -206,6 +214,7 @@ proc buildDb {ch} {
         set syntax(lsearch)     "o* x x"
     }
     set syntax(lsort)           "o* x"
+    set syntax(lset)            "n x x x*"
     # "namespace" is handled specially
     set syntax(namespace)       "s x*"
     set syntax(open)            "r 1 3"
