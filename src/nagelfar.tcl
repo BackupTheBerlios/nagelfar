@@ -2669,7 +2669,8 @@ proc usage {} {
    1               = Don't warn on single commands. "if [apa] {...}" is ok.
  -WsubN            : Sets subcommand warning level to N.
    1 (def)         = Warn about shortened subcommands.
- -WelseN           : Enforce else keyword. Default 1.}
+ -WelseN           : Enforce else keyword. Default 1.
+ -strictappend     : Enforce having an initialised variable in (l)append.}
     exit
 }
 
@@ -2920,6 +2921,11 @@ proc loadDatabases {} {
     }
 
     interp delete loadinterp
+
+    if {$::Prefs(strictAppend)} {
+        set ::syntax(lappend) [string map {n v} $::syntax(lappend)]
+        set ::syntax(append) [string map {n v} $::syntax(append)]
+    }
 }
 
 # Execute the checks
@@ -3367,6 +3373,8 @@ proc makeWin {} {
             -variable ::Prefs(warnBraceExpr) -value 2
     .m.mo add checkbutton -label "Enforce else keyword" \
             -variable ::Prefs(forceElse)
+    .m.mo add checkbutton -label "Strict (l)append" \
+            -variable ::Prefs(strictAppend)
 
     .m.mo add cascade -label "Script encoding" -menu .m.mo.me
     menu .m.mo.me
@@ -3771,6 +3779,7 @@ proc getOptions {} {
     array set ::Prefs {
         warnBraceExpr 2
         warnShortSub 1
+        strictAppend 0
         forceElse 1
         noVar 0
         severity N
@@ -3924,6 +3933,9 @@ if {![info exists gurka]} {
             }
             -Welse* {
                 set ::Prefs(forceElse) [string range $arg 6 end]
+            }
+            -strictappend {
+                set ::Prefs(strictAppend) 1
             }
             -filter {
                 incr i
