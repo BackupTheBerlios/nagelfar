@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.0b3 2004-03-23"
+set version "Version 1.0b3+ 2004-04-07"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -67,7 +67,7 @@ proc echo {str} {
         $::Nagelfar(resultWin) insert end $str\n
         $::Nagelfar(resultWin) configure -state disabled
     } else {
-        puts $str
+        puts stdout $str
     }
     update
 }
@@ -1053,7 +1053,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 		    set sub "$cmd $arg"
 		    if {[info exists ::syntax($sub)]} {
 			set stype [checkCommand $sub $index $argv $wordstatus \
-                                $indices 1]
+                                $indices [expr {[llength $sub] - 1}]]
                         if {$stype != ""} {
                             set type $stype
                         }
@@ -1130,16 +1130,20 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
                     if {![string equal $mod "*"]} {
                         set max 2
                     }
-                    # FIXA: like o
-                    set used [checkOptions $cmd $argv $wordstatus $indices $i \
+                    set oSyn [checkOptions $cmd $argv $wordstatus $indices $i \
                             $max 1]
-                    set used [llength $used]
+                    set used [llength $oSyn]
                     if {$used == 0 && ($mod == "" || $mod == ".")} {
                         errorMsg E "Expected an option as argument $i to \"$cmd\"" \
                                 [lindex $indices $i]
                         return $type
                     }
-                    incr i $used
+                    if {[lsearch -not $oSyn "x"] >= 0} {
+                        # Feed the syntax back into the check loop
+                        set syn [concat $oSyn $syn]
+                    } else {
+                        incr i $used
+                    }
                 }
 	    }
 	    default {
@@ -2473,12 +2477,14 @@ proc fileDropDb {files} {
 
 # Browse for and add a file to check.
 proc addFile {} {
-    set apa [tk_getOpenFile -title "Select file to check" \
-            -defaultextension .tcl \
+    set apa [tk_getOpenFile -title "Select file(s) to check" \
+            -defaultextension .tcl -multiple 1 \
             -filetypes {{{Tcl File} {.tcl}} {{All Files} {.*}}}]
-    if {$apa == ""} return
-
-    lappend ::Nagelfar(files) [fileRelative [pwd] $apa]
+    if {[llength $apa] == 0} return
+    
+    foreach file $apa {
+        lappend ::Nagelfar(files) [fileRelative [pwd] $file]
+    }
 }
 
 # Remove a file from the list to check
