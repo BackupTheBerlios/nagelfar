@@ -8,6 +8,7 @@ exec tclsh "$0" "$@"
 package require tcltest 2.2
 namespace import tcltest::*
 tcltest::configure -verbose "body error"
+#testConstraint knownbug 1
 #tcltest::configure -match nagelfar-6.*
 
 proc createTestFile {scr} {
@@ -206,6 +207,72 @@ test nagelfar-5.1 {
     execTestFile
 } -result {*Procedure "info" does not match previous definition*} -match glob
 
+test nagelfar-5.2 {
+    Procedure checking
+} -setup {
+    createTestFile {
+        proc hej {a b c} {
+            return $a
+        }
+        set x 1
+        set y 2
+        set z 3
+        hej $x $y $z
+    }
+} -body {
+    execTestFile
+} -result {Checking file _testfile_} -match glob
+
+test nagelfar-5.3 {
+    Procedure checking, detecting upvar
+} -setup {
+    createTestFile {
+        proc hej {a b c} {
+            upvar $b apa
+            return $apa
+        }
+        set x 1
+        set y 2
+        set z 3
+        hej $x $y $z
+    }
+} -body {
+    execTestFile
+} -result {*Suspicious variable name "$y"*} -match glob
+
+test nagelfar-5.4 {
+    Procedure checking, detecting upvar
+} -setup {
+    createTestFile {
+        proc hej {a b c} {
+            upvar $a apa
+            return $apa
+        }
+        set y 2
+        set z 3
+        hej x $y $z
+    }
+} -body {
+    execTestFile
+} -result {*Unknown variable "x"*} -match glob
+
+test nagelfar-5.5 {
+    Procedure checking, detecting upvar
+} -setup {
+    createTestFile {
+        proc hej {a b c} {
+            upvar $c apa
+            set apa 1
+        }
+        set y 2
+        set z 3
+        hej $y $z x
+        list $x
+    }
+} -body {
+    execTestFile
+} -result {Checking file _testfile_} -match glob
+
 test nagelfar-6.1 {
     Expression checking
 } -setup {
@@ -249,5 +316,50 @@ test nagelfar-6.4 {
 } -body {
     execTestFile
 } -result {Checking file _testfile_} -match glob
+
+test nagelfar-7.1 {
+    Command: upvar
+} -setup {
+    createTestFile {
+        upvar 1 bepa
+    }
+} -body {
+    execTestFile
+} -result {*Wrong number of arguments (2) to "upvar"*} -match glob
+
+test nagelfar-7.2 {
+    Command: upvar
+} -setup {
+    createTestFile {
+        set x hej
+        upvar 1 bepa $x
+    }
+} -body {
+    execTestFile
+} -result {*Suspicious upvar variable "$x"*} -match glob
+
+test nagelfar-7.3 {
+    Command: upvar
+} -setup {
+    createTestFile {
+        set x hej
+        upvar $x $x bepa
+    }
+} -body {
+    execTestFile
+} -result {*Non constant level to upvar: $x*} -match glob
+
+test nagelfar-8.1 {
+    Variable handling
+} -constraints knownbug -setup {
+    createTestFile {
+        proc hej {x y} {
+            global item
+            list item($x,$y)
+        }
+    }
+} -body {
+    execTestFile
+} -result {should detect missing dollar} -match glob
 
 file delete _testfile_
