@@ -4,7 +4,7 @@ Err.0.tcl: Line   2: E Could not complete statement.
 Checking file Err.1.tcl
 Err.1.tcl: Line  25: W Unknown command "name"
 Checking file Err.2.tcl
-Err.2.tcl: Line   8: W Procedure "info" do not match previous definition
+Err.2.tcl: Line   8: W Procedure "info" does not match previous definition
                        Previous 's x*'  New '1'
 Err.2.tcl: Line  26: W Unknown command "name"
 Err.2.tcl: Line  42: N Non static subcommand to "info"
@@ -30,50 +30,34 @@ Err.8.tcl: Line  34: E Could not complete statement.
                        One double quote would complete the first line
                        One double quote would complete the script body at line 36.
 Err.8.tcl: Line  40: W Found constant "array1" which is also a variable.
-Err.8.tcl: Line  40: W Found constant "searchId" which is also a variable.
 Err.8.tcl: Line  41: W Found constant "array1" which is also a variable.
-Err.8.tcl: Line  41: W Found constant "searchId" which is also a variable.
 Checking file Err.9.tcl
 Err.9.tcl: Line   6: E Wrong number of arguments (4) to "open"
 Err.9.tcl: Line   8: E Wrong number of arguments (4) to "puts"
 Checking file Err.10.tcl
-Err.10.tcl: Line  20: W Procedure "proc1" do not match previous definition
-                        Previous '2'  New '2'
 Err.10.tcl: Line  21: N Non constant argument to global: $arrayVar
 Err.10.tcl: Line  25: E Unknown variable "id"
 Err.10.tcl: Line  25: N Suspicious variable name "$arrayVar"
 Err.10.tcl: Line  26: W Unknown command "whoopee"
 Err.10.tcl: Line  27: N Suspicious variable name "$arrayVar"
 Err.10.tcl: Line  30: W Found constant "id" which is also a variable.
-Err.10.tcl: Line  33: W Procedure "proc2" do not match previous definition
-                        Previous '3'  New '3'
 Err.10.tcl: Line  34: N Non constant argument to global: $arrayVar
 Err.10.tcl: Line  37: E Could not complete statement.
                         One double quote would complete the first line
                         One double quote would complete the script body at line 39.
 Err.10.tcl: Line  43: W Found constant "array1" which is also a variable.
-Err.10.tcl: Line  43: W Found constant "searchId" which is also a variable.
 Err.10.tcl: Line  44: W Found constant "array1" which is also a variable.
-Err.10.tcl: Line  44: W Found constant "searchId" which is also a variable.
 Err.10.tcl: Line  45: W Found constant "array1" which is also a variable.
-Err.10.tcl: Line  45: W Found constant "searchId" which is also a variable.
 Checking file Err.11.tcl
-Err.11.tcl: Line  20: W Procedure "proc1" do not match previous definition
-                        Previous '2'  New '2'
 Err.11.tcl: Line  21: N Non constant argument to global: $arrayVar
 Err.11.tcl: Line  24: W Unknown command "for{set"
-Err.11.tcl: Line  33: W Procedure "proc2" do not match previous definition
-                        Previous '3'  New '3'
 Err.11.tcl: Line  34: N Non constant argument to global: $arrayVar
 Err.11.tcl: Line  37: E Could not complete statement.
                         One double quote would complete the first line
                         One double quote would complete the script body at line 39.
 Err.11.tcl: Line  43: W Found constant "array1" which is also a variable.
-Err.11.tcl: Line  43: W Found constant "searchId" which is also a variable.
 Err.11.tcl: Line  44: W Found constant "array1" which is also a variable.
-Err.11.tcl: Line  44: W Found constant "searchId" which is also a variable.
 Err.11.tcl: Line  45: W Found constant "array1" which is also a variable.
-Err.11.tcl: Line  45: W Found constant "searchId" which is also a variable.
 Checking file Err.12.tcl
 Err.12.tcl: Line   2: E Could not complete statement.
                         Two close braces would complete the first line
@@ -95,7 +79,6 @@ Err.15.tcl: Line   3: E Could not complete statement.
                         One close bracket would complete the first line
                         One close bracket would complete the script body at line 13.
 Err.15.tcl: Line  27: W Found constant "i1" which is also a variable.
-Err.15.tcl: Line  27: W Found constant "i2" which is also a variable.
 Checking file Err.16.tcl
 Err.16.tcl: Line   9: E Could not complete statement.
                         One double quote would complete the first line
@@ -103,3 +86,4 @@ Err.16.tcl: Line   9: E Could not complete statement.
 Err.16.tcl: Line  12: W No braces around expression in if statement.
 Err.16.tcl: Line  18: W Found constant "x" which is also a variable.
 Err.16.tcl: Line  19: W No braces around expression in if statement.
+Err.16.tcl: Line  19: E Bad expression: extra tokens at end of expression

@@ -14,7 +14,7 @@ set expect(0)  {*Could not complete*double quote*}
 # 1   Bad Command  
 set expect(1)  {*Unknown command "name"*}
 # 2   Wrong Number Args 
-set expect(2)  {*Procedure "info" do not*}
+set expect(2)  {*Procedure "info" does not*}
 # 3   Undefined Proc  
 set expect(3)  {*Unknown command "name"*}
 # 4   Undefined Proc
@@ -49,10 +49,10 @@ for {set t 0} {$t <= 16} {incr t} {
     test nagelfar-clif-1.$t {
         Test case
     } -body {
-        exec [info nameofexecutable] ../nagelfar.tcl Err.$t.tcl
+        exec ../nagelfar.kit Err.$t.tcl
     } -result $expect($t) -match glob
 
     lappend files Err.$t.tcl
 }
 
-eval [list exec [info nameofexecutable] ../nagelfar.tcl] $files > result.txt
+eval [list exec ../nagelfar.kit] $files > result.txt
