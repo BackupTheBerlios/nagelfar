@@ -14,6 +14,7 @@ source [file join [file dirname [file join [pwd] [info script]]] syntaxdb.tcl]
 #       Handle multiple files. Remember variables.
 #       Everything marked FIXA
 #       Give this program a silly name.
+#       Optimise. It's still slow.
 
 # Arguments to many procedures:
 # index     : Index of the start of a string or command.
@@ -36,7 +37,26 @@ proc decho {str} {
 }
 
 proc timestamp {str} {
-    puts stderr [clock clicks]:$str
+    global _timestamp_
+    set apa [clock clicks]
+    if {[info exists _timestamp_]} {
+        puts stderr $str:$apa:[expr {$apa - $_timestamp_}]
+    } else {
+        puts stderr $str:$apa
+    }
+    set _timestamp_ $apa
+}
+
+proc profile {str script} {
+    global profiledata
+    if {![info exists profiledata($str)]} {
+        set profiledata($str) 0
+        set profiledata($str,n) 0
+    }
+    set apa [clock clicks]
+    uplevel 1 $script
+    incr profiledata($str) [expr {[clock clicks] - $apa}]
+    incr profiledata($str,n)
 }
 
 # Allow syntax information in comments
@@ -74,11 +94,10 @@ proc skipWS {str len iName} {
 # Scan the string until the end of one word is found.
 # When entered, i points to the start of the word.
 # When returning, i points to the last char of the word.
-proc scanWord {str len index iName} {
+proc scanWordOld {str len index iName} {
     upvar $iName i
 
     set si $i
-    set ei $i
     set c [string index $str $i]
     if {$c == "\{"} {
         set closeChar \}
@@ -93,19 +112,25 @@ proc scanWord {str len index iName} {
     if {$closeChar != ""} {
 	for {} {$i < $len} {incr i} {
             # Speedup search for closeChar
-            set ci [string first $closeChar $str $i]
-            if {$ci != -1} {
-                # This should always happen since no incomplete lines should
+            set i [string first $closeChar $str $i]
+            if {$i == -1} {
+                # This should never happen since no incomplete lines should
                 # reach this function.
-                set i $ci
-            } else {
-		decho "PANIC! Did not find close char in scanWord."
+		decho "PANIC! Did not find close char in scanWord.\
+                        Line [calcLineNo $index]."
 		set i $len
 		return
 	    }
             if {[info complete [string range $str $si $i]]} {
+                #Check for following whitespace
+                set j [expr {$i + 1}]
+                if {$j == $len || [string is space [string index $str $j]]} {
+                    return
+                }
+                echo "Extra chars after closing brace or quote.\
+                        Line [calcLineNo [expr {$index + $i}]]."
                 # Switch over to scanning for whitespace
-                set ei $i
+                incr i
 		break
             }
 	}
@@ -120,10 +145,6 @@ proc scanWord {str len index iName} {
 		if {[string is space $c] && \
 			[info complete [string range $str $si $i]]} {
 		    incr i -1
-		    if {$ei != $si  && $ei != $i} {
-			echo "Extra chars after closing brace or quote.\
-				Line [calcLineNo [expr {$index + $ei}]]."
-		    }
 		    return
 		}
 	    } else {
@@ -140,11 +161,74 @@ proc scanWord {str len index iName} {
 	return -code break
     }
     incr i -1
-    if {$ei != $si && $ei != $i} {
-	echo "Extra chars after closing brace or quote.\
-                Line [calcLineNo [expr {$index + $ei}]]."
+}
+
+proc scanWord {str len index iName} {
+    upvar $iName i
+
+    set si $i
+    set c [string index $str $i]
+
+    if {$c == "\{"} {
+        set closeChar \}
+    } elseif {$c == "\""} {
+        set closeChar \"
+    } else {
+        set closeChar ""
     }
-    return
+
+    if {$closeChar != ""} {
+	for {} {$i < $len} {incr i} {
+            # Search for closeChar
+            set i [string first $closeChar $str $i]
+            if {$i == -1} {
+                # This should never happen since no incomplete lines should
+                # reach this function.
+		decho "PANIC! Did not find close char in scanWord.\
+                        Line [calcLineNo $index]."
+		set i $len
+		return
+	    }
+            if {[info complete [string range $str $si $i]]} {
+                #Check for following whitespace
+                set j [expr {$i + 1}]
+                if {$j == $len || [string is space [string index $str $j]]} {
+                    return
+                }
+                echo "Extra chars after closing brace or quote.\
+                        Line [calcLineNo [expr {$index + $i}]]."
+                # Switch over to scanning for whitespace
+                incr i
+		break
+            }
+	}
+    }
+    # Regexp to locate unescaped whitespace
+    set RE {(^|[^\\])(\\\\)*\s}
+
+    for {} {$i < $len} {incr i} {
+	# Search for unescaped whitespace
+        set tmp [string range $str $i end]
+        if {[regexp -indices $RE $tmp match]} {
+            incr i [lindex $match 1]
+        } else {
+            set i $len
+        }
+        if {[info complete [string range $str $si $i]]} {
+            incr i -1
+            return
+        }
+    }
+    
+    # Theoretically, no incomplete string should come to this function,
+    # but some precaution is never bad.
+    if {![info complete [string range $str $si end]]} {
+        decho "PANIC! in scanWord: String not complete.\
+                Line [calcLineNo [expr {$index + $si}]]."
+        decho $str
+	return -code break
+    }
+    incr i -1
 }
 
 ##syntax splitStatement x x n
@@ -168,7 +252,7 @@ proc splitStatement {statement index indicesName} {
     while {$i < $len} {
         set si $i
 	lappend indices [expr {$i + $index}]
-        scanWord $statement $len $index i
+        profile scanWord {scanWord $statement $len $index i}
         lappend words [string range $statement $si $i]
         incr i
         skipWS $statement $len i
@@ -218,11 +302,10 @@ proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
     return $used
 }
 
-##syntax splitList x x n
+##syntax splitListx x n
 # Make a list of a string. This is easy, just treat it as a list.
 # But we must keep track of indices, so our own parsing is needed too.
 proc splitList {str index iName} {
-    set apa [clock clicks]
     upvar $iName indices
 
     # Make a copy to perform list operations on
@@ -316,7 +399,6 @@ proc splitList {str index iName} {
             echo :$ix:[string range $l 0 10]:
         }
     }
-    incr ::profilespLi [expr {[clock clicks] - $apa}]
     return $lstr
 }
 
@@ -708,9 +790,7 @@ proc markVariable {var ws check knownVarsName} {
 # Parse one statement and check the syntax of the command
 proc parseStatement {statement index knownVarsName} {
     upvar $knownVarsName knownVars
-    set apa [clock clicks]
     set words [splitStatement $statement $index indices]
-    incr ::profilespSt [expr {[clock clicks] - $apa}]
     if {[llength $words] == 0} {return}
 
     set words2 {}
@@ -967,7 +1047,13 @@ proc parseStatement {statement index knownVarsName} {
 	    }
 	}
 	expr { # FIXA
-
+            #Take care of the standard case of a brace enclosed expr.
+            if {$argc == 1 && [lindex $wordstatus 0] == 2} {
+                 parseExpr [lindex $argv 0] [lindex $indices 0] knownVars
+            } else {
+                echo "Expr without braces in line\
+                        [calcLineNo [lindex $indices 0]]"
+            }
 	}
 	eval { # FIXA
 
@@ -1004,83 +1090,6 @@ proc parseStatement {statement index knownVarsName} {
 ##syntax splitScript x x n n
 # Split a script into individual statements
 proc splitScript {script index statementsName indicesName} {
-    incr ::profilespSc -[clock clicks]
-    upvar $statementsName statements $indicesName indices
-    
-    set commentre {^\s*#}
-
-    set statements {}
-    set indices {}
-    set rest $script
-    set tryline ""
-
-    while {[string bytelength $rest] != 0} {
-	# Move everything up to the next semicolon, newline or eof to tryline
-	
-	set i1 [string first \n $rest]
-	set i2 [string first \; $rest]
-
-	if {$i1 + $i2 != -2} {
-	    if {$i1 != -1 && ($i2 == -1 || $i1 < $i2)} {
-		set i $i1
-		set splitchar \n
-	    } else {
-		set i $i2
-		set splitchar \;
-	    }
-	    append tryline [string range $rest 0 $i]
-	    incr i
-	    set rest [string range $rest $i end]
-	} else {
-	    append tryline $rest
-	    set rest ""
-	    set splitchar ""
-	}
-	# If we split at a ; we must check that it really may be an end
-	if {$splitchar == ";"} {
-	    # Comment lines don't end with ;
-	    if {[regexp $commentre $tryline]} {continue}
-	    
-	    # Look for \'s before the ;
-	    # If there is an odd number of \, the ; is ignored
-	    if {[string index $tryline end-1] == "\\"} {
-		set i [expr {[string length $tryline] - 2}]
-		set t $i
-                while {[string index $tryline $t] == "\\"} {incr t -1}
-		if {($i - $t) % 2 == 1} {continue}
-	    }
-	}
-	if {[info complete $tryline]} {
-	    if {[regexp $commentre $tryline]} {
-		# Check and discard comments
-		checkComment $tryline $index
-	    } else {
-		if {$splitchar == ";"} {
-		    lappend statements [string range $tryline 0 end-1]
-		} else {
-		    lappend statements $tryline
-		}
-		lappend indices $index
-	    }
-	    incr index [string length $tryline]
-	    set tryline ""
-	}
-    }
-    # If tryline is non empty, it did not become complete
-    if {[string length $tryline] != 0} {
-	echo "Error in splitScript"
-	echo "Could not complete statement in line [calcLineNo $index]."
-	echo "Starting with: [string range $tryline 0 20]"
-	echo "tryline:$tryline:"
-	echo "rest:$rest:"
-    }
-    incr ::profilespSc [clock clicks]
-}
-
-##syntax splitScript2 x x n n
-# Split a script into individual statements
-proc splitScript2 {script index statementsName indicesName} {
-    incr ::profilespSc -[clock clicks]
     upvar $statementsName statements $indicesName indices
     
     set commentre {^\s*#}
@@ -1144,14 +1153,13 @@ proc splitScript2 {script index statementsName indicesName} {
 	echo "tryline:$tryline:"
 	echo "line:$line:"
     }
-    incr ::profilespSc [clock clicks]
 }
 
 ##syntax parseBody x x n
 proc parseBody {body index knownVarsName} {
     upvar $knownVarsName knownVars
 
-    splitScript2 $body $index statements indices
+    splitScript $body $index statements indices
 
     foreach statement $statements index $indices {
 	parseStatement $statement $index knownVars
@@ -1214,36 +1222,35 @@ proc calcLineNo {i} {
 # is greatly simplified if it does not need to bother with those.
 proc buildLineDb {str} {
     global newlineIx
-
-    set result ""
-    set rest $str
-    set newlineIx {}
     
-    while 1 {
-        set i [string first \n $rest]
-        if {$i != -1} {
-            set si [expr {$i - 1}]
-            # Count backslashes to determine if it's escaped
-            while {[string index $rest $si] == "\\"} {incr si -1}
-            if {($i - $si) % 2 == 0} {
+    set result ""
+    set lines [split $str \n]
+    set newlineIx {}
+    # This is a trick to get "sp" and "nl" to get an internal string rep.
+    # This also makes sure it will not be a shared object, which can mess up
+    # the internal rep.
+    # Append works a lot better that way.
+    set sp [string range " " 0 0]
+    set nl [string range \n 0 0]
+
+    foreach line $lines {
+        # Count backslashes to determine if it's escaped
+        if {[string index $line end] == "\\"} {
+	    set len [string length $line]
+            set si [expr {$len - 2}]
+            while {[string index $line $si] == "\\"} {incr si -1}
+            if {($len - $si) % 2 == 0} {
                 # An escaped newline
-                incr i -2
-                append result [string range $rest 0 $i]
-                append result " "
+                append result [string range $line 0 end-1] $sp
                 lappend newlineIx [string length $result]
-                incr i 3
-                set rest [string range $rest $i end]
-            } else {
-                # Unescaped newline
-                append result [string range $rest 0 $i]
-                lappend newlineIx [string length $result]
-                incr i
-                set rest [string range $rest $i end]
+                continue
             }
-        } else {
-            append result $rest
-            break
         }
+        # Unescaped newline
+        # It's important for performance that all elements in append
+        # has an internal string rep. String index takes care of $line
+        append result $line $nl
+        lappend newlineIx [string length $result]
     }
     set result
 }
@@ -1269,6 +1276,8 @@ proc parseScript {script} {
                     [calcLineNo $unknownCommands($cmd)]"
         }
     }
+    #Update known globals.
+    set knownGlobals [array names knownVars]
 }
 
 # Parse a file
@@ -1276,17 +1285,8 @@ proc parseFile {filename} {
     set ch [open $filename]
     set script [read $ch]
     close $ch
-    set ::profilespSc 0
-    set ::profilespSt 0
-    set ::profilespLi 0
 
-    set ::start [clock clicks]
-    parseScript $script
-    set ::stop [clock clicks]
-    puts total:[expr {$::stop - $::start}]
-    puts splitSt:$::profilespSt
-    puts splitSc:$::profilespSc
-    puts splitLi:$::profilespLi
+    profile total {parseScript $script}
 }
 
 proc usage {} {
@@ -1296,30 +1296,33 @@ proc usage {} {
 
 # End of procs, global code here
 
-if {![info exists gurka] && $argc >= 1} {
+if {![info exists gurka]} {
     set gurka 1
-    set dbfiles {}
-    set files {}
-    for {set i 0} {$i < $argc} {incr i} {
-        set arg [lindex $argv $i]
-        if {[string match $arg -h*]} {
-            usage
+    if {$argc >= 1} {
+        set dbfiles {}
+        set files {}
+        for {set i 0} {$i < $argc} {incr i} {
+            set arg [lindex $argv $i]
+            if {[string match $arg -h*]} {
+                usage
+            }
+            if {[string equal $arg -s]} {
+                incr i
+                lappend dbfile [lindex $argv $i]
+            } elseif {[string match $arg -*]} {
+                puts "Unknown option $arg."
+                usage
+            } else {
+                lappend files $arg
+            }
         }
-        if {[string equal $arg -s]} {
-            incr i
-            lappend dbfile [lindex $argv $i]
-        } elseif {[string match $arg -*]} {
-            puts "Unknown option $arg."
-            usage
-        } else {
-            lappend files $arg
+        foreach f $dbfiles {
+            source $f
         }
-    }
-    foreach f $dbfiles {
-        source $f
-    }
-    foreach f $files {
-        parseFile $f
+        foreach f $files {
+            parseFile $f
+        }
+        exit
     }
 }
 
@@ -1354,3 +1357,72 @@ proc comTest {file} {
 
     close $ch
 }
+
+proc pt {{n 0}} {
+    if {$n == 0} {
+        if {$::tcl_platform(platform) == "windows"} {
+            set n 5
+        } else {
+            set n 1000
+        }
+    }
+    catch {unset ::_profile_}
+    set ::tcl_profile $n
+    parseFile syntax1.tcl
+    set ::tcl_profile 0
+    pprofile
+}
+proc ptu {{n 0}} {
+    if {$n == 0} {
+        if {$::tcl_platform(platform) == "windows"} {
+            set n 5
+        } else {
+            set n 1000
+        }
+    }
+    catch {unset ::_profile_}
+    set ::tcl_profile $n
+    parseFile unicode.tcl
+    set ::tcl_profile 0
+    pprofile
+}
+
+proc pprofile {} {
+    global _profile_
+    if {![array exists _profile_]} {
+	puts "No profile data available."
+	return
+    }
+    set maxl 0
+    foreach name [array names _profile_] {
+	set base $name
+	regexp {(.*),} $name -> base
+	if {![info exists sum($base)]} {set sum($base) 0}
+	incr sum($base) $_profile_($name)
+	if {[string length $name] > $maxl} {
+	    set maxl [string length $name]
+	}
+    }
+    set nw 1
+    set x $_profile_(_total_)
+    while {$x >= 10} {
+	incr nw
+	set x [expr {$x / 10}]
+    }
+    foreach name [lsort [array names _profile_]] {
+	if {[string match _* $name]} {
+	    puts stdout [format "%-*s = %*s" $maxl $name $nw $_profile_($name)]
+	} else {
+	    puts -nonewline stdout [format "%-*s = %*s (%4.1f%%)" $maxl $name $nw $_profile_($name) [expr {$_profile_($name) * 100.0 / $_profile_(_total_)}]]
+	    if {[info exists sum($name)] && $sum($name) != $_profile_($name)} {
+		puts stdout [format " %*s (%4.1f%%)" $nw $sum($name) [expr {$sum($name) * 100.0 / $_profile_(_total_)}]]
+	    } else {
+		puts stdout ""
+	    }
+	}
+    }
+}
+
+#pt
+#parseFile syntax1.tcl
+#parray profiledata
