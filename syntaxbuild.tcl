@@ -165,7 +165,7 @@ proc buildDb {ch} {
     set syntax(array\ size)     "v"
     set syntax(array\ statistics) "v"
     set syntax(array\ unset)    "l x?"
-    set syntax(bgerror)          1
+    #set syntax(bgerror)          1
     set syntax(binary)          "s x*"
     set syntax(binary\ scan)    "x x n n*"
     set syntax(break)            0
@@ -323,22 +323,35 @@ proc buildDb {ch} {
 
     if {$useTk} {
         # "bind" is handled specially
+        set syntax(bindtags) "x x?"
+        set syntax(clipboard) "s x*"
         set syntax(console)  "r 1"
         set syntax(destroy)  "x*"
         set syntax(event)    "s x*"
         set syntax(focus)    "o? x?"
         set syntax(font)     "s x*"
         set syntax(image)    "s x*"
-        set syntax(grid)     "x x*"
+        set syntax(grab)     "x x*" ;# FIXA, how to check subcommands here?
+        set syntax(grid)     "x x*" ;# FIXA, how to check subcommands here?
         set syntax(lower)    "x x?"
         set syntax(option)   "s x*"
         set syntax(pack)     "x x*"
         set syntax(place)    "x x*"
         set syntax(raise)    "x x?"
         set syntax(selection) "s x*"
+        set syntax(send)     "o* x x x*"
         set syntax(tk)       "s x*"
 	set syntax(winfo)    "s x x*"
         set syntax(wm)       "s x x*"
+
+        set syntax(tk_chooseColor)     "p*"
+        set syntax(tk_chooseDirectory) "p*"
+        #set syntax(tk_dialog)          "r 6"
+        set syntax(tk_getOpenFile)     "p*"
+        set syntax(tk_getSaveFile)     "p*"
+        set syntax(tk_messageBox)      "p*"
+        set syntax(tk_popup)           "r 3 4"
+
         # FIXA: Starting on better Tk support
         foreach class {frame entry label button checkbutton radiobutton \
                 listbox labelframe spinbox panedwindow toplevel menu \
@@ -445,6 +458,7 @@ proc buildDb {ch} {
     set option(glob\ -directory) 1
     set option(glob\ -path)      1
     set option(glob\ -types)     1
+    set option(send\ -displayof) 1
 
     # Build syntax info for procs
     foreach apa $::kC {
