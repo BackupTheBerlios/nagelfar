@@ -24,11 +24,11 @@
 # the next line restarts using tclsh \
 exec tclsh "$0" "$@"
 
-set debug 0
+set debug 1
 package require Tcl 8.4
 
 package provide app-nagelfar 0.7
-set version "Version 0.7 2003-07-23"
+set version "Version 0.7.2 2003-08-11"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -220,7 +220,7 @@ proc checkPossibleComment {str lineNo} {
 # It allows syntax information to be stored in comments
 proc checkComment {str index} {
     if {[string match "##syntax *" $str]} {
-	set ::syntax([lindex $str 1]) [lrange $str 2 end]
+        set ::syntax([lindex $str 1]) [lrange $str 2 end]
     }
 }
 
@@ -265,17 +265,17 @@ proc scanWord {str len index iName} {
     }
 
     if {![string equal $closeChar ""]} {
-	for {} {$i < $len} {incr i} {
+        for {} {$i < $len} {incr i} {
             # Search for closeChar
             set i [string first $closeChar $str $i]
             if {$i == -1} {
                 # This should never happen since no incomplete lines should
                 # reach this function.
-		decho "Internal error: Did not find close char in scanWord.\
+                decho "Internal error: Did not find close char in scanWord.\
                         Line [calcLineNo $index]."
-		set i $len
-		return
-	    }
+                set i $len
+                return
+            }
             set word [string range $str $si $i]
             if {[info complete $word]} {
                 # Check for following whitespace
@@ -289,15 +289,15 @@ proc scanWord {str len index iName} {
                         [expr {$index + $si}]
                 # Switch over to scanning for whitespace
                 incr i
-		break
+                break
             }
-	}
+        }
     }
     # Regexp to locate unescaped whitespace
     set RE {(^|[^\\])(\\\\)*\s}
 
     for {} {$i < $len} {incr i} {
-	# Search for unescaped whitespace
+        # Search for unescaped whitespace
         set tmp [string range $str $i end]
         if {[regexp -indices $RE $tmp match]} {
             incr i [lindex $match 1]
@@ -316,7 +316,7 @@ proc scanWord {str len index iName} {
         decho "Internal error in scanWord: String not complete.\
                 Line [calcLineNo [expr {$index + $si}]]."
         decho $str
-	return -code break
+        return -code break
     }
     incr i -1
 }
@@ -330,7 +330,7 @@ proc splitStatement {statement index indicesName} {
 
     set len [string length $statement]
     if {$len == 0} {
-	return {}
+        return {}
     }
     set words {}
     set i 0
@@ -338,18 +338,18 @@ proc splitStatement {statement index indicesName} {
     # reaches this function. Check just in case.
     skipWS $statement $len i
     if {$i != 0 && $i < $len} {
-	decho "Internal error:"
-	decho " Whitespace in splitStatement. [calcLineNo $index]"
+        decho "Internal error:"
+        decho " Whitespace in splitStatement. [calcLineNo $index]"
     }
     # Comments should be descarded earlier
     if {[string equal [string index $statement $i] "#"]} {
-	decho "Internal error:"
-	decho " A comment slipped through to splitStatement. [calcLineNo $index]"
-	return {}
+        decho "Internal error:"
+        decho " A comment slipped through to splitStatement. [calcLineNo $index]"
+        return {}
     }
     while {$i < $len} {
         set si $i
-	lappend indices [expr {$i + $index}]
+        lappend indices [expr {$i + $index}]
         scanWord $statement $len $index i
         lappend words [string range $statement $si $i]
         incr i
@@ -367,6 +367,17 @@ proc splitStatement {statement index indicesName} {
 proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
     global option
 
+
+    set maxa [expr {[llength $argv] - $startI}]
+    if {$pair && ($maxa % 2) == 1} {
+        incr maxa -1
+    }
+    if {$maxa > $max} {
+        set max $maxa
+    }
+    if {$maxa == 0} {
+        return {}
+    }
     set check [info exists option($cmd)]
     set i 0
     set used 0
@@ -375,16 +386,19 @@ proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
     set replaceSyn {}
     # Since in most cases startI is 0, I believe foreach is faster.
     foreach arg $argv ws $wordstatus index $indices {
-	if {$skip} {
-	    set skip 0
+	if {$i < $startI} {
+	    incr i
+	    continue
+	}
+        if {$skip} {
+            set skip 0
             lappend replaceSyn $skipSyn
             set skipSyn x
 	    incr used
 	    continue
 	}
-	if {$i < $startI} {
-	    incr i
-	    continue
+	if {$max != 0 && $used >= $max} {
+	    break
 	}
 	if {[string equal [string index $arg 0] "-"]} {
 	    incr used
@@ -419,9 +433,6 @@ proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
 		break
 	    }
 	} else {
-	    break
-	}
-	if {$max != 0 && $used >= $max} {
 	    break
 	}
     }
@@ -1680,14 +1691,41 @@ proc parseProc {argv indices} {
         }
 	set knownVars($a) 5
     }
-    if {![info exists syntax($name)]} {
-	if {$unlim} {
-	    set syntax($name) [list r $min]
-	} elseif {$min == [llength $args]} {
-	    set syntax($name) $min
-	} else {
-	    set syntax($name) [list r $min [llength $args]]
-	}
+
+    if {$unlim} {
+        set newsyntax [list r $min]
+    } elseif {$min == [llength $args]} {
+        set newsyntax $min
+    } else {
+        set newsyntax [list r $min [llength $args]]
+    }
+
+    if {[info exists syntax($name)]} {
+        # Check if it matches previously defined syntax
+        set prevmin 0
+        set prevmax 0
+        set prevunlim 0
+        foreach token $syntax($name) {
+            set tok [string index $token 0]
+            set mod [string index $token 1]
+            set n [expr {$tok == "p" ? 2 : 1}]
+            if {$mod == ""} {
+                incr prevmin $n
+                incr prevmax $n
+            } elseif {$mod == "?"} {
+                incr prevmax $n
+            } elseif {$mod == "*"} {
+                set prevunlim 1
+            }
+        }
+        if {$prevunlim != $unlim || $prevmax != [llength $args]\
+                || $prevmin != $min} {
+            errorMsg W "Procedure \"$name\" do not match previous definition" \
+                    [lindex $indices 0]
+            contMsg "Previous '$syntax($name)'  New '$newsyntax'"
+        }
+    } else {
+        set syntax($name) $newsyntax
     }
     lappend knownProcs $name
     lappend knownCommands $name
@@ -1918,7 +1956,7 @@ proc addFile {} {
 
 # Remove a file from the list to check
 proc removeFile {} {
-    set ixs [lsort -decreasing -integer [.ff.lb curselection]]
+    set ixs [lsort -decreasing -integer [$::Nagelfar(fileWin) curselection]]
     foreach ix $ixs {
         set ::Nagelfar(files) [lreplace $::Nagelfar(files) $ix $ix]
     }
@@ -2037,7 +2075,7 @@ proc doCheck {} {
     if {$::Nagelfar(gui)} {
         echo "Done"
         normalCursor
-        progressUpdate 0
+        progressUpdate -1
     }
 }
 
@@ -2079,35 +2117,64 @@ proc resultPopup {x y X Y} {
 # Update the selection in the db listbox to or from the db list.
 proc updateDbSelection {{fromVar 0}} {
     if {$fromVar} {
-        .fs.lb selection clear 0 end
+        $::Nagelfar(dbWin) selection clear 0 end
         foreach f $::Nagelfar(db) {
             set i [lsearch $::Nagelfar(allDb) $f]
             if {$i >= 0} {
-                .fs.lb selection set $i
+                $::Nagelfar(dbWin) selection set $i
             }
         }
         return
     }
 
     set ::Nagelfar(db) {}
-    foreach ix [.fs.lb curselection] {
+    foreach ix [$::Nagelfar(dbWin) curselection] {
         lappend ::Nagelfar(db) [lindex $::Nagelfar(allDb) $ix]
     }
 }
 
 # A little helper to make a scrolled window
 # It returns the name of the scrolled window
-proc Scroll {class w args} {
+proc Scroll {dir class w args} {
+    switch -- $dir {
+        both {
+            set scrollx 1
+            set scrolly 1
+        }
+        x {
+            set scrollx 1
+            set scrolly 0
+        }
+        y {
+            set scrollx 0
+            set scrolly 1
+        }
+        default {
+            return -code error "Bad scrolldirection \"$dir\""
+        }
+    }
+
     frame $w
     eval [list $class $w.s] $args
 
-    $w.s configure -xscrollcommand [list $w.sbx set] \
-            -yscrollcommand [list $w.sby set]
-    scrollbar $w.sbx -orient horizontal -command [list $w.s xview]
-    scrollbar $w.sby -orient vertical   -command [list $w.s yview]
+    # Move border properties to frame
+    set bw [$w.s cget -borderwidth]
+    set relief [$w.s cget -relief]
+    $w configure -relief $relief -borderwidth $bw
+    $w.s configure -borderwidth 0
 
-    grid $w.s   $w.sby -sticky news
-    grid $w.sbx x      -sticky we
+    grid $w.s -sticky news
+
+    if {$scrollx} {
+        $w.s configure -xscrollcommand [list $w.sbx set]
+        scrollbar $w.sbx -orient horizontal -command [list $w.s xview]
+        grid $w.sbx -row 1 -sticky we
+    }
+    if {$scrolly} {
+        $w.s configure -yscrollcommand [list $w.sby set]
+        scrollbar $w.sby -orient vertical -command [list $w.s yview]
+        grid $w.sby -row 0 -column 1 -sticky ns
+    }
     grid columnconfigure $w 0 -weight 1
     grid rowconfigure    $w 0 -weight 1
 
@@ -2116,7 +2183,12 @@ proc Scroll {class w args} {
 
 # Set the progress
 proc progressUpdate {n} {
-    if {$n == 0} {
+    if {$n < 0} {
+        $::Nagelfar(progressWin) configure -relief flat
+    } else {
+        $::Nagelfar(progressWin) configure -relief solid
+    }
+    if {$n <= 0} {
         place $::Nagelfar(progressWin).f -x -100 -relx 0 -y 0 -rely 0 \
                 -relheight 1.0 -relwidth 0.0
     } else {
@@ -2138,16 +2210,23 @@ proc progressMax {n} {
 proc progressBar {w} {
     set ::Nagelfar(progressWin) $w
 
-    frame $w -bd 2 -relief sunken -padx 2 -pady 2 -width 100 -height 20
+    frame $w -bd 1 -relief solid -padx 2 -pady 2 -width 100 -height 20
     frame $w.f -background blue
 
     progressMax 100
+    progressUpdate -1
 }
 
 # Create main window
 proc makeWin {} {
     option add *Menu.tearOff 0
     option add *Listbox.exportSelection 0
+    if {$::tcl_platform(platform) == "windows"} {
+        option add *Panedwindow.sashRelief flat
+        option add *Panedwindow.sashWidth 4
+        option add *Panedwindow.sashPad 0
+    }
+
     catch {font create ResultFont -family courier \
             -size [lindex $::Prefs(resultFont) 1]}
 
@@ -2156,20 +2235,19 @@ proc makeWin {} {
     wm title . "Nagelfar: Tcl Syntax Checker"
     wm withdraw .
 
-    # Syntax file section
+    # Syntax database section
 
     frame .fs
     label .fs.l -text "Syntax database files"
-    button .fs.b -text "Add" -width 7 -command addDbFile
-    listbox .fs.lb -yscrollcommand ".fs.sby set" \
-            -listvariable ::Nagelfar(allDbView) \
-            -height 4 -width 40 -selectmode single
-    updateDbSelection 1
-    bind .fs.lb <<ListboxSelect>> updateDbSelection
-    scrollbar .fs.sby -orient vertical -command ".fs.lb yview"
+    button .fs.b -text "Add" -width 10 -command addDbFile
+    set lb [Scroll y listbox .fs.lb \
+                    -listvariable ::Nagelfar(allDbView) \
+                    -height 4 -width 40 -selectmode single]
+    set ::Nagelfar(dbWin) $lb
+    bind $lb <<ListboxSelect>> updateDbSelection
 
-    grid .fs.l  .fs.b x       -sticky w
-    grid .fs.lb -     .fs.sby -sticky news
+    grid .fs.l  .fs.b -sticky w -padx 2 -pady 2
+    grid .fs.lb -     -sticky news
     grid columnconfigure .fs 0 -weight 1
     grid rowconfigure .fs 1 -weight 1
     
@@ -2178,37 +2256,37 @@ proc makeWin {} {
 
     frame .ff
     label .ff.l -text "Tcl files to check"
-    button .ff.b -text "Add" -width 7 -command addFile
-    listbox .ff.lb -yscrollcommand ".ff.sby set" \
-            -listvariable ::Nagelfar(files) \
-            -height 4 -width 40
-    scrollbar .ff.sby -orient vertical -command ".ff.lb yview"
-    bind .ff.lb <Key-Delete> "removeFile"
-    bind .ff.lb <Button-1> "focus .ff.lb"
+    button .ff.b -text "Add" -width 10 -command addFile
+    set lb [Scroll y listbox .ff.lb \
+                    -listvariable ::Nagelfar(files) \
+                    -height 4 -width 40]
+    set ::Nagelfar(fileWin) $lb
+    bind $lb <Key-Delete> "removeFile"
+    bind $lb <Button-1> [list focus $lb]
 
-    grid .ff.l  .ff.b x       -sticky w
-    grid .ff.lb -     .ff.sby -sticky news
+    grid .ff.l  .ff.b -sticky w -padx 2 -pady 2
+    grid .ff.lb -     -sticky news
     grid columnconfigure .ff 0 -weight 1
     grid rowconfigure .ff 1 -weight 1
 
     # Set up file dropping in listboxes if TkDnd is available
     if {![catch {package require tkdnd}]} {
         dnd bindtarget . text/uri-list <Drop> {fileDropFile %D}
-        #dnd bindtarget .ff.lb text/uri-list <Drop> {fileDropFile %D}
-        dnd bindtarget .fs.lb text/uri-list <Drop> {fileDropDb %D}
+        #dnd bindtarget $::Nagelfar(fileWin) text/uri-list <Drop> {fileDropFile %D}
+        dnd bindtarget $::Nagelfar(dbWin) text/uri-list <Drop> {fileDropDb %D}
     }
 
     # Result section
 
     frame .fr
     progressBar .fr.pr
-    button .fr.b -text "Check" -underline 0 -width 7 -command "doCheck"
+    button .fr.b -text "Check" -underline 0 -width 10 -command "doCheck"
     bind . <Alt-Key-c> doCheck
     bind . <Alt-Key-C> doCheck
-    set ::Nagelfar(resultWin) [Scroll \
+    set ::Nagelfar(resultWin) [Scroll both \
             text .fr.t -width 100 -height 25 -wrap none -font ResultFont]
 
-    grid .fr.b .fr.pr -sticky w
+    grid .fr.b .fr.pr -sticky w -padx 2 -pady {0 2}
     grid .fr.t -      -sticky news
     grid columnconfigure .fr 0 -weight 1
     grid rowconfigure    .fr 1 -weight 1
@@ -2218,28 +2296,22 @@ proc makeWin {} {
     bind $::Nagelfar(resultWin) <Button-3> "resultPopup %x %y %X %Y ; break"
 
     # Use the panedwindow in 8.4
-    if {[package present Tk] >= 8.4} {
-        panedwindow .pw -orient vertical
-        lower .pw
-        frame .pw.f
-        grid .fs .ff -in .pw.f -sticky news 
-        grid columnconfigure .pw.f {0 1} -weight 1 -uniform a
-        grid rowconfigure .pw.f 0 -weight 1
+    panedwindow .pw -orient vertical
+    lower .pw
+    frame .pw.f
+    grid .fs x .ff -in .pw.f -sticky news 
+    grid columnconfigure .pw.f {0 2} -weight 1 -uniform a
+    grid columnconfigure .pw.f 1 -minsize 4
+    grid rowconfigure .pw.f 0 -weight 1
 
-        # Make sure the frames have calculated their size before
-        # adding them to the pane
-        update idletasks
-        .pw add .pw.f -sticky news
-        .pw add .fr   -sticky news
-        pack .pw -fill both -expand 1
-        # Make sure the "ghost sash" below follows resize of window
-        #bind .pw <Configure> {.pw sash place 1 2 %h}
-    } else {
-        grid .fs .ff -sticky news
-        grid .fr -   -sticky news
-        grid columnconfigure . {0 1} -weight 1
-        grid rowconfigure . 1 -weight 1
-    }
+    # Make sure the frames have calculated their size before
+    # adding them to the pane
+    # This update can be excluded in 8.4.4+
+    update idletasks
+    .pw add .pw.f -sticky news
+    .pw add .fr   -sticky news
+    pack .pw -fill both -expand 1
+    
 
     # Menus
 
@@ -2258,15 +2330,15 @@ proc makeWin {} {
 
     .m.mo add cascade -label "Result Window Font" -menu .m.mo.mo
     menu .m.mo.mo
-    .m.mo.mo add radiobutton -label "Courier -10" \
-	    -variable ::Prefs(resultFont) -value "Courier -10" \
-	    -command {font configure ResultFont -size -10}
-    .m.mo.mo add radiobutton -label "Courier -12" \
-	    -variable ::Prefs(resultFont) -value "Courier -12" \
-	    -command {font configure ResultFont -size -12}
-    .m.mo.mo add radiobutton -label "Courier -14" \
-	    -variable ::Prefs(resultFont) -value "Courier -14" \
-	    -command {font configure ResultFont -size -14}
+    .m.mo.mo add radiobutton -label "Small" \
+	    -variable ::Prefs(resultFont) -value "Courier 8" \
+	    -command {font configure ResultFont -size 8}
+    .m.mo.mo add radiobutton -label "Medium" \
+	    -variable ::Prefs(resultFont) -value "Courier 10" \
+	    -command {font configure ResultFont -size 10}
+    .m.mo.mo add radiobutton -label "Large" \
+	    -variable ::Prefs(resultFont) -value "Courier 12" \
+	    -command {font configure ResultFont -size 12}
 
     .m.mo add cascade -label "Severity level" -menu .m.mo.ms
     menu .m.mo.ms
@@ -2330,51 +2402,50 @@ proc editFile {filename lineNo} {
     if {[winfo exists .fv]} {
         wm deiconify .fv
         raise .fv
+        set w $::Nagelfar(editWin)
     } else {
         toplevel .fv
 
-        text .fv.t -width 80 -height 25 -font $::Prefs(editFileFont) \
-                -xscrollcommand ".fv.sbx set" \
-                -yscrollcommand ".fv.sby set"
-        scrollbar .fv.sbx -orient horizontal -command ".fv.t xview"
-        scrollbar .fv.sby -orient vertical   -command ".fv.t yview"
+        set w [Scroll both text .fv.t \
+                       -width 80 -height 25 -font $::Prefs(editFileFont)]
+        set ::Nagelfar(editWin) $w
         frame .fv.f
-        grid .fv.t .fv.sby -sticky news
-        grid .fv.sbx       -sticky we
-        grid .fv.f -       -sticky we
+        grid .fv.t -sticky news
+        grid .fv.f -sticky we
         grid columnconfigure .fv 0 -weight 1
         grid rowconfigure .fv 0 -weight 1
 
         menu .fv.m
         .fv configure -menu .fv.m
-        .fv.m add cascade -label "File" -menu .fv.m.mf
+        .fv.m add cascade -label "File" -underline 0 -menu .fv.m.mf
         menu .fv.m.mf
-        .fv.m.mf add command -label "Save" -command "saveFile"
+        .fv.m.mf add command -label "Save"  -underline 0 -command "saveFile"
         .fv.m.mf add separator
-        .fv.m.mf add command -label "Close" -command "closeFile"
+        .fv.m.mf add command -label "Close"  -underline 0 -command "closeFile"
 
-        .fv.m add cascade -label "Font" -menu .fv.m.mo
+        .fv.m add cascade -label "Font" -underline 3 -menu .fv.m.mo
         menu .fv.m.mo
-	.fv.m.mo add radiobutton -label "Courier -10" \
-	    -variable ::Prefs(editFileFont) -value "Courier -10" \
-	    -command {.fv.t configure -font $::Prefs(editFileFont)}
-	.fv.m.mo add radiobutton -label "Courier -12" \
-	    -variable ::Prefs(editFileFont) -value "Courier -12" \
-	    -command {.fv.t configure -font $::Prefs(editFileFont)}
-	.fv.m.mo add radiobutton -label "Courier -14" \
-	    -variable ::Prefs(editFileFont) -value "Courier -14" \
-	    -command {.fv.t configure -font $::Prefs(editFileFont)}
+        set cmd "[list $w] configure -font \$::Prefs(editFileFont)"
+        foreach lab {Small Medium Large} size {8 10 12} {
+            .fv.m.mo add radiobutton -label $lab  -underline 0 \
+                    -variable ::Prefs(editFileFont) \
+                    -value [list Courier $size] \
+                    -command $cmd
+        }
 
-        label .fv.f.ln -width 5 -textvariable ::Nagelfar(lineNo)
-        pack .fv.f.ln -side right
+        label .fv.f.ln -width 5 -anchor e -textvariable ::Nagelfar(lineNo)
+        pack .fv.f.ln -side right -padx 3
 
-        bind .fv.t <Any-Key> {
+        bind $w <Any-Key> {
             after idle {
-                set ::Nagelfar(lineNo) [lindex [split [.fv.t index insert] .] 0]
+                set ::Nagelfar(lineNo) \
+                        [lindex [split [$::Nagelfar(editWin) index insert] .] 0]
             }
         }
+        bind $w <Any-Button> [bind $w <Any-Key>]
+
         wm protocol .fv WM_DELETE_WINDOW closeFile
-        .fv.t tag configure hl -background yellow
+        $w tag configure hl -background yellow
         if {[info exists ::Nagelfar(editFileGeom)]} {
             wm geometry .fv $::Nagelfar(editFileGeom)
         } else {
@@ -2386,7 +2457,7 @@ proc editFile {filename lineNo} {
 
     if {![info exists ::Nagelfar(editFile)] || \
             $filename != $::Nagelfar(editFile)} {
-        .fv.t delete 1.0 end
+        $w delete 1.0 end
         set ::Nagelfar(editFile) $filename
         wm title .fv [file tail $filename]
 
@@ -2413,16 +2484,17 @@ proc editFile {filename lineNo} {
         set ch [open $filename r]
         set data [read $ch]
         close $ch
-        .fv.t insert end $data
+        $w insert end $data
     }
    
-    .fv.t tag remove hl 1.0 end
-    .fv.t tag add hl $lineNo.0 $lineNo.end
-    .fv.t mark set insert $lineNo.0
-    focus .fv.t
+    $w tag remove hl 1.0 end
+    $w tag add hl $lineNo.0 $lineNo.end
+    $w mark set insert $lineNo.0
+    focus $w
     set ::Nagelfar(lineNo) $lineNo
-    #update idletasks
-    after 1 {after idle {.fv.t see insert}}
+    update
+    $w see insert
+    #after 1 {after idle {$::Nagelfar(editWin) see insert}}
 }
 
 proc saveFile {} {
@@ -2457,13 +2529,15 @@ proc helpWin {w title} {
     destroy $w
 
     toplevel $w
-    wm title $w "About Nagelfar"
+    wm title $w $title
     bind $w <Key-Return> "destroy $w"
     bind $w <Key-Escape> "destroy $w"
     frame $w.f
-    button $w.b -text "Close" -command "destroy $w"
-    pack $w.b -side bottom
+    button $w.b -text "Close" -command "destroy $w" -width 10 \
+            -default active
+    pack $w.b -side bottom -pady 3
     pack $w.f -side top -expand y -fill both
+    focus $w
     return $w.f
 }
 
@@ -2473,7 +2547,8 @@ proc makeAboutWin {} {
     set w [helpWin .ab "About Nagelfar"]
 
 
-    text $w.t -width 45 -height 7 -wrap none -relief flat
+    text $w.t -width 45 -height 7 -wrap none -relief flat \
+            -bg [$w cget -bg]
     pack $w.t -side top -expand y -fill both
 
     $w.t insert end "A syntax checker for Tcl\n\n"
@@ -2492,7 +2567,8 @@ proc makeAboutWin {} {
 
 proc makeDocWin {fileName} {
     set w [helpWin .doc "Nagelfar Help"]
-    set t [Scroll text $w.t -width 80 -height 25 -wrap none -font ResultFont]
+    set t [Scroll both \
+                   text $w.t -width 80 -height 25 -wrap none -font ResultFont]
     pack $w.t -side top -expand 1 -fill both
 
     if {![file exists $::thisDir/doc/$fileName]} {
@@ -2530,8 +2606,8 @@ proc getOptions {} {
         forceElse 1
         noVar 0
         severity N
-        editFileFont {Courier -12}
-        resultFont {Courier -12}
+        editFileFont {Courier 10}
+        resultFont {Courier 10}
     }
 
     if {[file exists "~/.nagelfarrc"]} {
