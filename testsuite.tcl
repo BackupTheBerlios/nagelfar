@@ -166,32 +166,29 @@ test nagelfar-3.5 {
 
 test nagelfar-4.1 {
     Options checking
-} -setup {
+} -body {
     createTestFile {
         lsort -ascii -command xxx -decreasing -dictionary -increasing \
                 -index 0 -integer -real -unique [list 1 2 3]
     }
-} -body {
     execTestFile
 } -result {%%}
 
 test nagelfar-4.2 {
     Options checking
-} -setup {
+} -body {
     createTestFile {
         lsort -d [list 1 2 3]
     }
-} -body {
     execTestFile
 } -result {%%Line   2: E Ambigous option for lsort, -d -> -decreasing/-dictionary}
 
 test nagelfar-4.3 {
     Options checking
-} -setup {
+} -body {
     createTestFile {
         lsort -dictionary -index [list 1 2 3]
     }
-} -body {
     execTestFile
 } -result {%%Line   2: E Wrong number of arguments (3) to "lsort"}
 
@@ -200,25 +197,43 @@ test nagelfar-4.4 {
     Options checking
 } -constraints { 
     knownbug
-} -setup {
+} -body {
     createTestFile {
         fconfigure xx -blocking 1 -encoding 0 -mode
     }
-} -body {
     execTestFile
 } -result {*Missing value for last option*} -match glob
 
 test nagelfar-4.5 {
     Options checking
-} -setup {
+} -body {
     createTestFile {
         # This should see that i is set
         string is integer -strict -failindex i 789
         puts $i
     }
-} -body {
     execTestFile
 } -result {%%}
+
+test nagelfar-4.6 {
+    Options checking
+} -body {
+    createTestFile {
+        # Here, -apa cannot be an option
+        string match -apa gurka
+    }
+    execTestFile
+} -result {%%}
+
+test nagelfar-4.7 {
+    Options checking
+} -body {
+    createTestFile {
+        # There was a bug with glob chars in options
+        string match -?* gurka burka
+    }
+    execTestFile
+} -result {%%Line   3: E Bad option -?* to string match}
 
 test nagelfar-5.1 {
     Procedure checking
@@ -579,6 +594,30 @@ test nagelfar-13.1 {
 } -body {
     execTestFile
 } -result {%%}
+
+test nagelfar-13.2 {
+    Syntax database, v token
+} -body {
+    createTestFile "
+        ##syntax Miffo v
+
+        set apa \[Miffo \\
+                hej\]
+    "
+    execTestFile
+} -result "%%Line   5: E Unknown variable \"hej\""
+
+test nagelfar-13.3 {
+    Syntax database, n token
+} -body {
+    createTestFile "
+        ##syntax Miffo n
+        set hej 1
+        set apa \[Miffo \\
+                \$hej\]
+    "
+    execTestFile
+} -result "%%Line   5: N Suspicious variable name \"\$hej\""
 
 test nagelfar-14.1 {
     Namespaces, procs in namespace
