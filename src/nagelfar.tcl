@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.0b3+ 2004-04-07"
+set version "Version 1.0b3+ 2004-04-13"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -193,7 +193,7 @@ proc timestamp {str} {
 }
 
 # A tool to collect profiling data
-##syntax profile x c
+##nagelfar syntax profile x c
 proc profile {str script} {
     global profiledata
     if {![info exists profiledata($str)]} {
@@ -234,12 +234,55 @@ proc checkPossibleComment {str lineNo} {
 # It allows syntax information to be stored in comments
 proc checkComment {str index knownVarsName} {
     upvar $knownVarsName knownVars
+
+    # The forms ##syntax and ##variable are deprecated
     if {[string match "##syntax *" $str]} {
         set ::syntax([lindex $str 1]) [lrange $str 2 end]
     }
     if {[string match "##variable *" $str]} {
         set var [string trim [string range $str 11 end]]
-        markVariable $var 1 1 $index knownVars ""
+        markVariable $var 1 "" 1 $index knownVars ""
+    }
+
+    if {[string match "##nagelfar *" $str]} {
+        set rest [string range $str 11 end]
+        if {[catch {llength $rest}]} {
+            errorMsg N "Bad list in ##nagelfar comment" $index
+            return
+        }
+        if {[llength $rest] == 0} return
+        set cmd [lindex $rest 0]
+        set first [lindex $rest 1]
+        set rest [lrange $rest 2 end]
+        switch -- $cmd {
+            syntax {
+                set ::syntax($first) $rest
+            }
+            return {
+                set ::return($first) $rest
+            }
+            subcmd {
+                set ::subCmd($first) $rest
+            }
+            option {
+                set ::option($first) $rest
+            }
+            variable {
+                set type [join $rest]
+                markVariable $first 1 "" 1 $index knownVars type
+            }
+            ignore -
+            filter {
+                # FIXA, syntax for several lines
+                set line [calcLineNo $index]
+                incr line
+                addFilter "*Line *$line:*[join $rest]*"
+            }
+            default {
+                errorMsg N "Bad type in ##nagelfar comment" $index
+                return
+            }
+        }
     }
 }
 
@@ -686,7 +729,7 @@ proc parseVar {str len index iName knownVarsName} {
 # Returns 0 if any substitutions are present
 proc parseSubst {str index typeName knownVarsName} {
     upvar $typeName type $knownVarsName knownVars
-    
+
     set type ""
 
     # First do a quick check for $ or [
@@ -728,10 +771,13 @@ proc parseSubst {str index typeName knownVarsName} {
                         [expr {$index + $si}] knownVars]
 		incr i
 		set result 0
-	    } elseif {[string equal $c "\]"] && $i == ($len - 1)} {
-                # Note unescaped bracket at end of word since it's
-                # likely to mean it should not be there.
-                errorMsg N "Unescaped end bracket" [expr {$index + $i}]
+	    } else {
+                set notype 1
+                if {[string equal $c "\]"] && $i == ($len - 1)} {
+                    # Note unescaped bracket at end of word since it's
+                    # likely to mean it should not be there.
+                    errorMsg N "Unescaped end bracket" [expr {$index + $i}]
+                }
             }
         } else {
             set escape 0
@@ -861,7 +907,7 @@ proc WA {} {
 # Check a command that have a syntax defined in the database
 # 'firsti' says at which index in argv et.al. the arguments begin.
 # Returns the return type of the command
-proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
+proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
     upvar "constantsDontCheck" constantsDontCheck "knownVars" knownVars
 
     set argc [llength $argv]
@@ -872,7 +918,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
         #puts T:$cmd:$type
     }
 #    decho "Checking $cmd against syntax $syn"
-    
+
     # Check if the syntax definition has multiple entries
     if {[string index [lindex $syn 0] end] == ":"} {
         set na [expr {$argc - $firsti}]
@@ -918,6 +964,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
     # know that no optional tokens may consume anything.
     # This prevents e.g. options checking on arguments that cannot be
     # options due to their placement.
+
     set minargs 0
     foreach token $syn {
         if {[string length $token] <= 1} {
@@ -1053,6 +1100,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 		    set sub "$cmd $arg"
 		    if {[info exists ::syntax($sub)]} {
 			set stype [checkCommand $sub $index $argv $wordstatus \
+                                $wordtype \
                                 $indices [expr {[llength $sub] - 1}]]
                         if {$stype != ""} {
                             set type $stype
@@ -1083,18 +1131,19 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
                             # Skip qualified names until we handle
                             # namespace better. FIXA
                         } elseif {[markVariable [lindex $argv $i] \
-                                [lindex $wordstatus $i] 2 [lindex $indices $i]\
+                                [lindex $wordstatus $i] [lindex $wordtype $i] \
+                                2 [lindex $indices $i]\
                                 knownVars vtype]} {
 			    errorMsg E "Unknown variable \"[lindex $argv $i]\""\
                                     [lindex $indices $i]
 			}
 		    } elseif {[string equal $tok "n"]} {
 			markVariable [lindex $argv $i] \
-                                [lindex $wordstatus $i] 1 \
+                                [lindex $wordstatus $i] [lindex $wordtype $i] 1 \
                                 [lindex $indices $i] knownVars ""
 		    } else {
 			markVariable [lindex $argv $i] \
-                                [lindex $wordstatus $i] 0 \
+                                [lindex $wordstatus $i] [lindex $wordtype $i] 0 \
                                 [lindex $indices $i] knownVars ""
 		    }
 
@@ -1115,7 +1164,7 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
                                 [lindex $indices $i]
                         return $type
                     }
-                
+
                     if {[lsearch -not $oSyn "x"] >= 0} {
                         # Feed the syntax back into the check loop
                         set syn [concat $oSyn $syn]
@@ -1162,14 +1211,14 @@ proc checkCommand {cmd index argv wordstatus indices {firsti 0}} {
 # If check is 2, check if it is known, return 1 if unknown
 # If check is 1, mark the variable as known and set
 # If check is 0, mark the variable as known
-proc markVariable {var ws check index knownVarsName typeName} {
+proc markVariable {var ws wordtype check index knownVarsName typeName} {
     upvar $knownVarsName knownVars
     if {$typeName ne ""} {
         upvar $typeName type
     } else {
         set type ""
     }
-    
+
     if {$::Prefs(noVar)} {
         set type ""
         return 0
@@ -1203,12 +1252,14 @@ proc markVariable {var ws check index knownVarsName typeName} {
             if {[info exists ::foreachVar($name)]} {
                 # Mark them as known instead
                 foreach name $::foreachVar($name) {
-                    markVariable $name 1 $check $index knownVars ""
+                    markVariable $name 1 "" $check $index knownVars ""
                 }
                 #return 1
             }
         }
-        errorMsg N "Suspicious variable name \"$var\"" $index
+        if {$wordtype ne "varName"} {
+            errorMsg N "Suspicious variable name \"$var\"" $index
+        }
 	return 0
     }
 
@@ -1231,8 +1282,8 @@ proc markVariable {var ws check index knownVarsName typeName} {
             set knownVars(local,$varBase) 1
             set knownVars(type,$varBase)  $type
         }
-        if {$type ne ""} {
-            # Warn if changed??
+        if {1 || $type ne ""} {
+            # Warn if changed?? FIXA
             set knownVars(type,$varBase) $type
         }
         if {$check == 1} {
@@ -1345,7 +1396,6 @@ proc parseStatement {statement index knownVarsName} {
     set indices [lrange $indices2 1 end]
     set argc [llength $argv]
 
-    #puts stderr $cmd:[join $wordtype ,]
     # The parsing below can pass information to the constants checker
     # This list primarily consists of args that are supposed to be variable
     # names without a $ in front.
@@ -1483,7 +1533,6 @@ proc parseStatement {statement index knownVarsName} {
 	    }
 	}
 	set {
-            # miffo
 	    # Set gets a different syntax string depending on the
 	    # number of arguments.
 	    if {$argc == 1} {
@@ -1492,7 +1541,7 @@ proc parseStatement {statement index knownVarsName} {
                     # Skip qualified names until we handle
                     # namespace better. FIXA
                 } elseif {[markVariable [lindex $argv 0] \
-                        [lindex $wordstatus 0] \
+                        [lindex $wordstatus 0] [lindex $wordtype 0] \
                         2 [lindex $indices 0] knownVars wtype]} {
                     errorMsg E "Unknown variable \"[lindex $argv 0]\""\
                             [lindex $indices 0]
@@ -1500,7 +1549,8 @@ proc parseStatement {statement index knownVarsName} {
             } elseif {$argc == 2} {
                 set wtype [lindex $wordtype 1]
                 markVariable [lindex $argv 0] \
-                        [lindex $wordstatus 0] 1 [lindex $indices 0] \
+                        [lindex $wordstatus 0] [lindex $wordtype 0] \
+                        1 [lindex $indices 0] \
                         knownVars wtype
             } else {
 		WA
@@ -1522,7 +1572,7 @@ proc parseStatement {statement index knownVarsName} {
 		}
 		lappend constantsDontCheck $i
 		foreach var [lindex $argv $i] {
-		    markVariable $var 1 1 $index knownVars ""
+		    markVariable $var 1 "" 1 $index knownVars ""
 		}
 	    }
             # FIXA: Experimental foreach check...
@@ -1539,13 +1589,13 @@ proc parseStatement {statement index knownVarsName} {
                     }
                     foreach $fVars $valList {
                         foreach fVar $varList {
-                            ##variable apaV
+                            ##nagelfar variable apaV
                             lappend ::foreachVar($fVar) $apaV($fVar)
                         }
                     }
                 }
             }
-            
+
             if {[lindex $wordstatus end] == 0} {
                 errorMsg W "No braces around body in foreach\
                         statement." $index
@@ -1569,7 +1619,7 @@ proc parseStatement {statement index knownVarsName} {
 		switch -- $state {
                     skip {
                         # This will behave bad with "if 0 then then"...
-                        lappend ifsyntax X 
+                        lappend ifsyntax X
 			if {![string equal $arg then]} {
                             set state else
 			}
@@ -1636,7 +1686,7 @@ proc parseStatement {statement index knownVarsName} {
 	    }
 #            decho "if syntax \"$ifsyntax\""
 	    set ::syntax(if) $ifsyntax
-	    checkCommand $cmd $index $argv $wordstatus $indices
+	    checkCommand $cmd $index $argv $wordstatus $wordtype $indices
 	}
 	switch {
 	    if {$argc < 2} {
@@ -1712,7 +1762,8 @@ proc parseStatement {statement index knownVarsName} {
             set noConstantCheck 1
 	}
         package { # FIXA, take care of require
-            set type [checkCommand $cmd $index $argv $wordstatus $indices]
+            set type [checkCommand $cmd $index $argv $wordstatus $wordtype \
+                              $indices]
         }
 	namespace { # FIXA, also handle import
             if {$argc < 1} {
@@ -1739,7 +1790,8 @@ proc parseStatement {statement index knownVarsName} {
                     popNamespace
                 }
             } else {
-                set type [checkCommand $cmd $index $argv $wordstatus $indices]
+                set type [checkCommand $cmd $index $argv $wordstatus \
+                                  $wordtype $indices]
             }
 	}
 	uplevel { # FIXA
@@ -1747,7 +1799,8 @@ proc parseStatement {statement index knownVarsName} {
 	}
 	default {
 	    if {[info exists ::syntax($cmd)]} {
-		set type [checkCommand $cmd $index $argv $wordstatus $indices]
+		set type [checkCommand $cmd $index $argv $wordstatus \
+                                  $wordtype $indices]
 	    } else {
                 lookForCommand $cmd [currentNamespace] $index
 	    }
@@ -2481,7 +2534,7 @@ proc addFile {} {
             -defaultextension .tcl -multiple 1 \
             -filetypes {{{Tcl File} {.tcl}} {{All Files} {.*}}}]
     if {[llength $apa] == 0} return
-    
+
     foreach file $apa {
         lappend ::Nagelfar(files) [fileRelative [pwd] $file]
     }
@@ -2503,10 +2556,10 @@ proc fileDropFile {files} {
 }
 
 # FIXA: Move safe reading to package
-##syntax _ipsource x
-##syntax _ipexists l
-##syntax _ipset    v
-##syntax _iparray  s v
+##nagelfar syntax _ipsource x
+##nagelfar syntax _ipexists l
+##nagelfar syntax _ipset    v
+##nagelfar syntax _iparray  s v
 
 # Execute the checks
 proc doCheck {} {
@@ -2624,7 +2677,7 @@ proc doCheck {} {
 
 # This shows the file and the line from an error in the result window.
 proc showError {{lineNo {}}} {
-    set w $::Nagelfar(resultWin) 
+    set w $::Nagelfar(resultWin)
     if {$lineNo == ""} {
         set lineNo [lindex [split [$w index current] .] 0]
     }
@@ -2639,8 +2692,8 @@ proc showError {{lineNo {}}} {
 }
 
 proc resultPopup {x y X Y} {
-    set w $::Nagelfar(resultWin) 
-    
+    set w $::Nagelfar(resultWin)
+
     set lineNo [lindex [split [$w index @$x,$y] .] 0]
     set line [$w get $lineNo.0 $lineNo.end]
 
@@ -2751,7 +2804,7 @@ if {[catch {package require snit}]} {
         } else {
             $win.s configure -yscrollcommand {}
         }
-        
+
     }
 
 }
@@ -2878,8 +2931,8 @@ proc makeWin {} {
     grid .fs.lb -     -sticky news
     grid columnconfigure .fs 0 -weight 1
     grid rowconfigure .fs 1 -weight 1
-    
-    
+
+
     # File section
 
     frame .ff
@@ -2931,7 +2984,7 @@ proc makeWin {} {
     panedwindow .pw -orient vertical
     lower .pw
     frame .pw.f
-    grid .fs x .ff -in .pw.f -sticky news 
+    grid .fs x .ff -in .pw.f -sticky news
     grid columnconfigure .pw.f {0 2} -weight 1 -uniform a
     grid columnconfigure .pw.f 1 -minsize 4
     grid rowconfigure .pw.f 0 -weight 1
@@ -2943,7 +2996,7 @@ proc makeWin {} {
     .pw add .pw.f -sticky news
     .pw add .fr   -sticky news
     pack .pw -fill both -expand 1
-    
+
 
     # Menus
 
@@ -3130,7 +3183,7 @@ proc editFile {filename lineNo} {
         fconfigure $ch -translation binary
         set data [read $ch 400]
         close $ch
-        
+
         set crCnt [expr {[llength [split $data \r]] - 1}]
         set lfCnt [expr {[llength [split $data \n]] - 1}]
         if {$crCnt == 0 && $lfCnt > 0} {
@@ -3142,7 +3195,7 @@ proc editFile {filename lineNo} {
         } else {
             set ::Nagelfar(editFileTranslation) auto
         }
-            
+
         #puts "EOL $::Nagelfar(editFileTranslation)"
 
         set ch [open $filename r]
@@ -3150,7 +3203,7 @@ proc editFile {filename lineNo} {
         close $ch
         $w insert end $data
     }
-   
+
     $w tag remove hl 1.0 end
     $w tag add hl $lineNo.0 $lineNo.end
     $w mark set insert $lineNo.0
@@ -3188,7 +3241,7 @@ proc clearAndPaste {} {
     set w $::Nagelfar(editWin)
     $w delete 1.0 end
     focus $w
-    
+
     if {$::tcl_platform(platform) == "windows"} {
         event generate $w <<Paste>>
     } else {
@@ -3198,7 +3251,7 @@ proc clearAndPaste {} {
 
 proc checkEditWin {} {
     set w $::Nagelfar(editWin)
-    
+
     set script [$w get 1.0 end]
     set ::Nagelfar(checkEdit) $script
     doCheck
@@ -3309,7 +3362,7 @@ proc fileRelative {dir file} {
     set dirpath [file split $dir]
     set filepath [file split $file]
     set newpath {}
-    
+
     set dl [llength $dirpath]
     set fl [llength $filepath]
     for {set t 0} {$t < $dl && $t < $fl} {incr t} {
@@ -3332,8 +3385,8 @@ proc defaultGuiOptions {} {
 
     if {[tk windowingsystem]=="x11"} {
         option add *Menu.activeBorderWidth 1
-        option add *Menu.borderWidth 1       
-        
+        option add *Menu.borderWidth 1
+
         option add *Menu.tearOff 0
         option add *Listbox.exportSelection 0
         option add *Listbox.borderWidth 1
@@ -3384,7 +3437,7 @@ if {![info exists gurka]} {
             }
         }
     }
-    
+
     # Parse command line options
     for {set i 0} {$i < $argc} {incr i} {
         set arg [lindex $argv $i]
