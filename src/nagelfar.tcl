@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 0.9
-set version "Version 0.9+ 2004-01-07"
+set version "Version 0.9+ 2004-01-09"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -280,7 +280,7 @@ proc scanWord {str len index iName} {
         set closeChar \"
         set charType quote
     } else {
-        set closeChar [string range apa 1 0]
+        set closeChar ""
     }
 
     if {![string equal $closeChar ""]} {
@@ -312,14 +312,11 @@ proc scanWord {str len index iName} {
             }
         }
     }
-    # Regexp to locate unescaped whitespace
-    set RE {(^|[^\\])(\\\\)*\s}
 
     for {} {$i < $len} {incr i} {
         # Search for unescaped whitespace
-        set tmp [string range $str $i end]
-        if {[regexp -indices $RE $tmp match]} {
-            incr i [lindex $match 1]
+        if {[regexp -start $i -indices {(^|[^\\])(\\\\)*\s} $str match]} {
+            set i [lindex $match 1]
         } else {
             set i $len
         }
@@ -1361,7 +1358,7 @@ proc parseStatement {statement index knownVarsName} {
                 # Assume it is not a level unless odd number of args.
                 if {$oddA} {
                     # Warn here? FIXA
-                    errorMsg N "Non constant level to $cmd: $level" $index
+                    errorMsg N "Non constant level to $cmd: \"$level\"" $index
                     set hasLevel 1
                     set level ""
                 } else {
@@ -1678,6 +1675,7 @@ proc splitScript {script index statementsName indicesName knownVarsName} {
     string length $tryline
 
     foreach line $lines {
+        # Restore the \n that split removed
 	append line \n
 	while {![string equal $line ""]} {
 
@@ -1739,7 +1737,7 @@ proc splitScript {script index statementsName indicesName knownVarsName} {
 		# Most lines will have no leading whitespace since
 		# buildLineDb removes most of it. This takes care
 		# of all remaining.
-                if {[string is space -failindex "i" $tryline]} {
+                if {[string is space -failindex i $tryline]} {
                     # Only space, discard the line
                     incr index [string length $tryline]
                     set tryline ""
@@ -1834,10 +1832,24 @@ proc splitScript {script index statementsName indicesName knownVarsName} {
 proc parseBody {body index knownVarsName} {
     upvar $knownVarsName knownVars
 
-    splitScript $body $index statements indices knownVars
+    # Cache the splitScript result to optimise 2-pass checking.
+    if {[info exists ::Nagelfar(cacheBody)] && \
+            [string equal $::Nagelfar(cacheBody) $body]} {
+        set statements $::Nagelfar(cacheStatements)
+        set indices $::Nagelfar(cacheIndices)
+    } else {
+        splitScript $body $index statements indices knownVars
+    }
 
     foreach statement $statements index $indices {
 	parseStatement $statement $index knownVars
+    }
+    if {$::Nagelfar(onlyproc)} {
+        set ::Nagelfar(cacheBody) $body
+        set ::Nagelfar(cacheStatements) $statements
+        set ::Nagelfar(cacheIndices) $indices
+    } else {
+        unset -nocomplain ::Nagelfar(cacheBody)
     }
 }
 
@@ -2121,7 +2133,7 @@ proc parseScript {script} {
         # First do one round with proc checking
         set ::Nagelfar(onlyproc) 1
         parseBody $script 0 knownVars
-        echo "Second pass"
+        #echo "Second pass"
         set ::Nagelfar(onlyproc) 0
     }
     parseBody $script 0 knownVars
