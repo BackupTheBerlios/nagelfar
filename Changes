@@ -1,3 +1,16 @@
+Version 1.1.2
+
+2005-01-29
+ Added -quiet and -glob. Ideas from Phil Wise.
+ Fixed a bug in -header which did not work in 8.5.
+
+2005-01-14
+ Added -header for header generation. Idea from Yiftach Tzori.
+
+2005-01-12
+ Added the option to use emacs to view files instead of the internal editor.
+ Started to move source code to separate smaller files.
+
 Version 1.1.1
 
 2005-01-01
