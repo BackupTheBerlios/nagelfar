@@ -3,6 +3,11 @@ INSTALLATION
 Unpack the distribution whereever you want it and add a link
 to nagelfar.tcl from any directory in your path.
 
+The syntax database in the distribution may not be right for your system.
+Look in the file syntaxdb.tcl, or in the About window to see the platform
+and version it is for.  Read syntaxdatabases.txt for more information on
+how to generate your own.
+
 
 REQUIREMENTS
 
