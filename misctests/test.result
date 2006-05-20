@@ -26,8 +26,8 @@ Line  67: E Could not complete statement.
 Line  70: E Wrong number of arguments (4) to "proc"
             Argument 4 at line 72
 Line  74: N Close brace not aligned with line 70 (0 4)
-Line  75: E Close brace first in statement.
-Line  82: E Close brace first in statement.
+Line  75: E Unbalanced close brace found
+Line  82: E Unbalanced close brace found
             Unbalanced brace in comment in line 78.
 Line  88: E Could not complete statement.
             One close brace would complete the first line
