@@ -24,11 +24,11 @@
 # the next line restarts using tclsh \
 exec tclsh "$0" "$@"
 
-set debug 0
+set debug 1
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.1.2+ 2005-02-20"
+set version "Version 1.1.2+ 2006-05-16"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -68,10 +68,10 @@ if {[info exists ::starkit::topdir]} {
 # 8 {expand}-ed
 
 # Moved out message handling to make it more flexible
-proc echo {str} {
+proc echo {str {info 0}} {
     if {[info exists ::Nagelfar(resultWin)]} {
         $::Nagelfar(resultWin) configure -state normal
-        $::Nagelfar(resultWin) insert end $str\n
+        $::Nagelfar(resultWin) insert end $str\n [lindex {{} info} $info]
         $::Nagelfar(resultWin) configure -state disabled
     } else {
         puts stdout $str
@@ -319,13 +319,18 @@ proc scanWord {str len index i} {
             if {[info complete $word]} {
                 # Check for following whitespace
                 set j [expr {$i + 1}]
-                if {$j == $len || [string is space [string index $str $j]]} {
+                set nextchar [string index $str $j]
+                if {$j == $len || [string is space $nextchar]} {
                     return $i
                 }
                 errorMsg E "Extra chars after closing $charType." \
                         [expr {$index + $i}]
                 contMsg "Opening $charType of above was on line %L." \
                         [expr {$index + $si2}]
+                # Extra info for this particular case
+                if {$charType eq "brace" && $nextchar eq "\{"} {
+                    contMsg "It might be a missing space between \} and \{"
+                }
                 # Switch over to scanning for whitespace
                 incr i
                 break
@@ -1445,6 +1450,10 @@ proc parseStatement {statement index knownVarsName} {
         if {[string match "_obj,*" $cmdtype]} {
             set cmd $cmdtype
         } else {
+            # Detect missing space after command
+            if {[regexp {^[\w:]+\{} $cmd]} {
+                errorMsg W "Suspicious command \"$cmd\"" $index
+            }
             return
         }
     }
@@ -2046,7 +2055,7 @@ proc splitScript {script index statementsName indicesName knownVarsName} {
             if {[string equal "\}" [string trim $line]]} {
                 set closeBraceIx [expr {[string length $tryline] + $index}]
                 if {$newstatement} {
-                    errorMsg E "Close brace first in statement." $closeBraceIx
+                    errorMsg E "Unbalanced close brace found" $closeBraceIx
                     reportCommentBrace 0 $closeBraceIx
                 }
                 set closeBrace [wasIndented $closeBraceIx]
@@ -2432,14 +2441,22 @@ proc calcLineNo {ix} {
 # This should preferably be called with the index to the first char of
 # the line since that case is much more efficient in calcLineNo.
 proc wasIndented {i} {
-    global indentInfo
-    lindex $indentInfo [expr {[calcLineNo $i] - 1}]
+    lindex $::indentInfo [calcLineNo $i]
 }
 
 # Length of initial whitespace
 proc countIndent {str} {
+    # Get whitespace
     set str [string range $str 0 end-[string length [string trimleft $str]]]
-    regsub -all { {0,7}\t} $str "        " str
+    # Any tabs?
+    if {[string first \t $str] != -1} {
+        # Only tabs in beginning?
+        if {[regexp {^\t+[^\t]*$} $str]} {
+            set str [string map $::Nagelfar(tabMap) $str]
+        } else {
+            regsub -all $::Nagelfar(tabReg) $str $::Nagelfar(tabSub) str
+        }
+    }
     return [string length $str]
 }
 
@@ -2457,7 +2474,8 @@ proc buildLineDb {str} {
         set lines [lrange $lines 0 end-1]
     }
     set newlineIx {}
-    set indentInfo {}
+    # Dummy element to get 1.. indexing
+    set indentInfo [list {}]
 
     # Detect a header.  Backslash-newline is not substituted in the header,
     # and the index after the header is kept.  This is to preserve the header
@@ -2553,8 +2571,14 @@ proc parseScript {script} {
                 [lsearch $knownCommands $cmd1] == -1 && \
                 ![info exists syntax($cmd2)] && \
                 [lsearch $knownCommands $cmd2] == -1} {
+	    # Close brace is reported elsewhere
             if {$cmd ne "\}"} {
-                errorMsg W "Unknown command \"$cmd\"" $index
+		# Different messages depending on name
+		if {[regexp {^[\w',:.]+$} $cmd]} {
+		    errorMsg W "Unknown command \"$cmd\"" $index
+		} else {
+		    errorMsg E "Strange command \"$cmd\"" $index
+		}
             }
         }
     }
@@ -2599,7 +2623,7 @@ proc dumpInstrumenting {filename} {
 
     set tail [file tail $filename]
     set ifile ${filename}_i
-    echo "Writing file $ifile"
+    echo "Writing file $ifile" 1
     set iscript $::instrumenting(script)
     set indices {}
     foreach item [array names ::instrumenting] {
@@ -2736,7 +2760,7 @@ proc instrumentMarkup {filename} {
             set lines($line) 1
         }
     }
-    echo "Writing file $mfile"
+    echo "Writing file $mfile" 1
     if {[array size lines] == 0} {
         echo "All lines covered in $tail"
         file copy -force $filename $mfile
@@ -2914,14 +2938,14 @@ proc doCheck {} {
             set syntaxfile [file rootname $f].syntax
             if {[file exists $syntaxfile]} {
                 if {!$::Nagelfar(quiet)} {
-                    echo "Parsing file $syntaxfile"
+                    echo "Parsing file $syntaxfile" 1
                 }
                 parseFile $syntaxfile
             }
             if {$f == $syntaxfile} continue
             if {[file isfile $f] && [file readable $f]} {
                 if {!$::Nagelfar(quiet)} {
-                    echo "Checking file $f"
+                    echo "Checking file $f" 1
                 }
                 parseFile $f
             } else {
@@ -2939,7 +2963,7 @@ proc doCheck {} {
         if {[catch {set ch [open $::Nagelfar(header) w]}]} {
             puts stderr "Could not create file \"$::Nagelfar(header)\""
         } else {
-            echo "Writing \"$::Nagelfar(header)\""
+            echo "Writing \"$::Nagelfar(header)\"" 1
             foreach item [lsort -dictionary [array names ::syntax]] {
                 puts $ch "\#\#nagelfar [list syntax $item] $::syntax($item)"
             }
@@ -2956,7 +2980,7 @@ proc doCheck {} {
         }
     }
     if {$::Nagelfar(gui)} {
-        echo "Done"
+        echo "Done" 1
         normalCursor
         progressUpdate -1
     }
