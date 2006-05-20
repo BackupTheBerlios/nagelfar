@@ -41,6 +41,7 @@ proc usage {} {
    1 (def)         = Warn about shortened subcommands.
  -WelseN           : Enforce else keyword. Default 1.
  -strictappend     : Enforce having an initialised variable in (l)append.
+ -tab <size>       : Tab size, default is 8.
  -header <file>    : Create a "header" file with syntax info for scriptfiles.
  -instrument       : Instrument source file for code coverage.
  -markup           : Markup source file with code coverage result.
@@ -63,6 +64,9 @@ if {![info exists gurka]} {
     set ::Nagelfar(withCtext) 0
     set ::Nagelfar(instrument) 0
     set ::Nagelfar(header) ""
+    set ::Nagelfar(tabReg) { {0,7}\t| {8,8}}
+    set ::Nagelfar(tabSub) [string repeat " " 8]
+    set ::Nagelfar(tabMap) [list \t $::Nagelfar(tabSub)]
 
     getOptions
 
@@ -115,6 +119,7 @@ if {![info exists gurka]} {
 		switch -glob -- $arg {
 		    ema*    {set ::Prefs(editor) emacs}
 		    inte*   {set ::Prefs(editor) internal}
+		    vi*     {set ::Prefs(editor) vim}
 		    default {
                         puts stderr "Bad -editor option: \"$arg\""
                     }
@@ -200,6 +205,18 @@ if {![info exists gurka]} {
                     exit
                 }
             }
+ 	    -tab {
+                incr i
+                set arg [lindex $argv $i]
+                if {![string is integer -strict $arg] || \
+                        $arg < 2 || $arg > 20} {
+                    puts "Bad tab value '$arg'"
+                    exit
+                }
+                set ::Nagelfar(tabReg) " {0,[expr {$arg - 1}]}\t| {$arg,$arg}"
+                set ::Nagelfar(tabSub) [string repeat " " $arg]
+                set ::Nagelfar(tabMap) [list \t $::Nagelfar(tabSub)]
+            }
             -glob {
                 incr i
                 set files [glob -nocomplain [lindex $argv $i]]
@@ -250,6 +267,7 @@ if {![info exists gurka]} {
             }
         }
 
+        catch {package require textSearch}
         set ::Nagelfar(gui) 1
         makeWin
         vwait forever
@@ -258,5 +276,14 @@ if {![info exists gurka]} {
 
     doCheck
     #_dumplogme
+    if {[array size _stats] > 0} {
+        array set _apa [array get _stats]
+        parray _apa
+        set sum 0
+        foreach name [array names _apa] {
+            incr sum $_apa($name)
+        }
+        puts "Total $sum"
+    }
     exit
 }
