@@ -189,6 +189,50 @@ test nagelfar-3.7 {
     execTestFile
 } -result {%%}
 
+test nagelfar-3.8 {
+    Basic errors
+} -body {
+    createTestFile {
+        apa bepa
+	a'pa bepa
+	a%pa bepa
+    }
+    execTestFile
+} -match glob -result {%%Line   2: W Unknown command "apa"*Line   3: W Unknown command "a'pa"*Line   4: E Strange command "a%pa"}
+
+test nagelfar-3.9 {
+    Basic errors
+} -body {
+    createTestFile "
+        set apa bepa
+	\}
+    "
+    execTestFile
+} -result {%%Line   3: E Unbalanced close brace found}
+
+test nagelfar-3.10 {
+    Basic errors
+} -body {
+    createTestFile {
+        if{[set apa 1]} {
+            set apa $bepa
+        }
+    }
+    execTestFile
+} -result {%%Line   2: W Suspicious command "if{[set apa 1]}"}
+
+test nagelfar-3.11 {
+    Basic errors
+} -body {
+    createTestFile {
+        proc x {y} {
+            list {x y}{z w}
+        }
+    }
+    execTestFile
+} -result {%%Line   3: E Extra chars after closing brace*was on line 3.*missing space*} \
+        -match glob
+
 test nagelfar-4.1 {
     Options checking
 } -body {
@@ -422,6 +466,19 @@ test nagelfar-10.2 {
     }
     execTestFile
 } -result {%%Line   4: N Close brace not aligned with line 2 (8 9)}
+
+test nagelfar-10.3 {
+    Brace alignment and style
+} -body {
+    createTestFile {
+        if {[catch {
+            set apa 2
+        } msg]} {
+            set apa 1
+        }
+    }
+    set res [execTestFile]
+} -returnCodes 0 -result {%%}
 
 test nagelfar-11.1 {
     Line numbers
