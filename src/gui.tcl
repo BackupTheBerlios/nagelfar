@@ -91,6 +91,7 @@ proc showError {{lineNo {}}} {
 
     $w tag remove hl 1.0 end
     $w tag add hl $lineNo.0 $lineNo.end
+    $w mark set insert $lineNo.0
     set line [$w get $lineNo.0 $lineNo.end]
 
     if {[regexp {^(.*): Line\s+(\d+):} $line -> fileName fileLine]} {
@@ -98,6 +99,37 @@ proc showError {{lineNo {}}} {
     } elseif {[regexp {^Line\s+(\d+):} $line -> fileLine]} {
         editFile "" $fileLine
     }
+}
+
+# Scroll a text window to view a certain line, and possibly some
+# lines before and after.
+proc seeText {w si} {
+    $w see $si
+    $w see $si-3lines
+    $w see $si+3lines
+    if {[llength [$w bbox $si]] == 0} {
+        $w yview $si-3lines
+    }
+    if {[llength [$w bbox $si]] == 0} {
+        $w yview $si
+    }
+}
+
+# Make next "E" error visible
+proc seeNextError {} {
+    set w $::Nagelfar(resultWin)
+    set lineNo [lindex [split [$w index insert] .] 0]
+
+    set index [$w search -exact ": E " $lineNo.end]
+    if {$index eq ""} {
+        $w see end
+        return
+    }
+    seeText $w $index
+    set lineNo [lindex [split $index .] 0]
+    $w tag remove hl 1.0 end
+    $w tag add hl $lineNo.0 $lineNo.end
+    $w mark set insert $lineNo.0
 }
 
 proc resultPopup {x y X Y} {
@@ -353,6 +385,7 @@ proc makeWin {} {
 
     frame .ff
     label .ff.l -text "Tcl files to check"
+    button .ff.bd -text "Del" -width 10 -command removeFile
     button .ff.b -text "Add" -width 10 -command addFile
     set lb [Scroll y listbox .ff.lb \
                     -listvariable ::Nagelfar(files) \
@@ -361,8 +394,8 @@ proc makeWin {} {
     bind $lb <Key-Delete> "removeFile"
     bind $lb <Button-1> [list focus $lb]
 
-    grid .ff.l  .ff.b -sticky w -padx 2 -pady 2
-    grid .ff.lb -     -sticky news
+    grid .ff.l  .ff.bd .ff.b -sticky w -padx 2 -pady 2
+    grid .ff.lb -      -     -sticky news
     grid columnconfigure .ff 0 -weight 1
     grid rowconfigure .ff 1 -weight 1
 
@@ -380,6 +413,9 @@ proc makeWin {} {
     button .fr.b -text "Check" -underline 0 -width 10 -command "doCheck"
     bind . <Alt-Key-c> doCheck
     bind . <Alt-Key-C> doCheck
+    button .fr.bn -text "Next E" -underline 0 -width 10 -command "seeNextError"
+    bind . <Alt-Key-n> seeNextError
+    bind . <Alt-Key-N> seeNextError
     if {$::debug == 0} {
         bind . <Key> "backDoor %A"
     }
@@ -387,11 +423,12 @@ proc makeWin {} {
     set ::Nagelfar(resultWin) [Scroll both \
             text .fr.t -width 100 -height 25 -wrap none -font ResultFont]
 
-    grid .fr.b .fr.pr -sticky w -padx 2 -pady {0 2}
-    grid .fr.t -      -sticky news
-    grid columnconfigure .fr 0 -weight 1
+    grid .fr.b .fr.bn .fr.pr -sticky w -padx 2 -pady {0 2}
+    grid .fr.t -      -      -sticky news
+    grid columnconfigure .fr 1 -weight 1
     grid rowconfigure    .fr 1 -weight 1
 
+    $::Nagelfar(resultWin) tag configure info -foreground #707070
     $::Nagelfar(resultWin) tag configure error -foreground red
     $::Nagelfar(resultWin) tag configure hl -background yellow
     bind $::Nagelfar(resultWin) <Double-Button-1> "showError ; break"
@@ -527,9 +564,20 @@ proc tryEmacs {filename lineNo} {
     return 1
 }
 
+# Try to show a file using vim
+proc tryVim {filename lineNo} {
+    if {[catch {exec gvim +$lineNo $filename &}]} {
+        if {[catch {exec xterm -exec vi +$lineNo $filename &}]} {
+            return 0
+        }
+    }
+    return 1
+}
+
 # Edit a file using internal or external editor.
 proc editFile {filename lineNo} {
     if {$::Prefs(editor) eq "emacs" && [tryEmacs $filename $lineNo]} return
+    if {$::Prefs(editor) eq "vim"   && [tryVim   $filename $lineNo]} return
 
     if {[winfo exists .fv]} {
         wm deiconify .fv
@@ -548,6 +596,11 @@ proc editFile {filename lineNo} {
                     -width 80 -height 25 -font $::Prefs(editFileFont)]
         }
         set ::Nagelfar(editWin) $w
+        # Set up a tag for incremental search bindings
+        if {[info procs textSearch::enableSearch] != ""} {
+            textSearch::enableSearch $w -label ::Nagelfar(iSearch)
+        }
+
         frame .fv.f
         grid .fv.t -sticky news
         grid .fv.f -sticky we
@@ -569,6 +622,15 @@ proc editFile {filename lineNo} {
         .fv.m.me add command -label "Check" -underline 0 \
                 -command "checkEditWin"
 
+        .fv.m add cascade -label "Search" -underline 0 -menu .fv.m.ms
+        menu .fv.m.ms
+        if {[info procs textSearch::searchMenu] != ""} {
+            textSearch::searchMenu .fv.m.ms
+        } else {
+            .fv.m.ms add command -label "Text search not available" \
+                    -state disabled
+        }
+
         .fv.m add cascade -label "Options" -underline 0 -menu .fv.m.mo
         menu .fv.m.mo
         .fv.m.mo add checkbutton -label "Backup" -underline 0 \
@@ -585,7 +647,9 @@ proc editFile {filename lineNo} {
         }
 
         label .fv.f.ln -width 5 -anchor e -textvariable ::Nagelfar(lineNo)
-        pack .fv.f.ln -side right -padx 3
+        label .fv.f.li -width 1 -pady 0 -padx 0 \
+                -textvariable ::Nagelfar(iSearch)
+        pack .fv.f.ln .fv.f.li -side right -padx 3
 
         bind $w <Any-Key> {
             after idle {
@@ -752,6 +816,11 @@ proc makeAboutWin {} {
     $w.t configure -state disabled
 }
 
+# Partial backslash-subst
+proc mySubst {str} {
+    subst -nocommands -novariables [string map {\\\n \\\\\n} $str]
+}
+
 # Insert a text file into a text widget.
 # Any XML-style tags in the file are used as tags in the text window.
 proc insertTaggedText {w file} {
@@ -762,7 +831,7 @@ proc insertTaggedText {w file} {
     set tags {}
     while {$data != ""} {
         if {[regexp {^([^<]*)<(/?)([^>]+)>(.*)$} $data -> pre sl tag post]} {
-            $w insert end [subst -nocommands -novariables $pre] $tags
+            $w insert end [mySubst $pre] $tags
             set i [lsearch $tags $tag]
             if {$sl != ""} {
                 # Remove tag
@@ -775,7 +844,7 @@ proc insertTaggedText {w file} {
             }
             set data $post
         } else {
-            $w insert end [subst -nocommands -novariables $data] $tags
+            $w insert end [mySubst $data] $tags
             set data ""
         }
     }
