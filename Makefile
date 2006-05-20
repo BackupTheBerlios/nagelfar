@@ -14,6 +14,7 @@ TCLKIT_WIN     = $(TCLKIT)/tclkit-win32.upx.exe
 GRIFFIN = /home/peter/tclkit/griffin.vfs/lib/griffin
 TKDND   = /home/peter/tkdnd/lib/tkdnd1.0
 CTEXT   = /home/peter/src/ctext
+TEXTSEARCH = /home/peter/src/textsearch
 
 # Path to the interpreter used for generating the syntax database
 TCLSHDB  = ~/tcl/install/bin/wish8.4
@@ -41,12 +42,15 @@ nagelfar.vfs/lib/tkdnd:
 	cd nagelfar.vfs/lib ; ln -s $(TKDND) tkdnd
 nagelfar.vfs/lib/ctext:
 #	cd nagelfar.vfs/lib ; ln -s $(CTEXT) ctext
+nagelfar.vfs/lib/textsearch:
+	cd nagelfar.vfs/lib ; ln -s $(TEXTSEARCH) textsearch
 
 links: nagelfar.vfs/lib/app-nagelfar/nagelfar.tcl \
 	nagelfar.vfs/lib/app-nagelfar/syntaxdb.tcl \
 	nagelfar.vfs/lib/app-nagelfar/doc \
 	nagelfar.vfs/lib/griffin \
 	nagelfar.vfs/lib/tkdnd \
+	nagelfar.vfs/lib/textsearch \
 	nagelfar.vfs/lib/ctext
 
 setup: links
@@ -149,7 +153,7 @@ db: syntaxdb.tcl $(DB2NAME)
 # Packaging/Releasing
 #----------------------------------------------------------------
 
-wrap:
+wrap: base
 	sdx wrap nagelfar.kit
 
 wrapexe:
@@ -160,10 +164,10 @@ wrapexe:
 
 distrib:
 	@\rm -f nagelfar.tar.gz
-	@tar --directory=.. -zcvf nagelfar.tar.gz nagelfar/COPYING \
+	@tar --directory=..  --exclude CVS -zcvf nagelfar.tar.gz nagelfar/COPYING \
 		nagelfar/README.txt nagelfar/syntaxbuild.tcl nagelfar/syntaxdb.tcl \
 		nagelfar/nagelfar.syntax nagelfar/nagelfar.tcl \
 		nagelfar/misctests/test.tcl nagelfar/misctests/test.syntax \
-		nagelfar/doc --exclude CVS
+		nagelfar/doc
 
 release: base distrib wrap wrapexe
