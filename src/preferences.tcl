@@ -86,6 +86,8 @@ proc addOptionsMenu {m} {
             -variable ::Prefs(editor) -value internal
     $m.mo.med add radiobutton -label "Emacs" \
             -variable ::Prefs(editor) -value emacs
+    $m.mo.med add radiobutton -label "Vim" \
+            -variable ::Prefs(editor) -value vim
 
     $m.mo add separator
 
