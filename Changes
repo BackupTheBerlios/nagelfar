@@ -1,3 +1,22 @@
+2006-05-20
+ Support vim as editor.
+ Support different tab settings.
+ See next error button in GUI.
+ Text search in report window.
+ Show less important info in gray.
+ 
+2006-05-16
+ Detect missing space after cmd e.g. if{something}
+
+2005-04-03
+ When starting up in wish on windows it is pointless to not run in gui mode.
+ Added possibility to delete files from database list.
+ Added simple File menu.
+
+2005-02-20
+ Extended handling of if 0 {...} as a comment to handle e.g. { 0 } too.
+ Instrument a missing "else" in code coverage, to get branch coverage.
+ 
 Version 1.1.2
 
 2005-01-29
