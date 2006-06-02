@@ -24,11 +24,11 @@
 # the next line restarts using tclsh \
 exec tclsh "$0" "$@"
 
-set debug 1
+set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.1.2+ 2006-05-16"
+set version "Version 1.1.3 2006-06-02"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
