@@ -801,7 +801,7 @@ proc makeAboutWin {} {
     $w.t insert end "$version\n\n"
     $w.t insert end "Made by Peter Spjuth\n"
     $w.t insert end "E-Mail: peter.spjuth@space.se\n"
-    $w.t insert end "\nURL: http://spjuth.pointclark.net/Nagelfar.html\n"
+    $w.t insert end "\nURL: http://nagelfar.berlios.de\n"
     $w.t insert end "\nTcl version: [info patchlevel]"
     set d [package provide tkdnd]
     if {$d != ""} {
