@@ -639,7 +639,7 @@ proc editFile {filename lineNo} {
         .fv.m.mo add cascade -label "Font" -underline 0 -menu .fv.m.mo.mf
         menu .fv.m.mo.mf
         set cmd "[list $w] configure -font \$::Prefs(editFileFont)"
-        foreach lab {Small Medium Large} size {8 10 12} {
+        foreach lab {Small Medium Large} size {8 10 14} {
             .fv.m.mo.mf add radiobutton -label $lab  -underline 0 \
                     -variable ::Prefs(editFileFont) \
                     -value [list Courier $size] \

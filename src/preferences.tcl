@@ -77,8 +77,8 @@ proc addOptionsMenu {m} {
 	    -variable ::Prefs(resultFont) -value "Courier 10" \
 	    -command {font configure ResultFont -size 10}
     $m.mo.mo add radiobutton -label "Large" \
-	    -variable ::Prefs(resultFont) -value "Courier 12" \
-	    -command {font configure ResultFont -size 12}
+	    -variable ::Prefs(resultFont) -value "Courier 14" \
+	    -command {font configure ResultFont -size 14}
 
     $m.mo add cascade -label "Editor" -menu $m.mo.med
     menu $m.mo.med
