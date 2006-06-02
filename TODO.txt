@@ -86,7 +86,7 @@ the Checker:
 
 -----------------------------------------------------------------------------
 
-Additional from Andreas L:
+Additional from Andreas Leitgeb:
 
 > I just finished my vacation 
 Just like me one week later :-)

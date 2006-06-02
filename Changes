@@ -1,9 +1,12 @@
+Version 1.1.3
+
 2006-05-20
  Support vim as editor.
  Support different tab settings.
  See next error button in GUI.
  Text search in report window.
  Show less important info in gray.
+ Ideas from Andreas Leitgeb.
  
 2006-05-16
  Detect missing space after cmd e.g. if{something}
@@ -12,6 +15,7 @@
  When starting up in wish on windows it is pointless to not run in gui mode.
  Added possibility to delete files from database list.
  Added simple File menu.
+ Ideas from Arjen Markus.
 
 2005-02-20
  Extended handling of if 0 {...} as a comment to handle e.g. { 0 } too.
