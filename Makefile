@@ -98,14 +98,18 @@ MFILES   = $(SRCFILES:.tcl=.tcl_m)
 	@./nagelfar.tcl -instrument $<
 
 # Target to prepare for code coverage run. Makes sure log file is clear.
-instrument: $(IFILES)
+instrument: $(IFILES) nagelfar.tcl_i
 	@rm -f $(LOGFILES)
 
 # Top file for coverage run
-nagelfar.tcl_i: $(IFILES)
-	@rm -f nagelfar.tcl_i
-	@touch nagelfar.tcl_i
-	@for i in $(IFILES) ; do echo "source $$i" >> nagelfar.tcl_i ; done
+nagelfar_dummy.tcl: $(IFILES)
+	@rm -f nagelfar_dummy.tcl
+	@touch nagelfar_dummy.tcl
+	@for i in $(SRCFILES) ; do echo "source $$i" >> nagelfar_dummy.tcl ; done
+
+# Top file for coverage run
+nagelfar.tcl_i: nagelfar_dummy.tcl_i
+	@cp -f nagelfar_dummy.tcl_i nagelfar.tcl_i
 
 # Run tests to create log file.
 testcover $(LOGFILES): nagelfar.tcl_i
@@ -122,7 +126,7 @@ icheck: $(MFILES)
 
 # Remove code coverage files
 clean:
-	@rm -f $(LOGFILES) $(IFILES) $(MFILES) nagelfar.tcl_i
+	@rm -f $(LOGFILES) $(IFILES) $(MFILES) nagelfar.tcl_* nagelfar_dummy*
 
 #----------------------------------------------------------------
 # Generating test examples
@@ -158,7 +162,7 @@ wrap: base
 
 wrapexe:
 	@\rm -f nagelfar nagelfar.exe nagelfar.solaris
-	sdx wrap nagelfar         -runtime $(TCLKIT_LINUX)
+	sdx wrap nagelfar.linux   -runtime $(TCLKIT_LINUX)
 	sdx wrap nagelfar.solaris -runtime $(TCLKIT_SOLARIS)
 	sdx wrap nagelfar.exe     -runtime $(TCLKIT_WIN)
 
