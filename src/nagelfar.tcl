@@ -73,6 +73,8 @@ proc echo {str {info 0}} {
         $::Nagelfar(resultWin) configure -state normal
         $::Nagelfar(resultWin) insert end $str\n [lindex {{} info} $info]
         $::Nagelfar(resultWin) configure -state disabled
+    } elseif {$::Nagelfar(embedded)} {
+        lappend ::Nagelfar(chkResult) $str
     } else {
         puts stdout $str
     }
@@ -640,7 +642,7 @@ proc parseVar {str len index iName knownVarsName} {
     } else {
 	for {set ei $si} {$ei < $len} {incr ei} {
 	    set c [string index $str $ei]
-	    if {[string is word $c]} continue
+	    if {[string is wordchar $c]} continue
 	    # :: is ok.
 	    if {[string equal $c ":"]} {
 		set c [string index $str [expr {$ei + 1}]]
@@ -2686,13 +2688,17 @@ proc dumpInstrumenting {filename} {
         namespace eval ::_instrument_ {}
         if {[info commands ::_instrument_::source] == ""} {
             rename ::source ::_instrument_::source
-            proc ::source {fileName} {
+            proc ::source {args} {
+                set fileName [lindex $args end]
+                set args [lrange $args 0 end-1]
                 set newFileName $fileName
                 set altFileName ${fileName}_i
                 if {[file exists $altFileName]} {
                     set newFileName $altFileName
                 }
-                uplevel 1 [list ::_instrument_::source $newFileName]
+                set args [linsert $args 0 ::_instrument_::source]
+                lappend args $newFileName
+                uplevel 1 $args
             }
             rename ::exit ::_instrument_::exit
             proc ::exit {args} {
