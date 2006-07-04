@@ -46,7 +46,7 @@ if 0 { # Not working yet
 # Function to get an option or subcommand list from an error message.
 proc getSubCmds {args} {
     catch {eval $args} err
-    
+
     lappend res {option .* must be (.*)$}
     lappend res {option .* should be one of (.*)$}
     lappend res {bad .* must be (.*)$}
@@ -55,7 +55,7 @@ proc getSubCmds {args} {
     foreach re $res {
 	if {[regexp $re $err -> apa]} {
 	    regsub -all {( or )|(, or )|(, )} $apa " " apa
-	    return [lrange $apa 0 end]
+	    return [lsort -dictionary [lrange $apa 0 end]]
 	}
     }
     return {}
@@ -213,6 +213,7 @@ proc buildDb {ch} {
     set syntax(info\ default)   "x x n"
     # "interp" is handled specially
     set syntax(interp)          "s x*"
+    set syntax(interp\ invokehidden) "x o* x x*"
     set syntax(join)            "r 1 2"
     set syntax(lappend)         "n x*"
     if {[catch {lindex apa 0 0}]} {
@@ -259,7 +260,7 @@ proc buildDb {ch} {
     set syntax(string\ equal)   "o* x x"
     set syntax(string\ first)   "r 2 3"
     set syntax(string\ index)    2
-    set syntax(string\ is)      "x o* x"
+    set syntax(string\ is)      "s o* x"
     set syntax(string\ last)    "r 2 3"
     set syntax(string\ length)   1
     set syntax(string\ map)     "o? x x"
@@ -320,6 +321,10 @@ proc buildDb {ch} {
         set syntax(lassign)    "x n n*"
         set syntax(lrepeat)    "r 2"
         set syntax(unload)     "o* x x*"
+        set syntax(chan)       "s x*"
+        set syntax(apply)      "x x*"
+        set syntax(source)     "p* x"
+        set option(interp\ invokehidden\ -namespace) 1
     }
 
     # Some special Tcl commands
@@ -357,6 +362,7 @@ proc buildDb {ch} {
         set syntax(selection) "s x*"
         set syntax(send)     "o* x x x*"
         set syntax(tk)       "s x*"
+        set syntax(tkwait)   "s v"
 	set syntax(winfo)    "s x x*"
         set syntax(wm)       "s x x*"
 
@@ -427,6 +433,10 @@ proc buildDb {ch} {
     set option(fcopy)      [getSubCmds fcopy stdin stdout -gurkmeja x]
     set option(unset)      [list -nocomplain --]
 
+    # Add additonal fconfigure, known for serial channels
+    lappend option(fconfigure) -mode -handshake -queue -timeout -ttycontrol -ttystatus -xchar -pollinterval -sysbuffer -lasterror
+    set option(fconfigure) [lsort -uniq -dictionary $option(fconfigure)]
+
     # Get options for any commands defining "o" or "p"
     foreach cmd [array names syntax] {
         if {[info exists option($cmd)]} continue
@@ -449,6 +459,8 @@ proc buildDb {ch} {
             if {[llength $opts] > 0} {
                 set option($cmd) $opts
                 #puts "Autoopt: $cmd $option($cmd)"
+            } else {
+                #puts "Failed Autoopt: $cmd"
             }
         }
     }
