@@ -50,9 +50,8 @@ proc usage {} {
     exit
 }
 
-# Global code is only run first time to allow re-sourcing
-if {![info exists gurka]} {
-    set gurka 1
+# Initialise global variables with defaults.
+proc StartUp {} {
     set ::Nagelfar(db) {}
     set ::Nagelfar(files) {}
     set ::Nagelfar(gui) 0
@@ -67,10 +66,38 @@ if {![info exists gurka]} {
     set ::Nagelfar(tabReg) { {0,7}\t| {8,8}}
     set ::Nagelfar(tabSub) [string repeat " " 8]
     set ::Nagelfar(tabMap) [list \t $::Nagelfar(tabSub)]
+    if {![info exists ::Nagelfar(embedded)]} {
+        set ::Nagelfar(embedded) 0
+    }
 
     getOptions
+}
+
+# Procedure to perform a check when embedded.
+proc synCheck {fpath dbPath} {
+    set ::Nagelfar(files) [list $fpath]
+    set ::Nagelfar(allDb) {}
+    set ::Nagelfar(allDbView) {}
+    set ::Nagelfar(allDb) [list $dbPath]
+    set ::Nagelfar(allDbView) [list [file tail $dbPath] "(app)"]
+    set ::Nagelfar(db) [list $dbPath]
+    set ::Nagelfar(embedded) 1
+    set ::Nagelfar(chkResult) ""
+    doCheck
+    return $::Nagelfar(chkResult)
+}
+
+
+# Global code is only run first time to allow re-sourcing
+if {![info exists gurka]} {
+    set gurka 1
+
+    StartUp
 
     if {[info exists _nagelfar_test]} return
+    # To use Nagelfar embedded, set ::Nagelfar(embedded) 1
+    # before sourcing nagelfar.tcl.
+    if {$::Nagelfar(embedded)} return
 
     # Locate default syntax database(s)
     set ::Nagelfar(allDb) {}
