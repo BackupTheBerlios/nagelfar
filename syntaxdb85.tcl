@@ -1,5 +1,5 @@
 # Automatically generated syntax database.
-# Generated with syntaxbuild Revision: 1.25 
+# Generated with syntaxbuild Revision: 1.26 
 
 lappend ::dbInfo {Tcl 8.5a4 unix, Tk 8.5a4 x11}
 set ::dbTclVersion 8.5
@@ -58,6 +58,7 @@ set {::syntax(_obj,toplevel cget)} o
 set {::syntax(_obj,toplevel configure)} {o. x. p*}
 set ::syntax(after) {r 1}
 set ::syntax(append) {n x*}
+set ::syntax(apply) {x x*}
 set ::syntax(array) {s v x?}
 set {::syntax(array exists)} l
 set {::syntax(array names)} {v x? x?}
@@ -81,6 +82,7 @@ set ::syntax(button) {x p*}
 set ::syntax(canvas) {x p*}
 set ::syntax(catch) {c n?}
 set ::syntax(cd) {r 0 1}
+set ::syntax(chan) {s x*}
 set ::syntax(checkbutton) {x p*}
 set ::syntax(clipboard) {s x*}
 set ::syntax(clock) {s x*}
@@ -137,6 +139,7 @@ set ::syntax(info) {s x*}
 set {::syntax(info default)} {x x n}
 set {::syntax(info exists)} l
 set ::syntax(interp) {s x*}
+set {::syntax(interp invokehidden)} {x o* x x*}
 set ::syntax(join) {r 1 2}
 set ::syntax(label) {x p*}
 set ::syntax(labelframe) {x p*}
@@ -184,7 +187,7 @@ set ::syntax(selection) {s x*}
 set ::syntax(send) {o* x x x*}
 set ::syntax(set) {1: v : n x}
 set ::syntax(socket) {r 2}
-set ::syntax(source) 1
+set ::syntax(source) {p* x}
 set ::syntax(spinbox) {x p*}
 set ::syntax(split) {r 1 2}
 set ::syntax(string) {s x x*}
@@ -193,7 +196,7 @@ set {::syntax(string compare)} {o* x x}
 set {::syntax(string equal)} {o* x x}
 set {::syntax(string first)} {r 2 3}
 set {::syntax(string index)} 2
-set {::syntax(string is)} {x o* x}
+set {::syntax(string is)} {s o* x}
 set {::syntax(string last)} {r 2 3}
 set {::syntax(string length)} 1
 set {::syntax(string map)} {o? x x}
@@ -234,6 +237,7 @@ set ::syntax(tk_popup) {r 3 4}
 set ::syntax(tk_textCopy) 1
 set ::syntax(tk_textCut) 1
 set ::syntax(tk_textPaste) 1
+set ::syntax(tkwait) {s v}
 set ::syntax(toplevel) {x p*}
 set ::syntax(trace) {s x x*}
 set {::syntax(trace add)} {s x x x}
@@ -303,29 +307,32 @@ set ::subCmd(_obj,text) {bbox cget compare configure count debug delete dlineinf
 set ::subCmd(_obj,toplevel) {cget configure}
 set ::subCmd(array) {anymore donesearch exists get names nextelement set size startsearch statistics unset}
 set ::subCmd(binary) {format scan}
+set ::subCmd(chan) {blocked close configure copy create eof event flush gets names postevent puts read seek tell truncate}
 set ::subCmd(clipboard) {append clear get}
 set ::subCmd(clock) {add clicks format microseconds milliseconds scan seconds}
 set ::subCmd(dict) {append create exists filter for get incr info keys lappend merge remove replace set size unset update values with}
 set ::subCmd(encoding) {convertfrom convertto dirs names system}
 set ::subCmd(event) {add delete generate info}
-set ::subCmd(file) {atime attributes channels copy delete dirname executable exists extension isdirectory isfile join link lstat mtime mkdir nativename normalize owned pathtype readable readlink rename rootname separator size split stat system tail type volumes writable}
+set ::subCmd(file) {atime attributes channels copy delete dirname executable exists extension isdirectory isfile join link lstat mkdir mtime nativename normalize owned pathtype readable readlink rename rootname separator size split stat system tail type volumes writable}
 set ::subCmd(font) {actual configure create delete families measure metrics names}
 set ::subCmd(history) {add change clear event info keep nextid redo}
 set ::subCmd(image) {create delete height inuse names type types width}
 set ::subCmd(info) {args body cmdcount commands complete default exists functions globals hostname level library loaded locals nameofexecutable patchlevel procs script sharedlibextension tclversion vars}
-set ::subCmd(interp) {alias aliases bgerror create delete eval exists expose hide hidden issafe invokehidden limit marktrusted recursionlimit slaves share target transfer}
+set ::subCmd(interp) {alias aliases bgerror create delete eval exists expose hidden hide invokehidden issafe limit marktrusted recursionlimit share slaves target transfer}
 set ::subCmd(namespace) {children code current delete ensemble eval exists export forget import inscope origin parent path qualifiers tail unknown upvar which}
 set ::subCmd(option) {add clear get readfile}
 set ::subCmd(package) {forget ifneeded names present provide require unknown vcompare versions vsatisfies}
 set ::subCmd(selection) {clear get handle own}
-set ::subCmd(string) {bytelength compare equal first index is last length map match range repeat replace tolower toupper totitle trim trimleft trimright wordend wordstart}
-set ::subCmd(tk) {appname caret scaling useinputmethods windowingsystem inactive}
+set ::subCmd(string) {bytelength compare equal first index is last length map match range repeat replace tolower totitle toupper trim trimleft trimright wordend wordstart}
+set {::subCmd(string is)} {alnum alpha ascii boolean control digit double false graph integer lower print punct space true upper wideinteger wordchar xdigit}
+set ::subCmd(tk) {appname caret inactive scaling useinputmethods windowingsystem}
+set ::subCmd(tkwait) {variable visibility window}
 set ::subCmd(trace) {add info remove variable vdelete vinfo}
-set {::subCmd(trace add)} {execution command variable}
-set {::subCmd(trace info)} {execution command variable}
-set {::subCmd(trace remove)} {execution command variable}
+set {::subCmd(trace add)} {command execution variable}
+set {::subCmd(trace info)} {command execution variable}
+set {::subCmd(trace remove)} {command execution variable}
 set ::subCmd(update) idletasks
-set ::subCmd(winfo) {cells children class colormapfull depth geometry height id ismapped manager name parent pointerx pointery pointerxy reqheight reqwidth rootx rooty screen screencells screendepth screenheight screenwidth screenmmheight screenmmwidth screenvisual server toplevel viewable visual visualid vrootheight vrootwidth vrootx vrooty width x y atom atomname containing interps pathname exists fpixels pixels rgb visualsavailable}
+set ::subCmd(winfo) {atom atomname cells children class colormapfull containing depth exists fpixels geometry height id interps ismapped manager name parent pathname pixels pointerx pointerxy pointery reqheight reqwidth rgb rootx rooty screen screencells screendepth screenheight screenmmheight screenmmwidth screenvisual screenwidth server toplevel viewable visual visualid visualsavailable vrootheight vrootwidth vrootx vrooty width x y}
 set ::subCmd(wm) {aspect attributes client colormapwindows command deiconify focusmodel frame geometry grid group iconbitmap iconify iconmask iconname iconphoto iconposition iconwindow maxsize minsize overrideredirect positionfrom protocol resizable sizefrom stackorder state title transient withdraw}
 
 set {::option(_obj,button cget)} {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -default -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -justify -overrelief -padx -pady -relief -repeatdelay -repeatinterval -state -takefocus -text -textvariable -underline -width -wraplength}
@@ -379,21 +386,23 @@ set ::option(canvas) {-background -bd -bg -borderwidth -closeenough -confine -cu
 set ::option(checkbutton) {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -indicatoron -justify -offrelief -offvalue -onvalue -overrelief -padx -pady -relief -selectcolor -selectimage -state -takefocus -text -textvariable -tristateimage -tristatevalue -underline -variable -width -wraplength}
 set {::option(checkbutton -textvariable)} n
 set {::option(checkbutton -variable)} n
-set {::option(clock clicks)} {-milliseconds -microseconds}
+set {::option(clock clicks)} {-microseconds -milliseconds}
 set {::option(clock format)} {-format -gmt -locale -timezone}
 set {::option(clock scan)} {-base -format -gmt -locale -timezone}
 set ::option(entry) {-background -bd -bg -borderwidth -cursor -disabledbackground -disabledforeground -exportselection -fg -font -foreground -highlightbackground -highlightcolor -highlightthickness -insertbackground -insertborderwidth -insertofftime -insertontime -insertwidth -invalidcommand -invcmd -justify -readonlybackground -relief -selectbackground -selectborderwidth -selectforeground -show -state -takefocus -textvariable -validate -validatecommand -vcmd -width -xscrollcommand}
 set {::option(entry -textvariable)} n
-set ::option(exec) {-keepnewline --}
-set ::option(fconfigure) {-blocking -buffering -buffersize -encoding -eofchar -translation -mode -queue -ttystatus -xchar}
-set ::option(fcopy) {-size -command}
+set ::option(exec) {-- -keepnewline}
+set ::option(fconfigure) {-blocking -buffering -buffersize -encoding -eofchar -handshake -lasterror -mode -pollinterval -queue -sysbuffer -timeout -translation -ttycontrol -ttystatus -xchar}
+set ::option(fcopy) {-command -size}
 set {::option(file attributes)} {-group -owner -permissions}
 set ::option(focus) {-displayof -force -lastfor}
 set ::option(frame) {-bd -borderwidth -class -relief -background -bg -colormap -container -cursor -height -highlightbackground -highlightcolor -highlightthickness -padx -pady -takefocus -visual -width}
-set ::option(glob) {-directory -join -nocomplain -path -tails -types --}
+set ::option(glob) {-- -directory -join -nocomplain -path -tails -types}
 set {::option(glob -directory)} 1
 set {::option(glob -path)} 1
 set {::option(glob -types)} 1
+set {::option(interp invokehidden)} {-- -global -namespace}
+set {::option(interp invokehidden -namespace)} 1
 set ::option(label) {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -compound -cursor -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -justify -padx -pady -relief -state -takefocus -text -textvariable -underline -width -wraplength}
 set {::option(label -textvariable)} n
 set ::option(labelframe) {-bd -borderwidth -class -fg -font -foreground -labelanchor -labelwidget -relief -text -background -bg -colormap -container -cursor -height -highlightbackground -highlightcolor -highlightthickness -padx -pady -takefocus -visual -width}
@@ -412,27 +421,28 @@ set ::option(puts) -nonewline
 set ::option(radiobutton) {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -indicatoron -justify -offrelief -overrelief -padx -pady -relief -selectcolor -selectimage -state -takefocus -text -textvariable -tristateimage -tristatevalue -underline -value -variable -width -wraplength}
 set {::option(radiobutton -textvariable)} n
 set {::option(radiobutton -variable)} n
-set ::option(regexp) {-all -about -indices -inline -expanded -line -linestop -lineanchor -nocase -start --}
+set ::option(regexp) {-- -about -all -expanded -indices -inline -line -lineanchor -linestop -nocase -start}
 set {::option(regexp -start)} 1
-set ::option(regsub) {-all -nocase -expanded -line -linestop -lineanchor -start --}
+set ::option(regsub) {-- -all -expanded -line -lineanchor -linestop -nocase -start}
 set {::option(regsub -start)} 1
 set ::option(scale) {-activebackground -background -bigincrement -bd -bg -borderwidth -command -cursor -digits -fg -font -foreground -from -highlightbackground -highlightcolor -highlightthickness -label -length -orient -relief -repeatdelay -repeatinterval -resolution -showvalue -sliderlength -sliderrelief -state -takefocus -tickinterval -to -troughcolor -variable -width}
 set {::option(scale -variable)} n
 set ::option(scrollbar) {-activebackground -activerelief -background -bd -bg -borderwidth -command -cursor -elementborderwidth -highlightbackground -highlightcolor -highlightthickness -jump -orient -relief -repeatdelay -repeatinterval -takefocus -troughcolor -width}
-set ::option(send) {-async -displayof --}
+set ::option(send) {-- -async -displayof}
 set {::option(send -displayof)} 1
+set ::option(source) -encoding
 set ::option(spinbox) {-activebackground -background -bd -bg -borderwidth -buttonbackground -buttoncursor -buttondownrelief -buttonuprelief -command -cursor -disabledbackground -disabledforeground -exportselection -fg -font -foreground -format -from -highlightbackground -highlightcolor -highlightthickness -increment -insertbackground -insertborderwidth -insertofftime -insertontime -insertwidth -invalidcommand -invcmd -justify -relief -readonlybackground -repeatdelay -repeatinterval -selectbackground -selectborderwidth -selectforeground -state -takefocus -textvariable -to -validate -validatecommand -values -vcmd -width -wrap -xscrollcommand}
 set {::option(spinbox -textvariable)} n
-set {::option(string compare)} {-nocase -length}
+set {::option(string compare)} {-length -nocase}
 set {::option(string compare -length)} 1
-set {::option(string equal)} {-nocase -length}
+set {::option(string equal)} {-length -nocase}
 set {::option(string equal -length)} 1
-set {::option(string is)} {-strict -failindex}
+set {::option(string is)} {-failindex -strict}
 set {::option(string is -failindex)} n
 set {::option(string map)} -nocase
 set {::option(string match)} -nocase
 set ::option(subst) {-nobackslashes -nocommands -novariables}
-set ::option(switch) {-exact -glob -indexvar -matchvar -nocase -regexp --}
+set ::option(switch) {-- -exact -glob -indexvar -matchvar -nocase -regexp}
 set ::option(text) {-autoseparators -background -bd -bg -blockcursor -borderwidth -cursor -endline -exportselection -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -inactiveselectbackground -insertbackground -insertborderwidth -insertofftime -insertontime -insertwidth -maxundo -padx -pady -relief -selectbackground -selectborderwidth -selectforeground -setgrid -spacing1 -spacing2 -spacing3 -startline -state -tabs -tabstyle -takefocus -undo -width -wrap -xscrollcommand -yscrollcommand}
 set ::option(tk_chooseColor) {-initialcolor -parent -title}
 set ::option(tk_chooseDirectory) {-initialdir -mustexist -parent -title}
@@ -440,6 +450,6 @@ set ::option(tk_getOpenFile) {-defaultextension -filetypes -initialdir -initialf
 set ::option(tk_getSaveFile) {-defaultextension -filetypes -initialdir -initialfile -parent -title}
 set ::option(tk_messageBox) {-default -detail -icon -message -parent -title -type}
 set ::option(toplevel) {-bd -borderwidth -class -menu -relief -screen -use -background -bg -colormap -container -cursor -height -highlightbackground -highlightcolor -highlightthickness -padx -pady -takefocus -visual -width}
-set ::option(unload) {-nocomplain -keeplibrary --}
+set ::option(unload) {-- -keeplibrary -nocomplain}
 set ::option(unset) {-nocomplain --}
 
