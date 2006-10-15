@@ -206,7 +206,8 @@ proc buildDb {ch} {
     set syntax(gets)            "x n?"
     set syntax(glob)            "o* x x*"
     # "global" is handled specially
-    # "if" is handled specially
+    # "if" is handled specially, but is added here to not disturb header gen.
+    set syntax(if)              "e c"
     set syntax(incr)            "v x?"
     set syntax(info)            "s x*"  ;# FIXA: All subcommands
     set syntax(info\ exists)    "l"
@@ -362,7 +363,8 @@ proc buildDb {ch} {
         set syntax(selection) "s x*"
         set syntax(send)     "o* x x x*"
         set syntax(tk)       "s x*"
-        set syntax(tkwait)   "s v"
+        set syntax(tkwait)   "s x"
+        set syntax(tkwait\ variable) "l" ;# Global variable?
 	set syntax(winfo)    "s x x*"
         set syntax(wm)       "s x x*"
 
