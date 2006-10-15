@@ -9,10 +9,14 @@ test namespace-1.1 {
 } -body {
     createTestFile {
         namespace eval apa {}
+        proc bepa {onearg} {
+            return $onearg
+        }
         proc apa::bepa {hej hopp} {
             set apa $hej
         }
         proc apa::cepa {hej hopp} {
+            # This should resolve to the namespace version
             set apa [bepa $hej $hopp]
         }
     }
@@ -36,6 +40,25 @@ test namespace-1.2 {
     }
     execTestFile
 } -result {%%Line\s+8: E Wrong num.*Line\s+9: E Wrong num.*Line\s+10: E Wrong num} -match regexp
+
+test namespace-1.3 {
+    Namespaces, procs in namespace
+} -body {
+    createTestFile {
+        namespace eval apa {}
+        proc apa::cepa {hej hopp} {
+            # This should resolve to the namespace version
+            set apa [bepa $hej $hopp]
+        }
+        proc apa::bepa {hej hopp} {
+            set apa $hej
+        }
+        proc bepa {onearg} {
+            return $onearg
+        }
+    }
+    execTestFile
+} -result {%%}
 
 test namespace-2.1 {
     Namespaces, imported procs
@@ -61,6 +84,47 @@ test namespace-3.1 {
     createTestFile {
         set apa hejsan
         namespace eval $apa {}
+    }
+    execTestFile
+} -result {%%}
+
+test namespace-3.2 {
+    Namespaces, eval
+} -body {
+    createTestFile {
+        set apa hejsan
+        namespace eval $apa {
+            proc hopp {x y} {
+                # This line should be checked
+                set x $z
+            }
+        }
+        # Neither of these should be known
+        hejsan::hopp
+        hopp
+    }
+    execTestFile
+} -result {%%Line   6: E Unknown variable "z"
+Line  10: W Unknown command "hejsan::hopp"
+Line  11: W Unknown command "hopp"}
+
+test namespace-3.3 {
+    Namespaces, eval
+} -body {
+    createTestFile {
+        proc hejsan::mupp {x y} {
+            set x
+        }
+        proc mupp {x} {
+            set x
+        }
+        set apa hejsan
+        namespace eval $apa {
+            proc hopp {x y} {
+                # This line resolves to the global mupp
+                mupp $x
+            }
+        }
     }
     execTestFile
 } -result {%%}
