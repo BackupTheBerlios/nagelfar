@@ -1,5 +1,5 @@
 # Automatically generated syntax database.
-# Generated with syntaxbuild Revision: 1.26 
+# Generated with syntaxbuild Revision: 1.27 
 
 lappend ::dbInfo {Tcl 8.5a4 unix, Tk 8.5a4 x11}
 set ::dbTclVersion 8.5
@@ -133,6 +133,7 @@ set ::syntax(glob) {o* x x*}
 set ::syntax(grab) {x x*}
 set ::syntax(grid) {x x*}
 set ::syntax(history) {s x*}
+set ::syntax(if) {e c}
 set ::syntax(image) {s x*}
 set ::syntax(incr) {v x?}
 set ::syntax(info) {s x*}
@@ -237,7 +238,8 @@ set ::syntax(tk_popup) {r 3 4}
 set ::syntax(tk_textCopy) 1
 set ::syntax(tk_textCut) 1
 set ::syntax(tk_textPaste) 1
-set ::syntax(tkwait) {s v}
+set ::syntax(tkwait) {s x}
+set {::syntax(tkwait variable)} l
 set ::syntax(toplevel) {x p*}
 set ::syntax(trace) {s x x*}
 set {::syntax(trace add)} {s x x x}
