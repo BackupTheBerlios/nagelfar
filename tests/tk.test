@@ -26,3 +26,13 @@ test tk-2.1 {
     execTestFile
 } -result {%%}
 
+test tk-3.1 {
+    Tk, misc commands, checking syntax db
+} -body {
+    createTestFile {
+        tkwait variable apa
+        tkwait visibility .
+        tkwait window .
+    }
+    execTestFile
+} -result {%%}
