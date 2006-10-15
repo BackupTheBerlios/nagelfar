@@ -127,3 +127,25 @@ test proc-2.5 {
     }
     execTestFile
 } -result {%%}
+
+test proc-3.1 {
+    Procedure, sanity checking args
+} -body {
+    createTestFile {
+        proc apa {args hej} {
+            return $hej
+        }
+    }
+    execTestFile
+} -result {%%Line   2: N Argument 'args' used before last, which can be confusing}
+
+test proc-3.2 {
+    Procedure, sanity checking args
+} -body {
+    createTestFile {
+        proc apa {hej x hej} {
+            return $hej
+        }
+    }
+    execTestFile
+} -result {%%Line   2: N Duplicate proc arguments}
