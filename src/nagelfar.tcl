@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.1.4+ 2006-08-22"
+set version "Version 1.1.5 2006-10-15"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -2332,7 +2332,7 @@ proc parseProc {argv indices} {
         }
         # Check for duplicates
         set l1 [lsort $args]
-        set l2 [lsort -uniq $args]
+        set l2 [lsort -unique $args]
         if {$l1 ne $l2} {
             errorMsg N "Duplicate proc arguments" [lindex $indices 0]
         }
