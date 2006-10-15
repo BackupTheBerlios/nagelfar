@@ -395,6 +395,16 @@ test nagelfar-7.4 {
     execTestFile
 } -result {%%}
 
+test nagelfar-7.5 {
+    Command: upvar
+} -body {
+    createTestFile {
+        upvar \#0 bepa bepa
+        llength $bepa
+    }
+    execTestFile
+} -result {%%}
+
 test nagelfar-8.1 {
     Variable handling
 } -constraints knownbug -body {
@@ -479,6 +489,26 @@ test nagelfar-10.3 {
     }
     set res [execTestFile]
 } -returnCodes 0 -result {%%}
+
+test nagelfar-10.2 {
+    Brace alignment
+} -body {
+    createTestFile {
+        set words 0
+        set n0 0
+        lappend r [expr {([lindex $words $n0] & 0xff000000)
+                         | ([lindex $words $n0] & 0x00ff0000)
+                         | ([lindex $words $n0] & 0x0000ff00)
+                         | ([lindex $words $n0] & 0x000000ff)}]
+        lappend r [expr {([lindex $words $n0] & 0xff000000)
+                         | ([lindex $words $n0] & 0x00ff0000)
+                         | ([lindex $words $n0] & 0x0000ff00)
+                         | ([lindex $words $n0] & 0x000000ff)
+                     }]
+        set x 0
+    }
+    execTestFile
+} -result {%%}
 
 test nagelfar-11.1 {
     Line numbers
