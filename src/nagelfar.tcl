@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.1.4 2006-07-05"
+set version "Version 1.1.4+ 2006-08-22"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -246,14 +246,25 @@ proc checkComment {str index knownVarsName} {
                 # FIXA, syntax for several lines
                 set line [calcLineNo $index]
                 incr line
-                addFilter "*Line *$line:*$first [join $rest]*"
+                switch -- $first {
+                    N { addFilter "*Line *$line: N *[join $rest]*" }
+                    W { addFilter "*Line *$line: \[NW\] *[join $rest]*" }
+                    E { addFilter "*Line *$line:*[join $rest]*" }
+                    default { addFilter "*Line *$line:*$first [join $rest]*" }
+                }
             }
             default {
                 errorMsg N "Bad type in ##nagelfar comment" $index
                 return
             }
         }
+    } elseif {[regexp {\#\s*(FRINK|PRAGMA):\s*nocheck} $str -> keyword]} {
+        # Support Frink's inline comment
+        set line [calcLineNo $index]
+        incr line
+        addFilter "*Line *$line:*"
     }
+
 }
 
 # Handle a stack of current namespaces.
@@ -1338,14 +1349,18 @@ proc lookForCommand {cmd ns index} {
     if {[string match "::*" $cmd]} {
         set cmd1 [string range $cmd 2 end]
         set cmd2 ""
-    } else {
+    } elseif {$ns ne "__unknown__" } {
         set cmd1 "${ns}::$cmd"
         if {[string match "::*" $cmd1]} {
             set cmd1 [string range $cmd1 2 end]
         }
         set cmd2 $cmd
+    } else {
+        set cmd1 $cmd
+        set cmd2 ""
     }
 
+    #puts "MOO cmd '$cmd' ns '$ns' '$cmd1' '$cmd2'"
     if {[info exists ::knownAliases($cmd1)]} {
         return $::knownAliases($cmd1)
     }
@@ -1353,14 +1368,14 @@ proc lookForCommand {cmd ns index} {
         return $::knownAliases($cmd2)
     }
 
-    if {[lsearch $::knownCommands $cmd] >= 0} {
-        return [list $cmd]
-    }
     if {[lsearch $::knownCommands $cmd1] >= 0} {
         return [list $cmd1]
     }
     if {$cmd2 != "" && [lsearch $::knownCommands $cmd2] >= 0} {
         return [list $cmd2]
+    }
+    if {[lsearch $::knownCommands $cmd] >= 0} {
+        return [list $cmd]
     }
 
     lappend ::unknownCommands [list $cmd $cmd1 $cmd2 $index]
@@ -1379,6 +1394,8 @@ proc parseStatement {statement index knownVarsName} {
             # OK
         } elseif {[lindex $words 0] eq "namespace" && \
                 [lindex $words 1] eq "eval" && \
+                [llength $words] == 4 && \
+                ![regexp {[][$\\]} [lindex $words 2]] && \
                 ![regexp {^[{"]?\s*["}]?$} [lindex $words 3]]} {
             # OK
         } else {
@@ -1534,19 +1551,21 @@ proc parseStatement {statement index knownVarsName} {
                         set ns [string range $ns 2 end]
                     }
                 }
-                if {$ws1 & 1} {
-                    set knownVars(namespace,$var) $ns
+                if {$ns ne "__unknown__"} {
+                    if {$ws1 & 1} {
+                        set knownVars(namespace,$var) $ns
+                    }
+                    if {($ws1 & 1) || [string is wordchar $var]} {
+                        set knownVars(known,$var) 1
+                        set knownVars(type,$var)  ""
+                        if {$i < $argc - 1} {
+                            set knownVars(set,$var) 1
+                        }
+                        lappend constantsDontCheck $i
+                    } else {
+                        errorMsg N "Non constant argument to $cmd: $var" $index
+                    }
                 }
-		if {($ws1 & 1) || [string is wordchar $var]} {
-                    set knownVars(known,$var) 1
-                    set knownVars(type,$var)  ""
-		    if {$i < $argc - 1} {
-                        set knownVars(set,$var) 1
-		    }
-		    lappend constantsDontCheck $i
-		} else {
-		    errorMsg N "Non constant argument to $cmd: $var" $index
-		}
 		incr i 2
 	    }
 	}
@@ -1560,7 +1579,7 @@ proc parseStatement {statement index knownVarsName} {
             set hasLevel 0
             if {[lindex $wordstatus 0] & 1} {
                 # Is it a level ?
-                if {[regexp {^[\#0-9]} $level]} {
+                if {[regexp {^[\\\#0-9]} $level]} {
                     if {!$oddA} {
                         WA
                         return
@@ -1908,23 +1927,32 @@ proc parseStatement {statement index knownVarsName} {
                     }
                     return
                 }
+                set arg1const [expr {[lindex $wordstatus 1] & 1}]
+                set arg2const [expr {[lindex $wordstatus 2] & 1}]
                 # Look for unknown parts
                 if {[string is space [lindex $argv 2]]} {
                     # Empty body, do nothing
-                } elseif {!([lindex $wordstatus 1] & 1) || \
-                        !([lindex $wordstatus 2] & 1)} {
+                } elseif {$arg2const && $argc == 3} {
+                    if {$arg1const} {
+                        set ns [lindex $argv 1]
+                        if {![string match "::*" $ns]} {
+                            set root [currentNamespace]
+                            if {$root ne "__unknown__"} {
+                                set ns ${root}::$ns
+                            }
+                        }
+                    } else {
+                        set ns __unknown__
+                    }
+
+                    pushNamespace $ns
+                    parseBody [lindex $argv 2] [lindex $indices 2] knownVars
+                    popNamespace
+                } else {
                     if {!$::Nagelfar(firstpass)} { # Messages in second pass
                         errorMsg N "Only braced namespace evals are checked." \
                                 [lindex $indices 0]
                     }
-                } else {
-                    set ns [lindex $argv 1]
-                    if {![string match "::*" $ns]} {
-                        set ns [currentNamespace]::$ns
-                    }
-                    pushNamespace $ns
-                    parseBody [lindex $argv 2] [lindex $indices 2] knownVars
-                    popNamespace
                 }
             } else {
                 set type [checkCommand $cmd $index $argv $wordstatus \
@@ -1935,12 +1963,13 @@ proc parseStatement {statement index knownVarsName} {
             set noConstantCheck 1
 	}
 	default {
-	    if {[info exists ::syntax($cmd)]} {
+            set ns [currentNamespace]
+	    if {$ns eq "" && [info exists ::syntax($cmd)]} {
 		set type [checkCommand $cmd $index $argv $wordstatus \
                         $wordtype $indices]
 	    } else {
                 # Resolve commands in namespace
-                set rescmd [lookForCommand $cmd [currentNamespace] $index]
+                set rescmd [lookForCommand $cmd $ns $index]
                 if {[llength $rescmd] > 0 && \
                         [info exists ::syntax([lindex $rescmd 0])]} {
                     set cmd [lindex $rescmd 0]
@@ -2136,9 +2165,12 @@ proc splitScript {script index statementsName indicesName knownVarsName} {
                 if {$closeBrace != -1} {
                     set tmp [wasIndented $index]
                     if {$tmp != $closeBrace} {
-                        errorMsg N "Close brace not aligned with line\
-                                [calcLineNo $index] ($tmp $closeBrace)" \
-                                $closeBraceIx
+                        # Only do this if there is a free open brace
+                        if {[regexp "\{\n" $tryline]} {
+                            errorMsg N "Close brace not aligned with line\
+                                    [calcLineNo $index] ($tmp $closeBrace)" \
+                                    $closeBraceIx
+                        }
                     }
                 }
 		incr index [string length $tryline]
@@ -2256,8 +2288,12 @@ proc parseProc {argv indices} {
     set cns [currentNamespace]
     set ns [namespace qualifiers $name]
     set tail [namespace tail $name]
+    set storeIt 1
     if {![string match "::*" $ns]} {
-        if {$ns != ""} {
+        if {$cns eq "__unknown__"} {
+            set ns $cns
+            set storeIt 0
+        } elseif {$ns != ""} {
             set ns ${cns}::$ns
         } else {
             set ns $cns
@@ -2281,8 +2317,26 @@ proc parseProc {argv indices} {
         set knownVars(set,$var)   1
         set knownVars(type,$var)  ""
     }
+    
+    if {$storeIt} {
+        lappend ::knownCommands $name
+    }
 
-    lappend ::knownCommands $name
+    # Sanity check of argument names
+    if {!$::Nagelfar(firstpass)} {
+        # Check for non-last "args"
+        set i [lsearch $args "args"]
+        if {$i >= 0 && $i != [llength $args] - 1} {
+            errorMsg N "Argument 'args' used before last, which can be confusing" \
+                    [lindex $indices 0]
+        }
+        # Check for duplicates
+        set l1 [lsort $args]
+        set l2 [lsort -uniq $args]
+        if {$l1 ne $l2} {
+            errorMsg N "Duplicate proc arguments" [lindex $indices 0]
+        }
+    }
 
 #    decho "Note: parsing procedure $name"
     if {!$::Nagelfar(firstpass)} {
@@ -2296,100 +2350,102 @@ proc parseProc {argv indices} {
     #    puts "upvar '$item' '$knownVars($item)'"
     #}
 
-    # Build a syntax description for the procedure.
-    # Parse the arguments.
-    set upvar 0
-    set unlim 0
-    set min 0
-    set newsyntax {}
-    foreach a $args {
-        set var [lindex $a 0]
-        set type x
+    if {$storeIt} {
+        # Build a syntax description for the procedure.
+        # Parse the arguments.
+        set upvar 0
+        set unlim 0
+        set min 0
+        set newsyntax {}
+        foreach a $args {
+            set var [lindex $a 0]
+            set type x
 
-        # Check for any upvar in the proc
-        if {[info exists knownVars(upvar,$var)]} {
-            set other $knownVars(upvar,$var)
-            if {[info exists knownVars(read,$other)]} {
-                set type v
-            } elseif {[info exists knownVars(set,$other)]} {
-                set type n
+            # Check for any upvar in the proc
+            if {[info exists knownVars(upvar,$var)]} {
+                set other $knownVars(upvar,$var)
+                if {[info exists knownVars(read,$other)]} {
+                    set type v
+                } elseif {[info exists knownVars(set,$other)]} {
+                    set type n
+                } else {
+                    set type l
+                }
+                set upvar 1
+            }
+            if {[string equal $var "args"]} {
+                set unlim 1
+                set type x*
+            } elseif {[llength $a] == 2} {
+                append type .
             } else {
-                set type l
+                incr min
             }
-            set upvar 1
+            lappend newsyntax $type
         }
-	if {[string equal $var "args"]} {
-            set unlim 1
-	    set type x*
-        } elseif {[llength $a] == 2} {
-            append type .
-	} else {
-            incr min
-        }
-        lappend newsyntax $type
-    }
 
-    if {!$upvar} {
-        if {$unlim} {
-            set newsyntax [list r $min]
-        } elseif {$min == [llength $args]} {
-            set newsyntax $min
-        } else {
-            set newsyntax [list r $min [llength $args]]
-        }
-    }
-
-    if {[info exists syntax($name)]} {
-        #decho "$name : Prev: '$syntax($name)'  New: '$newsyntax'"
-        # Check if it matches previously defined syntax
-        set prevmin 0
-        set prevmax 0
-        set prevunlim 0
-        if {[string is integer $syntax($name)]} {
-            set prevmin $syntax($name)
-            set prevmax $syntax($name)
-        } elseif {[string match "r*" $syntax($name)]} {
-            set prevmin [lindex $syntax($name) 1]
-            set prevmax [lindex $syntax($name) 2]
-            if {$prevmax == ""} {
-                set prevmax $prevmin
-                set prevunlim 1
+        if {!$upvar} {
+            if {$unlim} {
+                set newsyntax [list r $min]
+            } elseif {$min == [llength $args]} {
+                set newsyntax $min
+            } else {
+                set newsyntax [list r $min [llength $args]]
             }
-        } else {
-            foreach token $syntax($name) {
-                set tok [string index $token 0]
-                set mod [string index $token 1]
-                set n [expr {$tok == "p" ? 2 : 1}]
-                if {$mod == ""} {
-                    incr prevmin $n
-                    incr prevmax $n
-                } elseif {$mod == "?"} {
-                    incr prevmax $n
-                } elseif {$mod == "*"} {
+        }
+
+        if {[info exists syntax($name)]} {
+            #decho "$name : Prev: '$syntax($name)'  New: '$newsyntax'"
+            # Check if it matches previously defined syntax
+            set prevmin 0
+            set prevmax 0
+            set prevunlim 0
+            if {[string is integer $syntax($name)]} {
+                set prevmin $syntax($name)
+                set prevmax $syntax($name)
+            } elseif {[string match "r*" $syntax($name)]} {
+                set prevmin [lindex $syntax($name) 1]
+                set prevmax [lindex $syntax($name) 2]
+                if {$prevmax == ""} {
+                    set prevmax $prevmin
                     set prevunlim 1
-                } elseif {$mod == "."} {
-                    incr prevmax $n
+                }
+            } else {
+                foreach token $syntax($name) {
+                    set tok [string index $token 0]
+                    set mod [string index $token 1]
+                    set n [expr {$tok == "p" ? 2 : 1}]
+                    if {$mod == ""} {
+                        incr prevmin $n
+                        incr prevmax $n
+                    } elseif {$mod == "?"} {
+                        incr prevmax $n
+                    } elseif {$mod == "*"} {
+                        set prevunlim 1
+                    } elseif {$mod == "."} {
+                        incr prevmax $n
+                    }
                 }
             }
-        }
-        if {$prevunlim != $unlim || \
-                ($prevunlim == 0 && $prevmax != [llength $args]) \
-                || $prevmin != $min} {
-            errorMsg W "Procedure \"$name\" does not match previous definition" \
-                    [lindex $indices 0]
-            contMsg "Previous '$syntax($name)'  New '$newsyntax'"
-        } else {
-            # It matched.  Does the new one seem better?
-            if {[regexp {^(?:r )?\d+(?: \d+)?$} $syntax($name)]} {
-                #if {$syntax($name) != $newsyntax} {
-                #    decho "$name : Prev: '$syntax($name)'  New: '$newsyntax'"
-                #}
-                set syntax($name) $newsyntax
+            if {$prevunlim != $unlim || \
+                    ($prevunlim == 0 && $prevmax != [llength $args]) \
+                    || $prevmin != $min} {
+                errorMsg W "Procedure \"$name\" does not match previous definition" \
+                        [lindex $indices 0]
+                contMsg "Previous '$syntax($name)'  New '$newsyntax'"
+            } else {
+                # It matched.  Does the new one seem better?
+                if {[regexp {^(?:r )?\d+(?: \d+)?$} $syntax($name)]} {
+                    #if {$syntax($name) != $newsyntax} {
+                    #    decho "$name : Prev: '$syntax($name)'  New: '$newsyntax'"
+                    #}
+                    set syntax($name) $newsyntax
+                }
             }
+        } else {
+            #decho "Syntax for '$name' : '$newsyntax'"
+            set syntax($name) $newsyntax
         }
-    } else {
-        #decho "Syntax for '$name' : '$newsyntax'"
-        set syntax($name) $newsyntax
     }
 
     # Update known globals with those that were set in the proc.
