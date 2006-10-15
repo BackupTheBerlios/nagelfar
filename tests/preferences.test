@@ -1,0 +1,79 @@
+#------------------------------------------------------------*- tcl -*-
+# Tests for Nagelfar's preferences
+#----------------------------------------------------------------------
+# $Revision$
+#----------------------------------------------------------------------
+
+test preferences-1.1 {
+    Command line flags, -strictappend
+} -body {
+    createTestFile {
+        set apa bepa
+        lappend apa hej hopp
+        lappend cepa hej hopp
+    }
+    set res [execTestFile]
+    append res [execTestFile -flags -strictappend]
+} -returnCodes 0 -result {%%%%Line   4: E Unknown variable "cepa"}
+
+test preferences-1.2 {
+    Command line flags, -strictappend
+} -body {
+    createTestFile {
+        set apa bepa
+        append apa hej hopp
+        append cepa hej hopp
+    }
+    set res [execTestFile]
+    append res [execTestFile -flags -strictappend]
+} -returnCodes 0 -result {%%%%Line   4: E Unknown variable "cepa"}
+
+test preferences-2.1 {
+    Command line flags, -tab
+} -body {
+    createTestFile "
+        if {1} {
+            set bepa apa
+        }
+    "
+    set res [list [execTestFile -tab a]]
+    lappend res [execTestFile -tab 1]
+    lappend res [execTestFile -tab 21]
+} -returnCodes 0 -result {{Bad tab value 'a'} {Bad tab value '1'} {Bad tab value '21'}}
+
+test preferences-2.2 {
+    Command line flags, -tab
+} -body {
+    createTestFile "
+        \tif {1} {
+            set bepa apa
+        \t}
+    "
+    set res [list [execTestFile -tab 2]]
+    lappend res [execTestFile -tab 4]
+} -returnCodes 0 -result {%% %%}
+
+test preferences-2.3 {
+    Command line flags, -tab
+} -body {
+    createTestFile "
+        \tif {1} {
+            set bepa apa
+          }
+    "
+    set res [list [execTestFile -tab 2]]
+    lappend res [execTestFile -tab 4]
+} -returnCodes 0 -result {%% {%%Line   4: N Close brace not aligned with line 2 (12 10)}}
+
+test preferences-2.4 {
+    Command line flags, -tab
+} -body {
+    createTestFile "
+\t\t\tif {1} {
+            set bepa apa
+\t\t   \t}
+    "
+    set res [list [execTestFile -tab 2]]
+    lappend res [execTestFile -tab 4]
+    lappend res [execTestFile -tab 8]
+} -returnCodes 0 -result {{%%Line   4: N Close brace not aligned with line 2 (6 8)} %% %%}
