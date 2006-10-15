@@ -1,3 +1,16 @@
+2006-10-15
+ Added proc argument name sanity checks.
+
+2006-08-22
+ Fixed header generation bug. [Bug 8500]
+ Fixed upvar bug. [Bug 8534]
+ Fixed namespace resolution bug. [Bug 8538]
+ Fixed tkwait syntax info.
+ Check namespace eval better. [Bug 8539]
+ Fixed bad close brace alignment warning. [Bug 8537]
+ Recognise FRINK style inline comments. [FR 2540]
+ Allow level in inline filter comments.
+
 Version 1.1.4
 
 2006-07-05
