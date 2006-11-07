@@ -8,10 +8,10 @@
 # $Revision$
 
 # Autoload stuff to have them available
-catch {parray}
+catch {parray} ; catch {tk_dialog}
 foreach gurkmeja [array names auto_index] {
     if {[info procs $gurkmeja] == ""} {
-        eval $auto_index($gurkmeja)
+        catch {eval $auto_index($gurkmeja)}
     }
 }
 unset gurkmeja
