@@ -1,10 +1,10 @@
 # Automatically generated syntax database.
-# Generated with syntaxbuild Revision: 1.27 
+# Generated with syntaxbuild Revision: 1.28 
 
 lappend ::dbInfo {Tcl 8.4.13 unix, Tk 8.4.13 x11}
 set ::dbTclVersion 8.4
 set ::knownGlobals {argc argv argv0 auto_index auto_oldpath auto_path env errorCode errorInfo tcl_interactive tcl_libPath tcl_library tcl_nonwordchars tcl_patchLevel tcl_pkgPath tcl_platform tcl_rcFileName tcl_version tcl_wordchars tk_library tk_patchLevel tk_strictMotif tk_version}
-set ::knownCommands {. after append array auto_execok auto_import auto_load auto_load_index auto_mkindex auto_mkindex_old auto_qualify auto_reset bell binary bind bindtags break button canvas case catch cd checkbutton clipboard clock close concat continue destroy encoding entry eof error eval event exec exit expr fblocked fconfigure fcopy file fileevent flush focus font for foreach format frame gets glob global grab grid history if image incr info interp join label labelframe lappend lindex linsert list listbox llength load lower lrange lreplace lsearch lset lsort menu menubutton message namespace open option pack package panedwindow parray pid pkg_compareExtension pkg_mkIndex place proc puts pwd radiobutton raise read regexp regsub rename return scale scan scrollbar seek selection send set socket source spinbox split string subst switch tclLdAout tclLog tclPkgSetup tclPkgUnknown tcl_endOfWord tcl_findLibrary tcl_startOfNextWord tcl_startOfPreviousWord tcl_wordBreakAfter tcl_wordBreakBefore tell text time tk tk_chooseColor tk_chooseDirectory tk_getOpenFile tk_getSaveFile tk_menuSetFocus tk_messageBox tk_popup tk_textCopy tk_textCut tk_textPaste tkwait toplevel trace unknown unset update uplevel upvar variable vwait while winfo wm}
+set ::knownCommands {. EvalAttached after append array auto_execok auto_import auto_load auto_load_index auto_mkindex auto_mkindex_old auto_qualify auto_reset bell bgerror binary bind bindtags break button canvas case catch cd checkbutton clipboard clock close concat continue destroy encoding entry eof error eval event exec exit expr fblocked fconfigure fcopy file fileevent flush focus font for foreach format frame gets glob global grab grid history if image incr info interp join label labelframe lappend lindex linsert list listbox llength load lower lrange lreplace lsearch lset lsort menu menubutton message namespace open option pack package panedwindow parray pid pkg_compareExtension pkg_mkIndex place proc puts pwd radiobutton raise read regexp regsub rename return scale scan scrollbar seek selection send set socket source spinbox split string subst switch tclLdAout tclListValidFlags tclLog tclParseConfigSpec tclPkgSetup tclPkgUnknown tcl_endOfWord tcl_findLibrary tcl_startOfNextWord tcl_startOfPreviousWord tcl_wordBreakAfter tcl_wordBreakBefore tell text time tk tk_bindForTraversal tk_bisque tk_chooseColor tk_chooseDirectory tk_dialog tk_focusFollowsMouse tk_focusNext tk_focusPrev tk_getFileType tk_getOpenFile tk_getSaveFile tk_menuBar tk_menuSetFocus tk_messageBox tk_optionMenu tk_popup tk_setPalette tk_textCopy tk_textCut tk_textPaste tkwait toplevel trace unknown unset update uplevel upvar variable vwait while winfo wm}
 set ::syntax(_obj,button) {s x*}
 set {::syntax(_obj,button cget)} o
 set {::syntax(_obj,button configure)} {o. x. p*}
@@ -73,6 +73,7 @@ set ::syntax(auto_mkindex) {r 1}
 set ::syntax(auto_mkindex_old) {r 1}
 set ::syntax(auto_qualify) 2
 set ::syntax(auto_reset) 0
+set ::syntax(bgerror) 1
 set ::syntax(binary) {s x*}
 set {::syntax(binary scan)} {x x n n*}
 set ::syntax(bindtags) {x x?}
@@ -203,7 +204,9 @@ set {::syntax(string wordend)} 2
 set {::syntax(string wordstart)} 2
 set ::syntax(subst) {o* x}
 set ::syntax(tclLdAout) {r 0 3}
+set ::syntax(tclListValidFlags) 1
 set ::syntax(tclLog) 1
+set ::syntax(tclParseConfigSpec) 4
 set ::syntax(tclPkgSetup) 4
 set ::syntax(tclPkgUnknown) {r 2 3}
 set ::syntax(tcl_endOfWord) 2
@@ -216,13 +219,23 @@ set ::syntax(tell) 1
 set ::syntax(text) {x p*}
 set ::syntax(time) {r 1 2}
 set ::syntax(tk) {s x*}
+set ::syntax(tk_bindForTraversal) {r 0}
+set ::syntax(tk_bisque) 0
 set ::syntax(tk_chooseColor) p*
 set ::syntax(tk_chooseDirectory) p*
+set ::syntax(tk_dialog) {r 5}
+set ::syntax(tk_focusFollowsMouse) 0
+set ::syntax(tk_focusNext) 1
+set ::syntax(tk_focusPrev) 1
+set ::syntax(tk_getFileType) 0
 set ::syntax(tk_getOpenFile) p*
 set ::syntax(tk_getSaveFile) p*
+set ::syntax(tk_menuBar) {r 0}
 set ::syntax(tk_menuSetFocus) 1
 set ::syntax(tk_messageBox) p*
+set ::syntax(tk_optionMenu) {r 3}
 set ::syntax(tk_popup) {r 3 4}
+set ::syntax(tk_setPalette) {r 0}
 set ::syntax(tk_textCopy) 1
 set ::syntax(tk_textCut) 1
 set ::syntax(tk_textPaste) 1
