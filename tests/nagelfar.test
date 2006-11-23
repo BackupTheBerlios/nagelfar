@@ -324,15 +324,26 @@ test nagelfar-6.1 {
     execTestFile
 } -result {%%Line   2: E Bad expression: can't use empty string as operand of "+"}
 
-test nagelfar-6.2 {
+test nagelfar-6.2.1  {
     Expression checking
-} -body {
+} -constraints runin84 -body {
     createTestFile {
         set apa 1
         expr {1 + $apa /}
     }
     execTestFile
 } -result {%%Line   3: E Bad expression: premature end of expression}
+
+test nagelfar-6.2.2 {
+    Expression checking
+} -constraints runin85 -body {
+    createTestFile {
+        set apa 1
+        expr {1 + $apa /}
+    }
+    execTestFile
+} -result {%%Line   3: E Bad expression: missing operand at _@_
+in expression "1 + $dummy /_@_"}
 
 test nagelfar-6.3 {
     Expression checking
