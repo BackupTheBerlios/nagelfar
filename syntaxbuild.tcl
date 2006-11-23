@@ -110,7 +110,7 @@ proc buildDb {ch} {
     }
 
     puts $ch [list lappend ::dbInfo $dbstring]
-    puts $ch [list set ::dbTclVersion [package present Tcl]]
+    puts $ch [list set ::dbTclVersion $::tcl_version]
     puts $ch [list set ::knownGlobals $::kG]
     puts $ch [list set ::knownCommands $::kC]
 
