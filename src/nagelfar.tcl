@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.1.5 2006-10-15"
+set version "Version 1.1.5+ 2006-11-23"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -65,7 +65,7 @@ if {[info exists ::starkit::topdir]} {
 # 1 constant
 # 2 braced
 # 4 quoted
-# 8 {expand}-ed
+# 8 {*}-expanded
 
 # Moved out message handling to make it more flexible
 proc echo {str {info 0}} {
@@ -295,7 +295,18 @@ proc scanWord {str len index i} {
     set c [string index $str $i]
 
     if {$c eq "\{" && $::Nagelfar(allowExpand)} {
-        if {[string range $str $i [expr {$i + 7}]] eq "{expand}"} {
+        if {[string range $str $i [expr {$i + 2}]] eq "{*}"} {
+            set ni [expr {$i + 3}]
+            set nc [string index $str $ni]
+            if {![string is space $nc]} {
+                # Non-space detected, it is expansion
+                set c $nc
+                set i $ni
+                set si2 $i
+            } else {
+                errorMsg N "Standalone {*} can be confusing. I recommend \"*\"." $i
+            }
+        } elseif {[string range $str $i [expr {$i + 7}]] eq "{expand}"} {
             set ni [expr {$i + 8}]
             set nc [string index $str $ni]
             if {![string is space $nc]} {
@@ -1411,9 +1422,18 @@ proc parseStatement {statement index knownVarsName} {
     foreach word $words index $indices {
         set ws 0
         set wtype ""
-        if {[string length $word] > 8 && [string match "{expand}*" $word]} {
+        if {[string length $word] > 3 && [string match "{\\*}*" $word]} {
+            set ws 8
+            set word [string range $word 3 end]
+        } elseif {[string length $word] > 8 && \
+                [string match "{expand}*" $word]} {
             set ws 8
             set word [string range $word 8 end]
+            if {$::Nagelfar(allowOldExpand)} {
+                errorMsg W "Obsolete {expand} syntax. Use {*}." $index
+            } else {
+                errorMsg E "Obsolete {expand} syntax. Use {*}." $index
+            }
         }
         set char [string index $word 0]
         if {[string equal $char "\{"]} {
@@ -2906,15 +2926,22 @@ proc loadDatabases {} {
     } else {
         set ::Nagelfar(dbTclVersion) [package present Tcl]
     }
-    # {expand} requires that Nagelfar is run in 8.5 since the checks for
-    # it does not work otherwise.
+    # {*} expansion requires that Nagelfar is run in 8.5 since the checks
+    # for it does not work otherwise.
     # It also naturally requires an 8.5 database to indicate that it is
     # checking 8.5 scripts
+    set ::Nagelfar(allowExpand) 0
+    set ::Nagelfar(allowOldExpand) 0
     if {[package vcompare $::Nagelfar(dbTclVersion) 8.5] >= 0 && \
-            [package vcompare [package present Tcl] 8.5] >= 0} {
-        set ::Nagelfar(allowExpand) 1
-    } else {
-        set ::Nagelfar(allowExpand) 0
+            [package vcompare $::tcl_version 8.5] >= 0} {
+        ##nagelfar ignore
+        if {![catch {list {expand}{hej}}]} {
+            set ::Nagelfar(allowExpand) 1
+            set ::Nagelfar(allowOldExpand) 1
+        ##nagelfar ignore
+        } elseif {![catch {list {*}{hej}}]} {
+            set ::Nagelfar(allowExpand) 1
+        }
     }
 
     catch {unset ::syntax}
