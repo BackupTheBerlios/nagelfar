@@ -1,3 +1,7 @@
+2006-11-23
+ Support {*} syntax.
+ Fixed bug in switch check. [Bug 9147]
+
 Version 1.1.5
 
 2006-10-15

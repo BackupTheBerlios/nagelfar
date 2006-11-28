@@ -734,3 +734,14 @@ test nagelfar-19.5 {
     }
     execTestFile
 } -result {%%Line   4: E Bad option -nocasd to string match}
+
+test nagelfar-20.1 {
+    switch
+} -body {
+    createTestFile {
+        set x 1
+        set y {1 5}
+        set apa [switch $x $y]
+    }
+    execTestFile
+} -result {%%}

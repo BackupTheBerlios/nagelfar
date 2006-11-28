@@ -1844,20 +1844,26 @@ proc parseStatement {statement index knownVarsName} {
 		set ws [lindex $wordstatus $i]
 		set ix [lindex $indices $i]
 
-		set swargv [splitList $arg $ix swindices]
-		if {[llength $swargv] % 2 == 1} {
-		    errorMsg E "Odd number of elements in last argument to\
-                            switch." $ix
-		    return
-		}
-		if {[llength $swargv] == 0} {
-		    errorMsg W "Empty last argument to switch." $ix
-		    return
-		}
-		set swwordst {}
-		foreach word $swargv {
-		    lappend swwordst 1
-		}
+                if {($ws & 1) == 1} {
+                    set swargv [splitList $arg $ix swindices]
+                    if {[llength $swargv] % 2 == 1} {
+                        errorMsg E "Odd number of elements in last argument to\
+                                switch." $ix
+                        return
+                    }
+                    if {[llength $swargv] == 0} {
+                        errorMsg W "Empty last argument to switch." $ix
+                        return
+                    }
+                    set swwordst {}
+                    foreach word $swargv {
+                        lappend swwordst 1
+                    }
+                } else {
+                    set swwordst {}
+                    set swargv {}
+                    set swindices {}
+                }
 	    } elseif {$left % 2 == 1} {
 		WA
 		return
