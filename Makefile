@@ -4,6 +4,8 @@
 # $Revision$
 #----------------------------------------------------------------------
 
+VERSION = 116
+
 # Path to the TclKits used for creating StarPacks.
 TCLKIT = /home/peter/tclkit
 TCLKIT_LINUX   = $(TCLKIT)/tclkit-linux-x86
@@ -160,13 +162,13 @@ db: syntaxdb.tcl $(DB2NAME)
 wrap: base
 	sdx wrap nagelfar.kit
 
-wrapexe:
+wrapexe: base
 	@\rm -f nagelfar nagelfar.exe nagelfar.solaris
 	sdx wrap nagelfar.linux   -runtime $(TCLKIT_LINUX)
 	sdx wrap nagelfar.solaris -runtime $(TCLKIT_SOLARIS)
 	sdx wrap nagelfar.exe     -runtime $(TCLKIT_WIN)
 
-distrib:
+distrib: base
 	@\rm -f nagelfar.tar.gz
 	@tar --directory=..  --exclude CVS -zcvf nagelfar.tar.gz nagelfar/COPYING \
 		nagelfar/README.txt nagelfar/syntaxbuild.tcl nagelfar/syntaxdb.tcl \
@@ -175,3 +177,11 @@ distrib:
 		nagelfar/doc
 
 release: base distrib wrap wrapexe
+	@mv nagelfar.tar.gz nagelfar$(VERSION).tar.gz
+	@gzip nagelfar.linux
+	@mv nagelfar.linux.gz nagelfar$(VERSION).linux.gz
+	@zip nagelfar$(VERSION).win.zip nagelfar.exe
+	@gzip nagelfar.solaris
+	@mv nagelfar.solaris.gz nagelfar$(VERSION).solaris.gz
+	@gzip nagelfar.kit
+	@mv nagelfar.kit.gz nagelfar$(VERSION).kit.gz
