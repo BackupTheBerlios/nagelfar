@@ -155,3 +155,23 @@ test inline-6.3 {
     }
     execTestFile
 } -match glob -result {%%Line   8: E Unknown variable*}
+
+test inline-7.1 {
+    Inline in syntax file
+} -body {
+    # TODO: pass on global variable type info between files
+    createTestFile {
+        ##nagelfar syntax apa x n
+        ##nagelfar variable Gurka1
+        variable Gurka2 1
+        set Gurka3 1
+    } 1
+    createTestFile {
+        set x 1
+        apa 5 x
+        puts $Gurka1
+        puts $Gurka2
+        puts $Gurka3
+    }
+    execTestFile
+} -result {xx%%}
