@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.1.5+ 2006-11-23"
+set version "Version 1.1.5+ 2006-11-29"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -278,6 +278,19 @@ proc pushNamespace {ns} {
 
 proc popNamespace {} {
     set ::Nagelfar(namespaces) [lrange $::Nagelfar(namespaces) 0 end-1]
+}
+
+# Handle a stack of current procedures.
+proc currentProc {} {
+    lindex $::Nagelfar(procs) end
+}
+
+proc pushProc {p} {
+    lappend ::Nagelfar(procs) $p
+}
+
+proc popProc {} {
+    set ::Nagelfar(procs) [lrange $::Nagelfar(procs) 0 end-1]
 }
 
 # Return the index of the first non whitespace char following index "i".
@@ -1324,9 +1337,15 @@ proc markVariable {var ws wordtype check index knownVarsName typeName} {
 	return 0
     } else {
 	if {![info exists knownVars(known,$varBase)]} {
-            set knownVars(known,$varBase) 1
-            set knownVars(local,$varBase) 1
-            set knownVars(type,$varBase)  $type
+            if {[currentProc] ne ""} {
+                set knownVars(known,$varBase) 1
+                set knownVars(local,$varBase) 1
+                set knownVars(type,$varBase)  $type
+            } else {
+                set knownVars(known,$varBase) 1
+                set knownVars(namespace,$varBase) [currentNamespace]
+                set knownVars(type,$varBase)  $type
+            }
         }
         if {1 || $type ne ""} {
             # Warn if changed?? FIXA
@@ -2367,7 +2386,9 @@ proc parseProc {argv indices} {
 #    decho "Note: parsing procedure $name"
     if {!$::Nagelfar(firstpass)} {
         pushNamespace $ns
+        pushProc $name
         parseBody $body [lindex $indices 2] knownVars
+        popProc
         popNamespace
     }
     set ::instrumenting([lindex $indices 2]) 1
