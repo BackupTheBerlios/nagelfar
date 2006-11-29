@@ -20,8 +20,12 @@ if {$argc > 0} {
     eval tcltest::configure $argv
 }
 
-proc createTestFile {scr} {
-    set ch [open _testfile_ w]
+proc createTestFile {scr {syntaxfile 0}} {
+    if {$syntaxfile} {
+        set ch [open _testfile_.syntax w]
+    } else {
+        set ch [open _testfile_ w]
+    }
     puts $ch $scr
     close $ch
 }
@@ -43,11 +47,14 @@ proc execTestFile {args} {
             [array get xx] $flags] ;#2>@ stderr
     # Simplify result by shortening standard result
     regsub {Checking file _testfile_\n?} $res "%%" res
+    regsub {Parsing file _testfile_.syntax\n?} $res "xx" res
+    file delete -force _testfile_.syntax
     return $res
 }    
 
 proc cleanupTestFile {} {
     file delete -force _testfile_
+    file delete -force _testfile_.syntax
 }
 
 tcltest::testsDirectory $thisDir
