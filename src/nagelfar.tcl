@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.1.5+ 2006-11-29"
+set version "Version 1.1.6 2006-12-03"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -733,6 +733,17 @@ proc parseVar {str len index iName knownVarsName} {
 
     if {[string match ::* $var]} {
 	# Skip qualified names until we handle namespace better. FIXA
+        # Handle types for constant names
+        if {!$vararr} {
+            set full $var
+        } elseif {$varindexconst} {
+            set full ${var}($varindex)
+        } else {
+            set full ""
+        }
+        if {$full ne "" && [info exists knownVars(type,$full)]} {
+            return $knownVars(type,$full)
+        }
 	return ""
     }
     if {![info exists knownVars(known,$var)]} {
@@ -2922,6 +2933,9 @@ proc addFilter {pat {reapply 0}} {
 
 # Load syntax database using safe interpreter
 proc loadDatabases {} {
+    if {[interp exists loadinterp]} {
+        interp delete loadinterp
+    }
     interp create -safe loadinterp
     interp expose loadinterp source
     interp alias {} _ipsource loadinterp source
@@ -2930,6 +2944,7 @@ proc loadDatabases {} {
     interp alias {} _iparray  loadinterp array
 
     foreach f $::Nagelfar(db) {
+        # FIXA: catch?
         _ipsource $f
     }
 
