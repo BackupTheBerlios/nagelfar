@@ -15,7 +15,7 @@ Nagelfar requires Tcl 8.4.
 If you do not have 8.4, you can run Nagelfar as a Starkit
 using a 8.4 based Tclkit. http://wiki.tcl.tk/tclkit
 
-To check 8.5 code with {expand}, Nagelfar must be run with 8.5.
+To check 8.5 code with {*} syntax, Nagelfar must be run with 8.5.
 
 
 USAGE
@@ -43,6 +43,7 @@ The GUI lists database files and lets you select one to use.
 
 The other list shows files to check. With multiple files all are checked
 in the same way as with multiple files on a command line.
+You can reorder files with shift-up/down keys.
 
 By doubleclicking on an error the file and line is viewed in a simple
 editor. You can edit and save the file.
@@ -50,8 +51,10 @@ editor. You can edit and save the file.
 
 FEEDBACK
 
-Bugs and suggestions can be sent to:
-peter.spjuth@space.se
+Bugs and suggestions can be added to the trackers at:
+http://nagelfar.berlios.de/
+
+You can also mail peter.spjuth@space.se
 (I also accept beer and teddybears, or just a note saying you use the
 tool so I get encouraged to work on it.)
 
