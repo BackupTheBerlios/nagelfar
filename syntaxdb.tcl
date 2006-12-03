@@ -1,5 +1,5 @@
 # Automatically generated syntax database.
-# Generated with syntaxbuild Revision: 1.29 
+# Generated with syntaxbuild Revision: 1.30 
 
 lappend ::dbInfo {Tcl 8.4.15 unix, Tk 8.4.15 x11}
 set ::dbTclVersion 8.4
@@ -29,6 +29,7 @@ set {::syntax(_obj,labelframe configure)} {o. x. p*}
 set ::syntax(_obj,listbox) {s x*}
 set {::syntax(_obj,listbox cget)} o
 set {::syntax(_obj,listbox configure)} {o. x. p*}
+set {::syntax(_obj,listbox selection)} {s x x?}
 set ::syntax(_obj,menu) {s x*}
 set {::syntax(_obj,menu cget)} o
 set {::syntax(_obj,menu configure)} {o. x. p*}
@@ -298,6 +299,7 @@ set ::subCmd(_obj,frame) {cget configure}
 set ::subCmd(_obj,label) {cget configure}
 set ::subCmd(_obj,labelframe) {cget configure}
 set ::subCmd(_obj,listbox) {activate bbox cget configure curselection delete get index insert itemcget itemconfigure nearest scan see selection size xview yview}
+set {::subCmd(_obj,listbox selection)} {anchor clear includes set}
 set ::subCmd(_obj,menu) {activate add cget clone configure delete entrycget entryconfigure index insert invoke post postcascade type unpost yposition}
 set ::subCmd(_obj,menubutton) {cget configure}
 set ::subCmd(_obj,panedwindow) {add cget configure forget identify panecget paneconfigure panes proxy sash}

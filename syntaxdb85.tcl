@@ -1,5 +1,5 @@
 # Automatically generated syntax database.
-# Generated with syntaxbuild Revision: 1.29 
+# Generated with syntaxbuild Revision: 1.30 
 
 lappend ::dbInfo {Tcl 8.5a6 unix, Tk 8.5a6 x11}
 set ::dbTclVersion 8.5
@@ -31,6 +31,7 @@ set {::syntax(_obj,labelframe configure)} {o. x. p*}
 set ::syntax(_obj,listbox) {s x*}
 set {::syntax(_obj,listbox cget)} o
 set {::syntax(_obj,listbox configure)} {o. x. p*}
+set {::syntax(_obj,listbox selection)} {s x x?}
 set ::syntax(_obj,menu) {s x*}
 set {::syntax(_obj,menu cget)} o
 set {::syntax(_obj,menu configure)} {o. x. p*}
@@ -313,6 +314,7 @@ set ::subCmd(_obj,frame) {cget configure}
 set ::subCmd(_obj,label) {cget configure}
 set ::subCmd(_obj,labelframe) {cget configure}
 set ::subCmd(_obj,listbox) {activate bbox cget configure curselection delete get index insert itemcget itemconfigure nearest scan see selection size xview yview}
+set {::subCmd(_obj,listbox selection)} {anchor clear includes set}
 set ::subCmd(_obj,menu) {activate add cget clone configure delete entrycget entryconfigure index insert invoke post postcascade type unpost yposition}
 set ::subCmd(_obj,menubutton) {cget configure}
 set ::subCmd(_obj,panedwindow) {add cget configure forget identify panecget paneconfigure panes proxy sash}
@@ -324,7 +326,7 @@ set ::subCmd(_obj,text) {bbox cget compare configure count debug delete dlineinf
 set ::subCmd(_obj,toplevel) {cget configure}
 set ::subCmd(array) {anymore donesearch exists get names nextelement set size startsearch statistics unset}
 set ::subCmd(binary) {format scan}
-set ::subCmd(chan) {blocked close configure copy create eof event flush gets names postevent puts read seek tell truncate}
+set ::subCmd(chan) {blocked close configure copy create eof event flush gets names pending postevent puts read seek tell truncate}
 set ::subCmd(clipboard) {append clear get}
 set ::subCmd(clock) {add clicks format microseconds milliseconds scan seconds}
 set ::subCmd(dict) {append create exists filter for get incr info keys lappend merge remove replace set size unset update values with}
@@ -334,7 +336,7 @@ set ::subCmd(file) {atime attributes channels copy delete dirname executable exi
 set ::subCmd(font) {actual configure create delete families measure metrics names}
 set ::subCmd(history) {add change clear event info keep nextid redo}
 set ::subCmd(image) {create delete height inuse names type types width}
-set ::subCmd(info) {args body cmdcount commands complete default exists functions globals hostname level library loaded locals nameofexecutable patchlevel procs script sharedlibextension tclversion vars}
+set ::subCmd(info) {args body cmdcount commands complete default exists frame functions globals hostname level library loaded locals nameofexecutable patchlevel procs script sharedlibextension tclversion vars}
 set ::subCmd(interp) {alias aliases bgerror create delete eval exists expose hidden hide invokehidden issafe limit marktrusted recursionlimit share slaves target transfer}
 set ::subCmd(namespace) {children code current delete ensemble eval exists export forget import inscope origin parent path qualifiers tail unknown upvar which}
 set ::subCmd(option) {add clear get readfile}
