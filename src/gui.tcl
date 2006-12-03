@@ -121,6 +121,25 @@ proc removeFile {} {
     }
 }
 
+# Move a file up/down file list
+proc moveFile {dir} {
+    # FIXA: Allow this line on a global level or in .syntax file
+    ##nagelfar variable ::Nagelfar(fileWin) _obj,listbox
+    set ix [lindex [$::Nagelfar(fileWin) curselection] 0]
+    if {$ix eq ""} return
+    set len [llength $::Nagelfar(files)]
+    set nix [expr {$ix + $dir}]
+    if {$nix < 0 || $nix >= $len} return
+    set item [lindex $::Nagelfar(files) $ix]
+    set ::Nagelfar(files) [lreplace $::Nagelfar(files) $ix $ix]
+    set ::Nagelfar(files) [linsert $::Nagelfar(files) $nix $item]
+    $::Nagelfar(fileWin) see $nix 
+    $::Nagelfar(fileWin) selection clear 0 end
+    $::Nagelfar(fileWin) selection set $nix
+    $::Nagelfar(fileWin) selection anchor $nix
+    $::Nagelfar(fileWin) activate $nix
+}
+
 # File drop using TkDnd
 proc fileDropFile {files} {
     foreach file $files {
@@ -438,6 +457,8 @@ proc makeWin {} {
     set ::Nagelfar(fileWin) $lb
     bind $lb <Key-Delete> "removeFile"
     bind $lb <Button-1> [list focus $lb]
+    bind $lb <Shift-Up> {moveFile -1}
+    bind $lb <Shift-Down> {moveFile 1}
 
     grid .ff.l  .ff.bd .ff.b -sticky w -padx 2 -pady 2
     grid .ff.lb -      -     -sticky news
