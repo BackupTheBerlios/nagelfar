@@ -36,6 +36,8 @@ nagelfar.vfs/lib/app-nagelfar/nagelfar.tcl:
 	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../nagelfar.tcl
 nagelfar.vfs/lib/app-nagelfar/syntaxdb.tcl:
 	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../syntaxdb.tcl
+nagelfar.vfs/lib/app-nagelfar/syntaxdb85.tcl:
+	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../syntaxdb85.tcl
 nagelfar.vfs/lib/app-nagelfar/doc:
 	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../doc
 nagelfar.vfs/lib/griffin:
@@ -49,6 +51,7 @@ nagelfar.vfs/lib/textsearch:
 
 links: nagelfar.vfs/lib/app-nagelfar/nagelfar.tcl \
 	nagelfar.vfs/lib/app-nagelfar/syntaxdb.tcl \
+	nagelfar.vfs/lib/app-nagelfar/syntaxdb85.tcl \
 	nagelfar.vfs/lib/app-nagelfar/doc \
 	nagelfar.vfs/lib/griffin \
 	nagelfar.vfs/lib/tkdnd \
@@ -76,13 +79,13 @@ nagelfar.tcl: $(CATFILES)
 spell:
 	@cat doc/*.txt | ispell -d british -l | sort -u
 
-check:
+check: nagelfar.tcl
 	@./nagelfar.tcl -strictappend nagelfar.tcl
 
 test: base
 	@./tests/all.tcl $(TESTFLAGS)
 
-test85:
+test85: base
 	@$(TCLSH85) ./tests/all.tcl $(TESTFLAGS)
 
 #----------------------------------------------------------------
@@ -171,7 +174,8 @@ wrapexe: base
 distrib: base
 	@\rm -f nagelfar.tar.gz
 	@tar --directory=..  --exclude CVS -zcvf nagelfar.tar.gz nagelfar/COPYING \
-		nagelfar/README.txt nagelfar/syntaxbuild.tcl nagelfar/syntaxdb.tcl \
+		nagelfar/README.txt nagelfar/syntaxbuild.tcl \
+		nagelfar/syntaxdb.tcl nagelfar/syntaxdb85.tcl \
 		nagelfar/nagelfar.syntax nagelfar/nagelfar.tcl \
 		nagelfar/misctests/test.tcl nagelfar/misctests/test.syntax \
 		nagelfar/doc
@@ -183,5 +187,4 @@ release: base distrib wrap wrapexe
 	@zip nagelfar$(VERSION).win.zip nagelfar.exe
 	@gzip nagelfar.solaris
 	@mv nagelfar.solaris.gz nagelfar$(VERSION).solaris.gz
-	@gzip nagelfar.kit
-	@mv nagelfar.kit.gz nagelfar$(VERSION).kit.gz
+	@mv nagelfar.kit nagelfar$(VERSION).kit
