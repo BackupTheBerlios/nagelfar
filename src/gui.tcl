@@ -1,4 +1,23 @@
 #----------------------------------------------------------------------
+#  Nagelfar, a syntax checker for Tcl.
+#  Copyright (c) 1999-2006, Peter Spjuth  (peter.spjuth@space.se)
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; see the file COPYING.  If not, write to
+#  the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+#  Boston, MA 02111-1307, USA.
+#
+#----------------------------------------------------------------------
 # gui.tcl
 #----------------------------------------------------------------------
 # $Revision$
@@ -25,13 +44,22 @@ proc exitApp {} {
 
 # Browse for and add a syntax database file
 proc addDbFile {} {
-    set apa [tk_getOpenFile -title "Select db file"]
+    if {[info exists ::Nagelfar(lastdbdir)]} {
+        set initdir $::Nagelfar(lastdbdir) 
+    } elseif {[info exists ::Nagelfar(lastdir)]} {
+        set initdir $::Nagelfar(lastdir)
+    } else {
+        set initdir [pwd]
+    }
+    set apa [tk_getOpenFile -title "Select db file" \
+            -initialdir $initdir]
     if {$apa == ""} return
 
     lappend ::Nagelfar(db) $apa
     lappend ::Nagelfar(allDb) $apa
     lappend ::Nagelfar(allDbView) $apa
     updateDbSelection 1
+    set ::Nagelfar(lastdbdir) [file dirname $apa]
 }
 
 # File drop using TkDnd
@@ -58,13 +86,30 @@ proc removeDbFile {} {
 
 # Browse for and add a file to check.
 proc addFile {} {
+    if {[info exists ::Nagelfar(lastdir)]} {
+        set initdir $::Nagelfar(lastdir)
+    } elseif {[info exists ::Nagelfar(lastdbdir)]} {
+        set initdir $::Nagelfar(lastdbdir) 
+    } else {
+        set initdir [pwd]
+    }
     set apa [tk_getOpenFile -title "Select file(s) to check" \
+            -initialdir $initdir \
             -defaultextension .tcl -multiple 1 \
             -filetypes {{{Tcl File} {.tcl}} {{All Files} {.*}}}]
     if {[llength $apa] == 0} return
 
+    set newpwd [file dirname [lindex $apa 0]]
+    if {[llength $::Nagelfar(files)] == 0 && $newpwd ne [pwd]} {
+        set res [tk_messageBox -icon question -type yesno -message \
+                "Change current directory to $newpwd?"]
+        if {$res eq "yes"} {
+            cd $newpwd
+        }
+    }
     foreach file $apa {
         lappend ::Nagelfar(files) [fileRelative [pwd] $file]
+        set ::Nagelfar(lastdir) [file dirname $file]
     }
 }
 
