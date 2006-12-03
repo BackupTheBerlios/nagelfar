@@ -304,14 +304,14 @@ if {![info exists gurka]} {
 
     doCheck
     #_dumplogme
-    if {[array size _stats] > 0} {
-        array set _apa [array get _stats]
-        parray _apa
-        set sum 0
-        foreach name [array names _apa] {
-            incr sum $_apa($name)
-        }
-        puts "Total $sum"
-    }
+    #if {[array size _stats] > 0} {
+    #    array set _apa [array get _stats]
+    #    parray _apa
+    #    set sum 0
+    #    foreach name [array names _apa] {
+    #        incr sum $_apa($name)
+    #    }
+    #    puts "Total $sum"
+    #}
     exit
 }
