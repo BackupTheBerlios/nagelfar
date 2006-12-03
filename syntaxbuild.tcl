@@ -399,6 +399,13 @@ proc buildDb {ch} {
             set option(_obj,$class\ configure) $option($class)
             set syntax(_obj,$class\ cget) "o"
             set option(_obj,$class\ cget) $option($class)
+            switch $class {
+                listbox {
+                    set syntax(_obj,$class\ selection) "s x x?"
+                    set subCmd(_obj,$class\ selection) \
+                            [getSubCmds .w selection gurkmeja 0]
+                }
+            }
         }
     }
 
