@@ -107,6 +107,19 @@ test inline-5.2 {
     execTestFile
 } -result {%%}
 
+test inline-5.3 {
+    variable, with type, fully qualified
+} -body {
+    createTestFile {
+        ##nagelfar variable ::Gurka varName
+        button .b -textvariable $::Gurka
+
+        ##nagelfar variable ::Gurka2(hippo) varName
+        button .b -textvariable $::Gurka2(hippo)
+    }
+    execTestFile
+} -result {%%}
+
 test inline-6.1 {
     ignore/filter
 } -body {
