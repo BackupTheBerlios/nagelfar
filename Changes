@@ -1,8 +1,17 @@
+2007-01-04
+ Check for extra quote at end of word. [Bug 9644]
+ Detect extra bracketed commands. [FR 2943]
+ Check for duplicate files in GUI. [Bug 9709]
+ More filter options on GUI. [Bug 9774][Bug 9826]
+ Corrected syntax database for regsub. [Bug 9791]
+ More fconfigure opts in syntax db. [Bug 9607]
+ Added more missing to syntax db.
+
 Version 1.1.6
 
 2006-12-03
- Remember directories between adding files. [Frq 2921]
- Allow to move files in file list with shift-up/down. [Frq 2921]
+ Remember directories between adding files. [FR 2921]
+ Allow to move files in file list with shift-up/down. [FR 2921]
  Include 8.5 syntax database in distribution.
 
 2006-11-29
