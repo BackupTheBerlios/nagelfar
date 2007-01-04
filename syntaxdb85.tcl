@@ -1,10 +1,13 @@
 # Automatically generated syntax database.
-# Generated with syntaxbuild Revision: 1.30 
+# Generated with syntaxbuild Revision: 1.31 
 
 lappend ::dbInfo {Tcl 8.5a6 unix, Tk 8.5a6 x11}
 set ::dbTclVersion 8.5
 set ::knownGlobals {argc argv argv0 auto_index auto_path env errorCode errorInfo tcl_interactive tcl_library tcl_nonwordchars tcl_patchLevel tcl_pkgPath tcl_platform tcl_rcFileName tcl_version tcl_wordchars tk_library tk_patchLevel tk_strictMotif tk_version}
 set ::knownCommands {. EvalAttached WordBack WordForward after append apply array auto_execok auto_import auto_load auto_load_index auto_mkindex auto_mkindex_old auto_qualify auto_reset bell bgerror binary bind bindtags break button canvas case catch cd chan checkbutton clipboard clock close concat continue destroy dict encoding entry eof error eval event exec exit expr fblocked fconfigure fcopy file fileevent flush focus font for foreach format frame gets glob global grab grid history if image incr info interp join label labelframe lappend lassign lindex linsert list listbox llength load lower lrange lrepeat lreplace lreverse lsearch lset lsort menu menubutton message namespace open option pack package panedwindow parray pid pkg_mkIndex place proc puts pwd radiobutton raise read regexp regsub rename return scale scan scrollbar seek selection send set socket source spinbox split string subst switch tclLdAout tclListValidFlags tclLog tclParseConfigSpec tclPkgSetup tclPkgUnknown tcl_endOfWord tcl_findLibrary tcl_startOfNextWord tcl_startOfPreviousWord tcl_wordBreakAfter tcl_wordBreakBefore tell text time tk tk_bindForTraversal tk_bisque tk_chooseColor tk_chooseDirectory tk_dialog tk_focusFollowsMouse tk_focusNext tk_focusPrev tk_getFileType tk_getOpenFile tk_getSaveFile tk_menuBar tk_menuSetFocus tk_messageBox tk_optionMenu tk_popup tk_setPalette tk_textCopy tk_textCut tk_textPaste tkwait toplevel trace unknown unload unset update uplevel upvar variable vwait while winfo wm}
+set ::syntax(.) {s x*}
+set {::syntax(. cget)} o
+set {::syntax(. configure)} {o. x. p*}
 set ::syntax(WordBack) 2
 set ::syntax(WordForward) 2
 set ::syntax(_obj,button) {s x*}
@@ -38,6 +41,9 @@ set {::syntax(_obj,menu configure)} {o. x. p*}
 set ::syntax(_obj,menubutton) {s x*}
 set {::syntax(_obj,menubutton cget)} o
 set {::syntax(_obj,menubutton configure)} {o. x. p*}
+set ::syntax(_obj,message) {s x*}
+set {::syntax(_obj,message cget)} o
+set {::syntax(_obj,message configure)} {o. x. p*}
 set ::syntax(_obj,panedwindow) {s x*}
 set {::syntax(_obj,panedwindow cget)} o
 set {::syntax(_obj,panedwindow configure)} {o. x. p*}
@@ -77,6 +83,7 @@ set ::syntax(auto_mkindex) {r 1}
 set ::syntax(auto_mkindex_old) {r 1}
 set ::syntax(auto_qualify) 2
 set ::syntax(auto_reset) 0
+set ::syntax(bell) {o* x*}
 set ::syntax(bgerror) 1
 set ::syntax(binary) {s x*}
 set {::syntax(binary scan)} {x x n n*}
@@ -84,6 +91,7 @@ set ::syntax(bindtags) {x x?}
 set ::syntax(break) 0
 set ::syntax(button) {x p*}
 set ::syntax(canvas) {x p*}
+set ::syntax(case) x*
 set ::syntax(catch) {c n?}
 set ::syntax(cd) {r 0 1}
 set ::syntax(chan) {s x*}
@@ -160,11 +168,13 @@ set ::syntax(lower) {x x?}
 set ::syntax(lrange) 3
 set ::syntax(lrepeat) {r 2}
 set ::syntax(lreplace) {r 3}
+set ::syntax(lreverse) 1
 set ::syntax(lsearch) {o* x x}
 set ::syntax(lset) {n x x x*}
 set ::syntax(lsort) {o* x}
 set ::syntax(menu) {x p*}
 set ::syntax(menubutton) {x p*}
+set ::syntax(message) {x p*}
 set ::syntax(namespace) {s x*}
 set ::syntax(open) {r 1 3}
 set ::syntax(option) {s x*}
@@ -181,7 +191,7 @@ set ::syntax(radiobutton) {x p*}
 set ::syntax(raise) {x x?}
 set ::syntax(read) {r 1 2}
 set ::syntax(regexp) {o* x x n*}
-set ::syntax(regsub) {o* x x x n}
+set ::syntax(regsub) {o* x x x n?}
 set ::syntax(rename) 2
 set ::syntax(return) {p* x?}
 set ::syntax(scale) {x p*}
@@ -298,6 +308,7 @@ set ::return(lreplace) list
 set ::return(lsort) list
 set ::return(menu) _obj,menu
 set ::return(menubutton) _obj,menubutton
+set ::return(message) _obj,message
 set ::return(panedwindow) _obj,panedwindow
 set ::return(radiobutton) _obj,radiobutton
 set ::return(scale) _obj,scale
@@ -306,6 +317,7 @@ set ::return(spinbox) _obj,spinbox
 set ::return(text) _obj,text
 set ::return(toplevel) _obj,toplevel
 
+set ::subCmd(.) {cget configure}
 set ::subCmd(_obj,button) {cget configure flash invoke}
 set ::subCmd(_obj,canvas) {addtag bbox bind canvasx canvasy cget configure coords create dchars delete dtag find focus gettags icursor index insert itemcget itemconfigure lower move postscript raise scale scan select type xview yview}
 set ::subCmd(_obj,checkbutton) {cget configure deselect flash invoke select toggle}
@@ -315,8 +327,9 @@ set ::subCmd(_obj,label) {cget configure}
 set ::subCmd(_obj,labelframe) {cget configure}
 set ::subCmd(_obj,listbox) {activate bbox cget configure curselection delete get index insert itemcget itemconfigure nearest scan see selection size xview yview}
 set {::subCmd(_obj,listbox selection)} {anchor clear includes set}
-set ::subCmd(_obj,menu) {activate add cget clone configure delete entrycget entryconfigure index insert invoke post postcascade type unpost yposition}
+set ::subCmd(_obj,menu) {activate add cget clone configure delete entrycget entryconfigure index insert invoke post postcascade type unpost xposition yposition}
 set ::subCmd(_obj,menubutton) {cget configure}
+set ::subCmd(_obj,message) {cget configure}
 set ::subCmd(_obj,panedwindow) {add cget configure forget identify panecget paneconfigure panes proxy sash}
 set ::subCmd(_obj,radiobutton) {cget configure deselect flash invoke select}
 set ::subCmd(_obj,scale) {cget configure coords get identify set}
@@ -381,6 +394,9 @@ set {::option(_obj,menu configure)} {-activebackground -activeborderwidth -activ
 set {::option(_obj,menubutton cget)} {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -cursor -direction -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -indicatoron -justify -menu -padx -pady -relief -compound -state -takefocus -text -textvariable -underline -width -wraplength}
 set {::option(_obj,menubutton configure)} {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -cursor -direction -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -indicatoron -justify -menu -padx -pady -relief -compound -state -takefocus -text -textvariable -underline -width -wraplength}
 set {::option(_obj,menubutton configure -textvariable)} n
+set {::option(_obj,message cget)} {-anchor -aspect -background -bd -bg -borderwidth -cursor -fg -font -foreground -highlightbackground -highlightcolor -highlightthickness -justify -padx -pady -relief -takefocus -text -textvariable -width}
+set {::option(_obj,message configure)} {-anchor -aspect -background -bd -bg -borderwidth -cursor -fg -font -foreground -highlightbackground -highlightcolor -highlightthickness -justify -padx -pady -relief -takefocus -text -textvariable -width}
+set {::option(_obj,message configure -textvariable)} n
 set {::option(_obj,panedwindow cget)} {-background -bd -bg -borderwidth -cursor -handlepad -handlesize -height -opaqueresize -orient -relief -sashcursor -sashpad -sashrelief -sashwidth -showhandle -width}
 set {::option(_obj,panedwindow configure)} {-background -bd -bg -borderwidth -cursor -handlepad -handlesize -height -opaqueresize -orient -relief -sashcursor -sashpad -sashrelief -sashwidth -showhandle -width}
 set {::option(_obj,radiobutton cget)} {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -indicatoron -justify -offrelief -overrelief -padx -pady -relief -selectcolor -selectimage -state -takefocus -text -textvariable -tristateimage -tristatevalue -underline -value -variable -width -wraplength}
@@ -399,6 +415,7 @@ set {::option(_obj,text cget)} {-autoseparators -background -bd -bg -blockcursor
 set {::option(_obj,text configure)} {-autoseparators -background -bd -bg -blockcursor -borderwidth -cursor -endline -exportselection -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -inactiveselectbackground -insertbackground -insertborderwidth -insertofftime -insertontime -insertwidth -maxundo -padx -pady -relief -selectbackground -selectborderwidth -selectforeground -setgrid -spacing1 -spacing2 -spacing3 -startline -state -tabs -tabstyle -takefocus -undo -width -wrap -xscrollcommand -yscrollcommand}
 set {::option(_obj,toplevel cget)} {-bd -borderwidth -class -menu -relief -screen -use -background -bg -colormap -container -cursor -height -highlightbackground -highlightcolor -highlightthickness -padx -pady -takefocus -visual -width}
 set {::option(_obj,toplevel configure)} {-bd -borderwidth -class -menu -relief -screen -use -background -bg -colormap -container -cursor -height -highlightbackground -highlightcolor -highlightthickness -padx -pady -takefocus -visual -width}
+set ::option(bell) {-displayof -nice}
 set ::option(button) {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -default -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -justify -overrelief -padx -pady -relief -repeatdelay -repeatinterval -state -takefocus -text -textvariable -underline -width -wraplength}
 set {::option(button -textvariable)} n
 set ::option(canvas) {-background -bd -bg -borderwidth -closeenough -confine -cursor -height -highlightbackground -highlightcolor -highlightthickness -insertbackground -insertborderwidth -insertofftime -insertontime -insertwidth -offset -relief -scrollregion -selectbackground -selectborderwidth -selectforeground -state -takefocus -width -xscrollcommand -xscrollincrement -yscrollcommand -yscrollincrement}
@@ -410,8 +427,8 @@ set {::option(clock format)} {-format -gmt -locale -timezone}
 set {::option(clock scan)} {-base -format -gmt -locale -timezone}
 set ::option(entry) {-background -bd -bg -borderwidth -cursor -disabledbackground -disabledforeground -exportselection -fg -font -foreground -highlightbackground -highlightcolor -highlightthickness -insertbackground -insertborderwidth -insertofftime -insertontime -insertwidth -invalidcommand -invcmd -justify -readonlybackground -relief -selectbackground -selectborderwidth -selectforeground -show -state -takefocus -textvariable -validate -validatecommand -vcmd -width -xscrollcommand}
 set {::option(entry -textvariable)} n
-set ::option(exec) {-- -keepnewline}
-set ::option(fconfigure) {-blocking -buffering -buffersize -encoding -eofchar -handshake -lasterror -mode -pollinterval -queue -sysbuffer -timeout -translation -ttycontrol -ttystatus -xchar}
+set ::option(exec) {-- -ignorestderr -keepnewline}
+set ::option(fconfigure) {-blocking -buffering -buffersize -encoding -eofchar -error -handshake -lasterror -mode -peername -pollinterval -queue -sockname -sysbuffer -timeout -translation -ttycontrol -ttystatus -xchar}
 set ::option(fcopy) {-command -size}
 set {::option(file attributes)} {-group -owner -permissions}
 set ::option(focus) {-displayof -force -lastfor}
@@ -435,6 +452,8 @@ set {::option(lsort -index)} 1
 set ::option(menu) {-activebackground -activeborderwidth -activeforeground -background -bd -bg -borderwidth -cursor -disabledforeground -fg -font -foreground -postcommand -relief -selectcolor -takefocus -tearoff -tearoffcommand -title -type}
 set ::option(menubutton) {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -cursor -direction -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -indicatoron -justify -menu -padx -pady -relief -compound -state -takefocus -text -textvariable -underline -width -wraplength}
 set {::option(menubutton -textvariable)} n
+set ::option(message) {-anchor -aspect -background -bd -bg -borderwidth -cursor -fg -font -foreground -highlightbackground -highlightcolor -highlightthickness -justify -padx -pady -relief -takefocus -text -textvariable -width}
+set {::option(message -textvariable)} n
 set ::option(panedwindow) {-background -bd -bg -borderwidth -cursor -handlepad -handlesize -height -opaqueresize -orient -relief -sashcursor -sashpad -sashrelief -sashwidth -showhandle -width}
 set ::option(puts) -nonewline
 set ::option(radiobutton) {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -indicatoron -justify -offrelief -overrelief -padx -pady -relief -selectcolor -selectimage -state -takefocus -text -textvariable -tristateimage -tristatevalue -underline -value -variable -width -wraplength}
