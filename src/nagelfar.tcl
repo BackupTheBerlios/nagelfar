@@ -1,7 +1,7 @@
 #!/bin/sh
 #----------------------------------------------------------------------
 #  nagelfar.tcl, a syntax checker for Tcl.
-#  Copyright (c) 1999-2005, Peter Spjuth  (peter.spjuth@space.se)
+#  Copyright (c) 1999-2007, Peter Spjuth  (peter.spjuth@space.se)
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.1.6 2006-12-03"
+set version "Version 1.1.6+ 2007-01-04"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -780,7 +780,8 @@ proc parseSubst {str index typeName knownVarsName} {
     # If the word ends in "]" and there is no "[" it is considered
     # suspicious and we continue checking.
     if {[string first \$ $str] == -1 && [string first \[ $str] == -1 && \
-            [string index $str end] ne "\]"} {
+            [string index $str end] ne "\]" && \
+            [string index $str end] ne "\""} {
 	return 1
     }
 
@@ -821,6 +822,10 @@ proc parseSubst {str index typeName knownVarsName} {
                     # Note unescaped bracket at end of word since it's
                     # likely to mean it should not be there.
                     errorMsg N "Unescaped end bracket" [expr {$index + $i}]
+                } elseif {[string equal $c "\""] && $i == ($len - 1)} {
+                    # Note unescaped quote at end of word since it's
+                    # likely to mean it should not be there.
+                    errorMsg N "Unescaped quote" [expr {$index + $i}]
                 }
             }
         } else {
@@ -1522,6 +1527,10 @@ proc parseStatement {statement index knownVarsName} {
             # Detect missing space after command
             if {[regexp {^[\w:]+\{} $cmd]} {
                 errorMsg W "Suspicious command \"$cmd\"" $index
+            }
+            # Detect bracketed command
+            if {[llength $words2] == 1 && [string index $cmd 0] eq "\["} {
+                errorMsg N "Suspicious brackets around command" $index
             }
             return
         }
