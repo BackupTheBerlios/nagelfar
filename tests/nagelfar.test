@@ -233,6 +233,26 @@ test nagelfar-3.11 {
 } -result {%%Line   3: E Extra chars after closing brace*was on line 3.*missing space*} \
         -match glob
 
+test nagelfar-3.12 {
+    Basic errors
+} -body {
+    createTestFile {
+        list apa [list "a" b\" "a b" a"]
+        list apa [list "a b" beep\""]
+    }
+    execTestFile
+} -result {%%Line   2: N Unescaped quote*Line   3: N Unescaped quote} -match glob
+
+test nagelfar-3.13 {
+    Basic errors
+} -body {
+    createTestFile {
+        [list command with extra brackets]
+        [list command with extra brackets] but not alone
+    }
+    execTestFile
+} -result {%%Line   2: N Suspicious brackets around command}
+
 test nagelfar-4.1 {
     Options checking
 } -body {
@@ -647,6 +667,16 @@ test nagelfar-13.3 {
     execTestFile
 } -result "%%Line   5: N Suspicious variable name \"\$hej\""
 
+test nagelfar-13.4 {
+    Syntax database, regsub
+} -body {
+    createTestFile {
+        # Inline regsub
+        regsub apa bepa cepa
+        regsub apa bepa cepa depa
+    }
+    execTestFile
+} -result {%%}
 
 # Testing the after command which has the special thing
 # of accepting either an int or a subcommand as first argument.
