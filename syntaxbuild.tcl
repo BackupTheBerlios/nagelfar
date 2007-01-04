@@ -170,6 +170,7 @@ proc buildDb {ch} {
     set syntax(binary)          "s x*"
     set syntax(binary\ scan)    "x x n n*"
     set syntax(break)            0
+    set syntax(case)            "x*"
     set syntax(catch)           "c n?"
     set syntax(cd)              "r 0 1"
     set syntax(clock)           "s x*"
@@ -187,10 +188,10 @@ proc buildDb {ch} {
     set syntax(encoding\ system) "r 0 1"
     set syntax(eof)              1
     set syntax(error)           "r 1 3"
-    # "eval" is handled specially
+    set special(eval) 1
     set syntax(exec)            "o* x x*"
     set syntax(exit)            "r 0 1"
-    # "expr" is handled specially
+    set special(expr) 1
     set syntax(fblocked)         1
     set syntax(fconfigure)      "x o. x. p*"
     set syntax(fcopy)           "x x p*"
@@ -201,11 +202,11 @@ proc buildDb {ch} {
     set syntax(fileevent)       "x x x?"
     set syntax(flush)            1
     set syntax(for)             "c E c c"
-    # "foreach" is handled specially
+    set special(foreach) 1
     set syntax(format)          "r 1"
     set syntax(gets)            "x n?"
     set syntax(glob)            "o* x x*"
-    # "global" is handled specially
+    set special(global) 1
     # "if" is handled specially, but is added here to not disturb header gen.
     set syntax(if)              "e c"
     set syntax(incr)            "v x?"
@@ -241,12 +242,12 @@ proc buildDb {ch} {
     # "package" is handled specially
     set syntax(package)         "s x*" ;# FIXA: All subcommands
     set syntax(pid)             "r 0 1"
-    # "proc" is handled specially
+    set special(proc) 1
     set syntax(puts)            "1: x : o? x x?"
     set syntax(pwd)              0
     set syntax(read)            "r 1 2"
     set syntax(regexp)          "o* x x n*"
-    set syntax(regsub)          "o* x x x n"
+    set syntax(regsub)          "o* x x x n?"
     set syntax(rename)           2   ;# Maybe treat rename specially?
     set syntax(return)          "p* x?"
     set syntax(scan)            "x x n*"
@@ -278,7 +279,7 @@ proc buildDb {ch} {
     set syntax(string\ wordend)   2
     set syntax(string\ wordstart) 2
     set syntax(subst)           "o* x"
-    # "switch" is handled specially
+    set special(switch) 1
     set syntax(tell)             1
     set syntax(time)            "r 1 2"
     set syntax(trace)           "s x x*"
@@ -299,9 +300,9 @@ proc buildDb {ch} {
     set syntax(trace\ vdelete)  "v x x"
     set syntax(unset)           "o* l l*"
     set syntax(update)          "s."
-    # "uplevel" is handled specially
-    # "upvar" is handled specially
-    # "variable" is handled specially
+    set special(uplevel) 1
+    set special(upvar) 1
+    set special(variable) 1
     set syntax(vwait)           "n"
     set syntax(while)           "E c"
 
@@ -321,6 +322,7 @@ proc buildDb {ch} {
 
         set syntax(lassign)    "x n n*"
         set syntax(lrepeat)    "r 2"
+        set syntax(lreverse)   "1"
         set syntax(unload)     "o* x x*"
         set syntax(chan)       "s x*"
         set syntax(apply)      "x x*"
@@ -344,7 +346,8 @@ proc buildDb {ch} {
     # Syntax for Tk commands
 
     if {$useTk} {
-        # "bind" is handled specially
+        set syntax(bell)     "o* x*"
+        set special(bind) 1
         set syntax(bindtags) "x x?"
         set syntax(clipboard) "s x*"
         set syntax(console)  "r 1"
@@ -375,10 +378,13 @@ proc buildDb {ch} {
         set syntax(tk_getSaveFile)     "p*"
         set syntax(tk_messageBox)      "p*"
         set syntax(tk_popup)           "r 3 4"
+        set syntax(.)                  "s x*"
+        set syntax(.\ configure)       "o. x. p*"
+        set syntax(.\ cget)            "o"
 
         # FIXA: Starting on better Tk support
         foreach class {frame entry label button checkbutton radiobutton \
-                listbox labelframe spinbox panedwindow toplevel menu \
+                listbox labelframe spinbox panedwindow toplevel menu message \
                 scrollbar text canvas scale menubutton} {
             destroy .w
             if {[catch {$class .w}]} continue
@@ -444,6 +450,8 @@ proc buildDb {ch} {
 
     # Add additonal fconfigure, known for serial channels
     lappend option(fconfigure) -mode -handshake -queue -timeout -ttycontrol -ttystatus -xchar -pollinterval -sysbuffer -lasterror
+    # For socket channels
+    lappend option(fconfigure) -error -peername -sockname
     set option(fconfigure) [lsort -uniq -dictionary $option(fconfigure)]
 
     # Get options for any commands defining "o" or "p"
@@ -499,10 +507,13 @@ proc buildDb {ch} {
 
     # Build syntax info for procs
     foreach apa $::kC {
-        # Is it a proc?
-        if {[info procs $apa] != ""} {
-            if {![info exists syntax($apa)]} {
+        if {![info exists syntax($apa)]} {
+            # Is it a proc?
+            if {[info procs $apa] != ""} {
                 set syntax($apa) [createSyntax $apa]
+            } elseif {![info exists special($apa)]} {
+                # Debug helper
+                #puts "No syntax defined for cmd '$apa'"
             }
         }
     }
