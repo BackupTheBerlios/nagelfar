@@ -1,0 +1,139 @@
+#------------------------------------------------------------*- tcl -*-
+# Tests for GUI
+#----------------------------------------------------------------------
+# $Revision$
+#----------------------------------------------------------------------
+
+lappend ::auto_path /home/peter/src/tktest/src
+package require TkTest
+wm withdraw .
+
+proc RestartClient {{mode 0}} {
+    set ::clientfile nagelfar.tcl
+    if {[file exists ${::clientfile}_i]} {
+        set ::clientfile ${::clientfile}_i
+    }
+
+    if {![catch {send -async Nagelfar exit}]} {
+        update
+        after 500
+    }
+
+    switch $mode {
+        0 { set slavepid [exec $::clientfile -gui _testfile_ &] }
+        1 { set slavepid [exec $::clientfile -gui &] }
+        2 { set slavepid [exec $::clientfile &] }
+    }
+
+    after 1000
+    tktest::init Nagelfar
+    tktest::cmd wm geometry . +10+10
+
+    set files [tktest::widget -class Listbox -pos 1 -eval "get 0 end"]
+    if {($mode == 0 && $files ne "_testfile_") || \
+            ($mode != 0 && $files ne "")} {
+        exec kill $slavepid
+        puts "Another nagelfar is running. Can't do GUI tests."
+        exit
+    }
+}
+
+RestartClient 1
+
+test gui-1.1 {Run check without file} -body {
+    tktest::press -async Check
+    update
+    after 250
+    set f [tktest::cmd focus]
+    tktest::key Return
+
+    set w [tktest::widget -class Text]
+    set str [tktest::cmd $w get 1.0 end]
+    set output [split [string trim $str] \n]
+    # No output lines
+    list [llength $output] [string match "*cepa*" $output] \
+            [string equal $f "."]
+} -result {0 0 0}
+
+RestartClient 2
+
+test gui-1.2 {Run check without file} -body {
+    tktest::press -async Check
+    update
+    after 250
+    set f [tktest::cmd focus]
+    tktest::key Return
+
+    set w [tktest::widget -class Text]
+    set str [tktest::cmd $w get 1.0 end]
+    set output [split [string trim $str] \n]
+    # No output lines
+    list [llength $output] [string match "*cepa*" $output] \
+            [string equal $f "."]
+} -result {0 0 0}
+
+RestartClient
+
+test gui-1.3 {Run check from GUI} -body {
+    createTestFile {
+        set apa 1
+        set bepa $cepa
+    }
+    tktest::press Check
+    set w [tktest::widget -class Text]
+    set str [tktest::cmd $w get 1.0 end]
+    set output [split [string trim $str] \n]
+    # Three lines of output, with error about cepa
+    list [llength $output] [string match "*cepa*" $output]
+} -result {3 1}
+
+test gui-2.1 {Message filter} -body {
+    createTestFile {
+        set bepa $cepa
+        somecmd $bepa
+        set $bepa 1
+    }
+    tktest::press Check
+    set w [tktest::widget -class Text]
+    set str [tktest::cmd $w get 1.0 end]
+    set output [split [string trim $str] \n]
+    # Five lines of output, with all error classes
+    set res [list [llength $output] [string match "* E * W * N *" $output]]
+
+    # Coordinates for the warning message
+    set coord [tktest::coord $w bbox 3.3]
+    tktest::mouse right $coord
+    tktest::menu "Filter this message"
+    tktest::key Escape
+
+    set str [tktest::cmd $w get 1.0 end]
+    set output [split [string trim $str] \n]
+    # Four lines of output, with W gone
+    lappend res [llength $output] [string match "* E * W * N *" $output] \
+            [string match "* E * N *" $output]
+
+    set res
+} -result {5 1 4 0 1}
+
+test gui-3.1 {Debug mode} -body {
+    # Enter degug mode to exercise that code
+    set w [tktest::widget -class Text]
+
+    set str1 [tktest::cmd $w get 1.0 end]
+    tktest::keys PeterDebug
+    set str2 [tktest::cmd $w get 1.0 end]
+    tktest::keys PeterDebug
+    set str3 [tktest::cmd $w get 1.0 end]
+    
+    tktest::menu Debug "Reread Source"
+
+    if {$str1 ne $str2 || $str3 ne "\n"} {
+        set res '$str1'$str2'$str3'
+    } else {
+        set res 0
+    }
+    set res
+} -result 0
+
+send -async Nagelfar exit
+update
