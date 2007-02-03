@@ -93,10 +93,14 @@ proc addFile {} {
     } else {
         set initdir [pwd]
     }
+    
+    set filetypes [list {{Tcl Files} {.tcl}} \
+            [list {All Tcl Files} $::Prefs(extensions)] \
+            {{All Files} {.*}}]
     set apa [tk_getOpenFile -title "Select file(s) to check" \
             -initialdir $initdir \
             -defaultextension .tcl -multiple 1 \
-            -filetypes {{{Tcl File} {.tcl}} {{All Files} {.*}}}]
+            -filetypes $filetypes]
     if {[llength $apa] == 0} return
 
     set newpwd [file dirname [lindex $apa 0]]
@@ -107,9 +111,19 @@ proc addFile {} {
             cd $newpwd
         }
     }
+    set skipped {}
     foreach file $apa {
-        lappend ::Nagelfar(files) [fileRelative [pwd] $file]
+        set relfile [fileRelative [pwd] $file]
+        if {[lsearch -exact ::Nagelfar(files) $relfile] < 0} {
+            lappend skipped $relfile
+            continue
+        }
+        lappend ::Nagelfar(files) $relfile
         set ::Nagelfar(lastdir) [file dirname $file]
+    }
+    if {[llength $skipped] > 0} {
+        tk_messageBox -message \
+                "Skipped duplicate file"
     }
 }
 
@@ -212,6 +226,14 @@ proc resultPopup {x y X Y} {
     if {[regexp {^(.*): Line\s+\d+:\s*(.*)$} $line -> pre post]} {
         .popup add command -label "Filter this message" \
                 -command [list addFilter "*$pre*$post*" 1]
+        .popup add command -label "Filter this message in all files" \
+                -command [list addFilter "*$post*" 1]
+        regsub {".+?"} $post {"*"} post2
+        regsub {\(\d+\)} $post2 {(*)} post2
+        if {$post2 ne $post} {
+            .popup add command -label "Filter this generic message" \
+                    -command [list addFilter "*$post2*" 1]
+        }
     }
 
     tk_popup .popup $X $Y
@@ -407,6 +429,10 @@ proc backDoor {a} {
     append ::Nagelfar(backdoor) $a
     set ::Nagelfar(backdoor) [string range $::Nagelfar(backdoor) end-9 end]
     if {$::Nagelfar(backdoor) eq "PeterDebug"} {
+        # Second time it redraw window, thus giving debug menu
+        if {$::debug == 1} {
+            makeWin
+        }
         set ::debug 1
         catch {console show}
         set ::Nagelfar(backdoor) ""
@@ -423,6 +449,7 @@ proc makeWin {} {
     eval destroy [winfo children .]
     wm protocol . WM_DELETE_WINDOW exitApp
     wm title . "Nagelfar: Tcl Syntax Checker"
+    tk appname Nagelfar
     wm withdraw .
 
     # Syntax database section
