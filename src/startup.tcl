@@ -163,6 +163,9 @@ if {![info exists gurka]} {
                 }
                 set ::Nagelfar(encoding) $enc
             }
+            -exitcode {
+                set ::Prefs(exitcode) 1
+            }
             -2pass {
                 set ::Nagelfar(2pass) 1
             }
@@ -313,5 +316,5 @@ if {![info exists gurka]} {
     #    }
     #    puts "Total $sum"
     #}
-    exit
+    exit [expr {$::Prefs(exitcode) ? $::Nagelfar(exitstatus) : 0}]
 }
