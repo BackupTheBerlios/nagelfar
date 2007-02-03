@@ -49,6 +49,8 @@ proc getOptions {} {
         editFileFont {Courier 10}
         resultFont {Courier 10}
         editor internal
+        extensions {.tcl .test .adp .tk}
+        exitcode 0
     }
 
     # Do not load anything during test
