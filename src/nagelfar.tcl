@@ -170,6 +170,11 @@ proc flushMsg {} {
         }
         if {$print} {
             echo [lindex $msg 1]
+            if {$::Nagelfar(exitstatus) < 2 && [string match "*: E *" $msg]} {
+                set ::Nagelfar(exitstatus) 2
+            } elseif {$::Nagelfar(exitstatus) < 1 && [string match "*: W *" $msg]} {
+                set ::Nagelfar(exitstatus) 1
+            }
         }
     }
 }
@@ -1126,8 +1131,8 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                     }
 		} else {
                     set ::instrumenting([lindex $indices $i]) 1
+                    parseBody [lindex $argv $i] [lindex $indices $i] knownVars
                 }
-		parseBody [lindex $argv $i] [lindex $indices $i] knownVars
 		incr i
 	    }
 	    s { # A subcommand
@@ -2955,6 +2960,45 @@ proc loadDatabases {} {
     foreach f $::Nagelfar(db) {
         # FIXA: catch?
         _ipsource $f
+
+        # Support inline comments in db file
+        set ch [open $f r]
+        set data [read $ch]
+        close $ch
+        if {[string first "##nagelfar" $data] < 0} continue
+        set comments [lsearch -all -inline [split $data \n] "*##nagelfar*"]
+        foreach comment $comments {
+            set str [string trim $comment]
+            if {![string match "##nagelfar *" $str]} continue
+
+            set rest [string range $str 11 end]
+            if {[catch {llength $rest}]} {
+                errEcho "Bad list in ##nagelfar comment in db"
+                continue
+            }
+            if {[llength $rest] == 0} continue
+            set cmd [lindex $rest 0]
+            set first [lindex $rest 1]
+            set rest [lrange $rest 2 end]
+            switch -- $cmd {
+                syntax {
+                    _ipset ::syntax($first) $rest
+                }
+                return {
+                    _ipset ::return($first) $rest
+                }
+                subcmd {
+                    _ipset ::subCmd($first) $rest
+                }
+                option {
+                    _ipset ::option($first) $rest
+                }
+                default {
+                    errEcho "Bad type in ##nagelfar comment in db"
+                    continue
+                }
+            }
+        }
     }
 
     if {[_ipexists ::knownGlobals]} {
@@ -3029,7 +3073,7 @@ proc doCheck {} {
             return
         } else {
             puts stderr "No syntax database file found"
-            exit 1
+            exit 3
         }
     }
 
@@ -3071,6 +3115,7 @@ proc doCheck {} {
         parseScript $::Nagelfar(checkEdit)
         flushMsg
     } else {
+        set ::Nagelfar(exitstatus) 0
         foreach f $::Nagelfar(files) {
             if {$::Nagelfar(gui) || [llength $::Nagelfar(files)] > 1} {
                 set ::currentFile $f
