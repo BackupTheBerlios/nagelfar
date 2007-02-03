@@ -43,13 +43,17 @@ proc execTestFile {args} {
     if {[file exists ${file}_i]} {
         set file ${file}_i
     }
-    set res [eval [list exec [info nameofexecutable] $file $fn] \
-            [array get xx] $flags] ;#2>@ stderr
+    set code [catch {eval [list exec [info nameofexecutable] $file $fn] \
+            [array get xx] $flags} res] ;#2>@ stderr
+    if {$code && [llength $::errorCode] >= 3} {
+        set code [lindex $::errorCode 2]
+    }
     # Simplify result by shortening standard result
     regsub {Checking file _testfile_\n?} $res "%%" res
     regsub {Parsing file _testfile_.syntax\n?} $res "xx" res
+    regsub {\s*child process exited abnormally\s*} $res "" res
     file delete -force _testfile_.syntax
-    return $res
+    return -code $code $res
 }    
 
 proc cleanupTestFile {} {
