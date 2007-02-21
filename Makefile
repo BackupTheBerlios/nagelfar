@@ -4,7 +4,7 @@
 # $Revision$
 #----------------------------------------------------------------------
 
-VERSION = 116
+VERSION = 117
 
 # Path to the TclKits used for creating StarPacks.
 TCLKIT = /home/peter/tclkit
@@ -110,11 +110,13 @@ instrument: $(IFILES) nagelfar.tcl_i
 nagelfar_dummy.tcl: $(IFILES)
 	@rm -f nagelfar_dummy.tcl
 	@touch nagelfar_dummy.tcl
+	@echo "#!/usr/bin/env tclsh" >> nagelfar_dummy.tcl
 	@for i in $(SRCFILES) ; do echo "source $$i" >> nagelfar_dummy.tcl ; done
 
 # Top file for coverage run
 nagelfar.tcl_i: nagelfar_dummy.tcl_i
 	@cp -f nagelfar_dummy.tcl_i nagelfar.tcl_i
+	@chmod 775 nagelfar.tcl_i
 
 # Run tests to create log file.
 testcover $(LOGFILES): nagelfar.tcl_i
@@ -187,4 +189,5 @@ release: base distrib wrap wrapexe
 	@zip nagelfar$(VERSION).win.zip nagelfar.exe
 	@gzip nagelfar.solaris
 	@mv nagelfar.solaris.gz nagelfar$(VERSION).solaris.gz
-	@mv nagelfar.kit nagelfar$(VERSION).kit
+	@cp nagelfar.kit nagelfar`date +%Y%m%d`.kit
+	@cp nagelfar.kit nagelfar$(VERSION).kit
