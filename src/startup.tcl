@@ -46,7 +46,8 @@ proc usage {} {
  -instrument       : Instrument source file for code coverage.
  -markup           : Markup source file with code coverage result.
  -quiet            : Suppress non-syntax output.
- -glob <pattern>   : Add matching files to scriptfiles to check.}
+ -glob <pattern>   : Add matching files to scriptfiles to check.
+ -exitcode         : Return status code 2 for any error or 1 for warning.}
     exit
 }
 
