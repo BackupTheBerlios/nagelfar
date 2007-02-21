@@ -1,3 +1,13 @@
+2007-02-21
+ Added sanity check for proc arguments.
+ Read .nagelfarrc from current dir first.
+ Corrected bugs in duplicate file check and GUI filter options.
+
+2007-02-03
+ Added -exitcode. [Sup 102383]
+ Added extensions preference. [FR 3102]
+ Detect inline style comments in db file. [FR 2541][FR 2938]
+
 2007-01-04
  Check for extra quote at end of word. [Bug 9644]
  Detect extra bracketed commands. [FR 2943]
