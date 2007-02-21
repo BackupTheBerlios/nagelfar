@@ -2380,8 +2380,16 @@ proc parseProc {argv indices} {
     # Parse the arguments.
     # Initialise a knownVars array with the arguments.
     array set knownVars {}
+    set seenDefault 0
     foreach a $args {
         set var [lindex $a 0]
+        if {[llength $a] > 1} {
+            set seenDefault 1
+        } elseif {$seenDefault && !$::Nagelfar(firstpass) && $var ne "args"} {
+            errorMsg N "Non-default arg after default arg" [lindex $indices 0]
+            # Reset to avoid further messages
+            set seenDefault 0
+        }
         set knownVars(known,$var) 1
         set knownVars(local,$var) 1
         set knownVars(set,$var)   1
@@ -2941,7 +2949,7 @@ proc addFilter {pat {reapply 0}} {
 # FIXA: Move safe reading to package
 ##nagelfar syntax _ipsource x
 ##nagelfar syntax _ipexists l
-##nagelfar syntax _ipset    v
+##nagelfar syntax _ipset    1: v : n x
 ##nagelfar syntax _iparray  s v
 ##nagelfar subcmd _iparray  exists get
 
