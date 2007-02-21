@@ -149,3 +149,14 @@ test proc-3.2 {
     }
     execTestFile
 } -result {%%Line   2: N Duplicate proc arguments}
+
+test proc-3.3 {
+    Procedure, sanity checking args
+} -body {
+    createTestFile {
+        proc apa {hej {x y} hopp happ} {
+            return $hej
+        }
+    }
+    execTestFile
+} -result {%%Line   2: N Non-default arg after default arg}
