@@ -56,12 +56,15 @@ proc getOptions {} {
     # Do not load anything during test
     if {[info exists ::_nagelfar_test]} return
 
-    if {[file exists "~/.nagelfarrc"]} {
-        interp create -safe loadinterp
-        interp expose loadinterp source
-        interp eval loadinterp source "~/.nagelfarrc"
-        array set ::Prefs [interp eval loadinterp array get ::Prefs]
-        interp delete loadinterp
+    foreach candidate {.nagelfarrc ~/.nagelfarrc} {
+        if {[file exists $candidate]} {
+            interp create -safe loadinterp
+            interp expose loadinterp source
+            interp eval loadinterp source $candidate
+            array set ::Prefs [interp eval loadinterp array get ::Prefs]
+            interp delete loadinterp
+            break
+        }
     }
 }
 
