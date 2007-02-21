@@ -14,7 +14,7 @@ test preferences-1.1 {
     }
     set res [execTestFile]
     append res [execTestFile -flags -strictappend]
-} -returnCodes 0 -result {%%%%Line   4: E Unknown variable "cepa"}
+} -result {%%%%Line   4: E Unknown variable "cepa"}
 
 test preferences-1.2 {
     Command line flags, -strictappend
@@ -26,7 +26,7 @@ test preferences-1.2 {
     }
     set res [execTestFile]
     append res [execTestFile -flags -strictappend]
-} -returnCodes 0 -result {%%%%Line   4: E Unknown variable "cepa"}
+} -result {%%%%Line   4: E Unknown variable "cepa"}
 
 test preferences-2.1 {
     Command line flags, -tab
@@ -39,7 +39,7 @@ test preferences-2.1 {
     set res [list [execTestFile -tab a]]
     lappend res [execTestFile -tab 1]
     lappend res [execTestFile -tab 21]
-} -returnCodes 0 -result {{Bad tab value 'a'} {Bad tab value '1'} {Bad tab value '21'}}
+} -result {{Bad tab value 'a'} {Bad tab value '1'} {Bad tab value '21'}}
 
 test preferences-2.2 {
     Command line flags, -tab
@@ -51,7 +51,7 @@ test preferences-2.2 {
     "
     set res [list [execTestFile -tab 2]]
     lappend res [execTestFile -tab 4]
-} -returnCodes 0 -result {%% %%}
+} -result {%% %%}
 
 test preferences-2.3 {
     Command line flags, -tab
@@ -63,7 +63,7 @@ test preferences-2.3 {
     "
     set res [list [execTestFile -tab 2]]
     lappend res [execTestFile -tab 4]
-} -returnCodes 0 -result {%% {%%Line   4: N Close brace not aligned with line 2 (12 10)}}
+} -result {%% {%%Line   4: N Close brace not aligned with line 2 (12 10)}}
 
 test preferences-2.4 {
     Command line flags, -tab
@@ -76,7 +76,7 @@ test preferences-2.4 {
     set res [list [execTestFile -tab 2]]
     lappend res [execTestFile -tab 4]
     lappend res [execTestFile -tab 8]
-} -returnCodes 0 -result {{%%Line   4: N Close brace not aligned with line 2 (6 8)} %% %%}
+} -result {{%%Line   4: N Close brace not aligned with line 2 (6 8)} %% %%}
 
 test preferences-3.1 {
     Command line flags, -exitcode
@@ -104,4 +104,56 @@ test preferences-3.3 {
         set apa bepa
     }
     set res [execTestFile -flags -exitcode]
-} -returnCodes 0 -result {%%}
+} -result {%%}
+
+test preferences-4.1 {
+    Command line flags, -WelseN
+} -body {
+    createTestFile {
+        if {[list]} {
+            set apa bepa
+        } {
+            set apa bepa
+        }
+    }
+    set res [execTestFile -flags -Welse0]
+    append res [execTestFile -flags -Welse1]
+} -result {%%%%Line   4: E Badly formed if statement*} -match glob
+
+test preferences-4.2 {
+    Command line flags, -WelseN
+} -body {
+    createTestFile {
+        if {[list]} {
+            set apa bepa
+        } {
+            set apa bepa
+        }
+    }
+    set ch [open .nagelfarrc w]
+    puts $ch "set ::Prefs(forceElse) 0"
+    close $ch
+    set res [execTestFile]
+    append res [execTestFile -flags -Welse1]
+    file delete .nagelfarrc
+    set res
+} -result {%%%%Line   4: E Badly formed if statement*} -match glob
+
+test preferences-4.3 {
+    Command line flags, -WelseN
+} -body {
+    createTestFile {
+        if {[list]} {
+            set apa bepa
+        } {
+            set apa bepa
+        }
+    }
+    set ch [open .nagelfarrc w]
+    puts $ch "set ::Prefs(forceElse) 1"
+    close $ch
+    set res [execTestFile]
+    append res [execTestFile -flags -Welse0]
+    file delete .nagelfarrc
+    set res
+} -result {%%Line   4: E Badly formed if statement*%%} -match glob
