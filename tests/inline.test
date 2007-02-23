@@ -188,3 +188,20 @@ test inline-7.1 {
     }
     execTestFile
 } -result {xx%%}
+
+test inline-8.1 {
+    Inline in db file
+} -body {
+    set ch [open apa.miffo w]
+    puts $ch {
+        ##nagelfar syntax apa x n
+    }
+    close $ch
+    createTestFile {
+        set x 1
+        apa 5 x
+    }
+    set res [execTestFile -flags "-s apa.miffo"]
+    file delete apa.miffo
+    set res
+} -result {%%}
