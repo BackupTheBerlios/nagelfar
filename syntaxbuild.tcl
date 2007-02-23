@@ -14,7 +14,9 @@ foreach gurkmeja [array names auto_index] {
         catch {eval $auto_index($gurkmeja)}
     }
 }
-unset gurkmeja
+if {[info exists gurkmeja]} {
+	unset gurkmeja
+}
 
 
 # First get some data about the system
@@ -561,7 +563,7 @@ proc buildFile {filename} {
 # source syntaxbuild.tcl
 # buildFile <filename>
 
-if {!$tcl_interactive} {
+if {[info exists tcl_interactive] && !$tcl_interactive} {
     if {$argc == 0 && $tcl_platform(platform) == "windows"} {
 	set argc 1
 	set argv [list syntaxdb.tcl]
