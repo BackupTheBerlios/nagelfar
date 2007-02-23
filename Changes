@@ -1,7 +1,14 @@
+Version 1.1.7
+
+2007-02-23
+ Added checks for variable existence in syntaxbuild, to cope with
+ non-standard interpreters.
+
 2007-02-21
- Added sanity check for proc arguments.
+ Added sanity check for proc arguments. [FR 3167]
  Read .nagelfarrc from current dir first.
  Corrected bugs in duplicate file check and GUI filter options.
+ Corrected syntax database for lsearch -index. [Bug 10430]
 
 2007-02-03
  Added -exitcode. [Sup 102383]

@@ -7,17 +7,12 @@
  content="text/html; charset=ISO-8859-1">
 </head>
 <body>
-<a href="http://developer.berlios.de" title="BerliOS Developer"> <img src="http:
-//developer.berlios.de/bslogo.php?group_id=6731" width="124px" height="32px" bor
-der="0" alt="BerliOS Developer Logo"></a>
+<a href="http://developer.berlios.de" title="BerliOS Developer"> <img src="http://developer.berlios.de/bslogo.php?group_id=6731" width="124px" height="32px" border="0" alt="BerliOS Developer Logo"></a>
 
 <p>
-Nagelfar is being transferred here from it's
-old home and is being adapted to Berlios.
-<p>
-Bug tracker and mailing list can be found at the
+<h3>Bug tracker and mailing list can be found at the
 <b><a href="https://developer.berlios.de/projects/nagelfar/">Project page</a>
-</b><p>
+</b></h3><p>
  
 <h1>Nagelfar - A Tcl Syntax checker</h1>
 <a href="#NagelfarDownload">Download</a>
@@ -281,7 +276,7 @@ Line  93: N Close brace not aligned with line 90 (4 0)
 
 <a name="NagelfarDownload"></a><h3>Download</h3>
 
-Version 1.1.6:<br>
+Version 1.1.7:<br>
 Is available from the
 <a href="https://developer.berlios.de/projects/nagelfar/">Project page</a>
 , including as a Starkit and as Starpacks for Windows, Linux and Solaris.
@@ -292,6 +287,24 @@ More information about <a href="http://wiki.tcl.tk/starkit">Starkits</a>
 and <a href="http://wiki.tcl.tk/starpack">Starpacks</a>.
 
 <a name="NagelfarChanges"></a><h3>Changes</h3>
+Changes in v1.1.7 (2007-02-23):<br>
+<ul>
+  <li>  Added sanity check for proc arguments. [FR 3167]</li>
+  <li>  Read .nagelfarrc from current dir first.</li>
+  <li>  Added -exitcode. [Sup 102383]</li>
+  <li>  Added extensions preference. [FR 3102]</li>
+  <li>  Detect inline style comments in db file. [FR 2541][FR 2938]</li>
+  <li>  Check for extra quote at end of word. [Bug 9644]</li>
+  <li>  Detect extra bracketed commands. [FR 2943]</li>
+  <li>  Check for duplicate files in GUI. [Bug 9709]</li>
+  <li>  More filter options on GUI. [Bug 9774][Bug 9826]</li>
+  <li>  Corrected syntax database for regsub. [Bug 9791]</li>
+  <li>  More fconfigure opts in syntax db. [Bug 9607]</li>
+  <li>  Added more missing 8.5 features to syntax db. [Bug 10430]</li>
+  <li>  Thanks to David Cargo for suggestions.</li>
+
+</ul>
+<br>
 Changes in v1.1.6 (2006-12-03):<br>
 <ul>
   <li>  Remember directories between adding files. [Frq 2921]</li>
