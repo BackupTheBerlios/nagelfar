@@ -43,7 +43,7 @@ The GUI lists database files and lets you select one to use.
 
 The other list shows files to check. With multiple files all are checked
 in the same way as with multiple files on a command line.
-You can reorder files with shift-up/down keys.
+You can reorder files with shift-up/down keys, and remove them with delete.
 
 By doubleclicking on an error the file and line is viewed in a simple
 editor. You can edit and save the file.
