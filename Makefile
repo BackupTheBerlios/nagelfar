@@ -183,6 +183,7 @@ distrib: base
 		nagelfar/doc
 
 release: base distrib wrap wrapexe
+	@cp nagelfar.tar.gz nagelfar`date +%Y%m%d`.tar.gz
 	@mv nagelfar.tar.gz nagelfar$(VERSION).tar.gz
 	@gzip nagelfar.linux
 	@mv nagelfar.linux.gz nagelfar$(VERSION).linux.gz
