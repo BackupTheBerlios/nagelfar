@@ -38,6 +38,28 @@ proc RestartClient {{mode 0}} {
     }
 }
 
+proc DeleteFileToTest {file} {
+    set w [tktest::widget -class Listbox -pos 1]
+    set cont [tktest::cmd $w get 0 end]
+    set i [lsearch $cont $file]
+    if {$i < 0} return
+
+    tktest::cmd $w see $i
+    set coord [tktest::coord $w bbox $i]
+    tktest::mouse left $coord
+    tktest::key Delete
+}
+
+proc AddFileToTest {file} {
+    # FIXA: should add file through GUI
+    tktest::cmd fileDropFile $file
+}
+
+proc ResetFilters {} {
+    # FIXA: there should be a GUI way of doing this.
+    tktest::cmd set ::Nagelfar(filter) {}
+}
+
 RestartClient 1
 
 test gui-1.1 {Run check without file} -body {
@@ -112,8 +134,133 @@ test gui-2.1 {Message filter} -body {
     lappend res [llength $output] [string match "* E * W * N *" $output] \
             [string match "* E * N *" $output]
 
+    ResetFilters
+
     set res
 } -result {5 1 4 0 1}
+
+test gui-2.2 {Message filter, generic} -body {
+    createTestFile {
+        while 1 {
+            set apa 1
+         }
+        while 1 {
+            set apa 1
+          }
+        while 1 {
+            set apa 1
+           }
+    }
+    tktest::press Check
+    #after 5000 {set ::gurka 1}; vwait ::gurka
+    set w [tktest::widget -class Text]
+    set str [tktest::cmd $w get 1.0 end]
+    set output [split [string trim $str] \n]
+    # Five lines of output
+    set res [list [llength $output] [string match "* N Close*" $output]]
+
+    # Coordinates for the warning message
+    set coord [tktest::coord $w bbox 3.3]
+    tktest::mouse right $coord
+    tktest::menu "Filter this message"
+    tktest::key Escape
+
+    set str [tktest::cmd $w get 1.0 end]
+    set output [split [string trim $str] \n]
+    # Four lines of output
+    lappend res [llength $output] [string match "* N Close*" $output]
+
+    # Coordinates for the warning message
+    set coord [tktest::coord $w bbox 3.3]
+    tktest::mouse right $coord
+    tktest::menu "Filter this generic message"
+    tktest::key Escape
+
+    set str [tktest::cmd $w get 1.0 end]
+    set output [split [string trim $str] \n]
+    # Two lines of output
+    lappend res [llength $output] [string match "* N Close*" $output]
+
+    ResetFilters
+
+    set res
+} -result {5 1 4 1 2 0}
+
+test gui-2.3 {Message filter, all files} -body {
+    createTestFile {
+        somecmd bepa
+    }
+    file rename -force _testfile_ _testfile2_
+    createTestFile {
+        somecmd bepa
+    }
+    AddFileToTest _testfile2_
+
+    tktest::press Check
+    set w [tktest::widget -class Text]
+    set str [tktest::cmd $w get 1.0 end]
+    set output [split [string trim $str] \n]
+    # Five lines of output
+    set res [list [llength $output] \
+            [string match "*file_*somecmd*file2_*somecmd*" $output]]
+    #after 5000 {set ::gurka 1}; vwait ::gurka
+
+    # Coordinates for the warning message
+    set coord [tktest::coord $w bbox 2.3]
+    tktest::mouse right $coord
+    tktest::menu "Filter this message"
+    tktest::key Escape
+
+    set str [tktest::cmd $w get 1.0 end]
+    set output [split [string trim $str] \n]
+    # Four lines of output
+    lappend res [llength $output] \
+            [string match "*file2_*somecmd*" $output]
+    
+    ResetFilters
+    file delete -force _testfile2_
+    DeleteFileToTest _testfile2_
+
+    set res
+} -result {5 1 4 1}
+
+test gui-2.4 {Message filter, all files} -body {
+    createTestFile {
+        somecmd bepa
+    }
+    file rename -force _testfile_ _testfile2_
+    createTestFile {
+        somecmd bepa
+    }
+    AddFileToTest _testfile2_
+
+    tktest::press Check
+    set w [tktest::widget -class Text]
+    set str [tktest::cmd $w get 1.0 end]
+    set output [split [string trim $str] \n]
+    # Five lines of output
+    set res [list [llength $output] \
+            [string match "*file_*somecmd*file2_*somecmd*" $output]]
+    #after 5000 {set ::gurka 1}; vwait ::gurka
+
+    # Coordinates for the warning message
+    set coord [tktest::coord $w bbox 2.3]
+    tktest::mouse right $coord
+    tktest::menu "Filter this message in all files"
+    tktest::key Escape
+
+    set str [tktest::cmd $w get 1.0 end]
+    set output [split [string trim $str] \n]
+    # Three lines of output
+    lappend res [llength $output] \
+            [string match "*somecmd*" $output]
+    
+    ResetFilters
+    file delete -force _testfile2_
+    DeleteFileToTest _testfile2_
+
+    set res
+} -result {5 1 3 0}
 
 test gui-3.1 {Debug mode} -body {
     # Enter degug mode to exercise that code
