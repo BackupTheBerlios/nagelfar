@@ -1,5 +1,5 @@
 # Automatically generated syntax database.
-# Generated with syntaxbuild Revision: 1.31 
+# Generated with syntaxbuild Revision: 1.33 
 
 lappend ::dbInfo {Tcl 8.5a6 unix, Tk 8.5a6 x11}
 set ::dbTclVersion 8.5
@@ -445,6 +445,7 @@ set ::option(labelframe) {-bd -borderwidth -class -fg -font -foreground -labelan
 set ::option(listbox) {-activestyle -background -bd -bg -borderwidth -cursor -disabledforeground -exportselection -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -relief -selectbackground -selectborderwidth -selectforeground -selectmode -setgrid -state -takefocus -width -xscrollcommand -yscrollcommand -listvariable}
 set {::option(listbox -listvariable)} n
 set ::option(lsearch) {-all -ascii -decreasing -dictionary -exact -glob -increasing -index -inline -integer -nocase -not -real -regexp -sorted -start -subindices}
+set {::option(lsearch -index)} 1
 set {::option(lsearch -start)} 1
 set ::option(lsort) {-ascii -command -decreasing -dictionary -increasing -index -indices -integer -nocase -real -unique}
 set {::option(lsort -command)} 1
