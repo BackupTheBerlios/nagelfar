@@ -494,6 +494,7 @@ proc buildDb {ch} {
     # c/n/v/l and will be used to check the option.
     set option(lsort\ -index)   1
     set option(lsort\ -command) 1
+    set option(lsearch\ -index) 1
     set option(lsearch\ -start) 1
     set option(string\ is\ -failindex)   n
     set option(string\ compare\ -length) 1
@@ -504,6 +505,18 @@ proc buildDb {ch} {
     set option(glob\ -path)      1
     set option(glob\ -types)     1
     set option(send\ -displayof) 1
+
+    # Clean up unused options
+    foreach item [array names option] {
+        if {[string match "-*" [lindex $item end]]} {
+            set opt [lindex $item end]
+            set cmd [lrange $item 0 end-1]
+            if {[lsearch -exact $option($cmd) $opt] < 0} {
+                #puts "Deleting option($item)"
+                unset option($item)
+            }
+        }
+    }
 
     # Build syntax info for procs
     foreach apa $::kC {
