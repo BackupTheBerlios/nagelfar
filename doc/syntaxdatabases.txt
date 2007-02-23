@@ -13,8 +13,16 @@ The search order for default database is:
  syntaxdb.tcl where Nagelfar is located
  syntaxdb*.tcl where Nagelfar is located
 
+You can select database(s) with the command line switch "-s".
+
 In the GUI, all databases found are listed, and those found where Nagelfar
 is located are marked "(app)".
+
+Syntax databases may contain inline comments, so a file generated with
+the -header option may be used with -s.
+
+
+CREATING SYNTAX DATABASES
 
 A syntax database is created by syntaxbuild.tcl which makes
 it possible to create customised databases for the interpreter
