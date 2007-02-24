@@ -4,7 +4,7 @@
 # $Revision$
 #----------------------------------------------------------------------
 
-lappend ::auto_path /home/peter/src/tktest/src
+lappend ::auto_path /home/peter/src/tktest
 package require TkTest
 wm withdraw .
 
@@ -60,6 +60,12 @@ proc ResetFilters {} {
     tktest::cmd set ::Nagelfar(filter) {}
 }
 
+# Get all lines from the text widget, as a list
+proc GetTextLines {} {
+    set str [tktest::widget -class Text -eval "get 1.0 end"]
+    return [split [string trim $str] \n]
+}
+
 RestartClient 1
 
 test gui-1.1 {Run check without file} -body {
@@ -69,9 +75,7 @@ test gui-1.1 {Run check without file} -body {
     set f [tktest::cmd focus]
     tktest::key Return
 
-    set w [tktest::widget -class Text]
-    set str [tktest::cmd $w get 1.0 end]
-    set output [split [string trim $str] \n]
+    set output [GetTextLines]
     # No output lines
     list [llength $output] [string match "*cepa*" $output] \
             [string equal $f "."]
@@ -86,9 +90,7 @@ test gui-1.2 {Run check without file} -body {
     set f [tktest::cmd focus]
     tktest::key Return
 
-    set w [tktest::widget -class Text]
-    set str [tktest::cmd $w get 1.0 end]
-    set output [split [string trim $str] \n]
+    set output [GetTextLines]
     # No output lines
     list [llength $output] [string match "*cepa*" $output] \
             [string equal $f "."]
@@ -102,9 +104,7 @@ test gui-1.3 {Run check from GUI} -body {
         set bepa $cepa
     }
     tktest::press Check
-    set w [tktest::widget -class Text]
-    set str [tktest::cmd $w get 1.0 end]
-    set output [split [string trim $str] \n]
+    set output [GetTextLines]
     # Three lines of output, with error about cepa
     list [llength $output] [string match "*cepa*" $output]
 } -result {3 1}
@@ -116,20 +116,18 @@ test gui-2.1 {Message filter} -body {
         set $bepa 1
     }
     tktest::press Check
-    set w [tktest::widget -class Text]
-    set str [tktest::cmd $w get 1.0 end]
-    set output [split [string trim $str] \n]
+    set output [GetTextLines]
     # Five lines of output, with all error classes
     set res [list [llength $output] [string match "* E * W * N *" $output]]
 
     # Coordinates for the warning message
+    set w [tktest::widget -class Text]
     set coord [tktest::coord $w bbox 3.3]
     tktest::mouse right $coord
     tktest::menu "Filter this message"
     tktest::key Escape
 
-    set str [tktest::cmd $w get 1.0 end]
-    set output [split [string trim $str] \n]
+    set output [GetTextLines]
     # Four lines of output, with W gone
     lappend res [llength $output] [string match "* E * W * N *" $output] \
             [string match "* E * N *" $output]
@@ -153,20 +151,18 @@ test gui-2.2 {Message filter, generic} -body {
     }
     tktest::press Check
     #after 5000 {set ::gurka 1}; vwait ::gurka
-    set w [tktest::widget -class Text]
-    set str [tktest::cmd $w get 1.0 end]
-    set output [split [string trim $str] \n]
+    set output [GetTextLines]
     # Five lines of output
     set res [list [llength $output] [string match "* N Close*" $output]]
 
     # Coordinates for the warning message
+    set w [tktest::widget -class Text]
     set coord [tktest::coord $w bbox 3.3]
     tktest::mouse right $coord
     tktest::menu "Filter this message"
     tktest::key Escape
 
-    set str [tktest::cmd $w get 1.0 end]
-    set output [split [string trim $str] \n]
+    set output [GetTextLines]
     # Four lines of output
     lappend res [llength $output] [string match "* N Close*" $output]
 
@@ -176,8 +172,7 @@ test gui-2.2 {Message filter, generic} -body {
     tktest::menu "Filter this generic message"
     tktest::key Escape
 
-    set str [tktest::cmd $w get 1.0 end]
-    set output [split [string trim $str] \n]
+    set output [GetTextLines]
     # Two lines of output
     lappend res [llength $output] [string match "* N Close*" $output]
 
@@ -197,22 +192,20 @@ test gui-2.3 {Message filter, all files} -body {
     AddFileToTest _testfile2_
 
     tktest::press Check
-    set w [tktest::widget -class Text]
-    set str [tktest::cmd $w get 1.0 end]
-    set output [split [string trim $str] \n]
+    set output [GetTextLines]
     # Five lines of output
     set res [list [llength $output] \
             [string match "*file_*somecmd*file2_*somecmd*" $output]]
     #after 5000 {set ::gurka 1}; vwait ::gurka
 
     # Coordinates for the warning message
+    set w [tktest::widget -class Text]
     set coord [tktest::coord $w bbox 2.3]
     tktest::mouse right $coord
     tktest::menu "Filter this message"
     tktest::key Escape
 
-    set str [tktest::cmd $w get 1.0 end]
-    set output [split [string trim $str] \n]
+    set output [GetTextLines]
     # Four lines of output
     lappend res [llength $output] \
             [string match "*file2_*somecmd*" $output]
@@ -235,22 +228,20 @@ test gui-2.4 {Message filter, all files} -body {
     AddFileToTest _testfile2_
 
     tktest::press Check
-    set w [tktest::widget -class Text]
-    set str [tktest::cmd $w get 1.0 end]
-    set output [split [string trim $str] \n]
+    set output [GetTextLines]
     # Five lines of output
     set res [list [llength $output] \
             [string match "*file_*somecmd*file2_*somecmd*" $output]]
     #after 5000 {set ::gurka 1}; vwait ::gurka
 
     # Coordinates for the warning message
+    set w [tktest::widget -class Text]
     set coord [tktest::coord $w bbox 2.3]
     tktest::mouse right $coord
     tktest::menu "Filter this message in all files"
     tktest::key Escape
 
-    set str [tktest::cmd $w get 1.0 end]
-    set output [split [string trim $str] \n]
+    set output [GetTextLines]
     # Three lines of output
     lappend res [llength $output] \
             [string match "*somecmd*" $output]
