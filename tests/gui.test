@@ -253,6 +253,32 @@ test gui-2.4 {Message filter, all files} -body {
     set res
 } -result {5 1 3 0}
 
+test gui-2.5 {Message filter, multiline message} -body {
+    createTestFile {
+        proc Bug {p1 p2} {
+        }
+        proc Bug {} {
+        }      
+    }
+    tktest::press Check
+    set output [GetTextLines]
+    set res [list [llength $output] [string match "*does not match previous*" $output]]
+
+    # Coordinates for the warning message
+    set w [tktest::widget -class Text]
+    set coord [tktest::coord $w bbox 3.3]
+    tktest::mouse right $coord
+    tktest::menu "Filter this message"
+    tktest::key Escape
+
+    set output [GetTextLines]
+    lappend res [llength $output]
+
+    ResetFilters
+
+    set res
+} -result {4 1 2}
+
 test gui-3.1 {Debug mode} -body {
     # Enter degug mode to exercise that code
     set w [tktest::widget -class Text]
