@@ -4,7 +4,7 @@
 # $Revision$
 #----------------------------------------------------------------------
 
-VERSION = 117
+VERSION = 118
 
 # Path to the TclKits used for creating StarPacks.
 TCLKIT = /home/peter/tclkit
@@ -64,7 +64,7 @@ setup: links
 # Concatening source
 #----------------------------------------------------------------
 
-CATFILES = src/nagelfar.tcl src/gui.tcl src/dbbrowser.tcl \
+CATFILES = src/prologue.tcl src/nagelfar.tcl src/gui.tcl src/dbbrowser.tcl \
 	src/registry.tcl src/preferences.tcl src/startup.tcl
 
 
@@ -79,8 +79,13 @@ nagelfar.tcl: $(CATFILES)
 spell:
 	@cat doc/*.txt | ispell -d british -l | sort -u
 
-check: nagelfar.tcl
-	@./nagelfar.tcl -strictappend nagelfar.tcl
+# Create a common "header" file for all source files.
+nagelfar_h.syntax: nagelfar.tcl nagelfar.syntax $(CATFILES)
+	@echo Creating syntax header file...
+	@./nagelfar.tcl -header nagelfar_h.syntax nagelfar.syntax $(CATFILES)
+
+check: nagelfar.tcl nagelfar_h.syntax
+	@./nagelfar.tcl -strictappend nagelfar_h.syntax $(CATFILES)
 
 test: base
 	@./tests/all.tcl $(TESTFLAGS)
