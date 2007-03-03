@@ -668,12 +668,16 @@ test nagelfar-13.3 {
 } -result "%%Line   5: N Suspicious variable name \"\$hej\""
 
 test nagelfar-13.4 {
-    Syntax database, regsub
+    Syntax database, misc
 } -body {
     createTestFile {
         # Inline regsub
         regsub apa bepa cepa
         regsub apa bepa cepa depa
+        # Correct time
+        time {set x 1}
+        time {set y $x} 5
+        set y
     }
     execTestFile
 } -result {%%}
