@@ -213,8 +213,16 @@ proc seeNextError {} {
 proc resultPopup {x y X Y} {
     set w $::Nagelfar(resultWin)
 
-    set lineNo [lindex [split [$w index @$x,$y] .] 0]
-    set line [$w get $lineNo.0 $lineNo.end]
+    set index [$w index @$x,$y]
+    set tags [$w tag names $index]
+    set tag [lsearch -glob -inline $tags "message*"]
+    if {$tag == ""} {
+        set lineNo [lindex [split $index .] 0]
+        set line [$w get $lineNo.0 $lineNo.end]
+    } else {
+        set range [$w tag nextrange $tag 1.0]
+        set line [lindex [split [eval \$w get $range] \n] 0]
+    }
 
     destroy .popup
     menu .popup -tearoff 0
@@ -262,6 +270,7 @@ proc updateDbSelection {{fromVar 0}} {
     }
 }
 
+# Unused experiment to make scrolling snidget
 if {[catch {package require snit}]} {
     namespace eval snit {
         proc widget {args} {}
