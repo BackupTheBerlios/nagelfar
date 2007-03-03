@@ -1,7 +1,6 @@
-#!/bin/sh
 #----------------------------------------------------------------------
-#  nagelfar.tcl, a syntax checker for Tcl.
-#  Copyright (c) 1999-2007, Peter Spjuth  (peter.spjuth@space.se)
+#  Nagelfar, a syntax checker for Tcl.
+#  Copyright (c) 1999-2006, Peter Spjuth  (peter.spjuth@space.se)
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -19,35 +18,10 @@
 #  Boston, MA 02111-1307, USA.
 #
 #----------------------------------------------------------------------
+# nagelfar.tcl
+#----------------------------------------------------------------------
 # $Revision$
 #----------------------------------------------------------------------
-# the next line restarts using tclsh \
-exec tclsh "$0" "$@"
-
-set debug 0
-package require Tcl 8.4
-
-package provide app-nagelfar 1.0
-set version "Version 1.1.7 2007-02-23"
-
-set thisScript [file normalize [file join [pwd] [info script]]]
-set thisDir    [file dirname $thisScript]
-
-# Follow any link
-set tmplink $thisScript
-while {[file type $tmplink] == "link"} {
-    set tmplink [file readlink $tmplink]
-    set tmplink [file normalize [file join $thisDir $tmplink]]
-    set thisDir [file dirname $tmplink]
-}
-unset tmplink
-
-# Search where the script is to be able to place e.g. ctext there.
-if {[info exists ::starkit::topdir]} {
-    lappend auto_path [file dirname [file normalize $::starkit::topdir]]
-} else {
-    lappend auto_path $thisDir
-}
 
 #####################
 # Syntax check engine
@@ -68,10 +42,13 @@ if {[info exists ::starkit::topdir]} {
 # 8 {*}-expanded
 
 # Moved out message handling to make it more flexible
-proc echo {str {info 0}} {
+proc echo {str {tag {}}} {
     if {[info exists ::Nagelfar(resultWin)]} {
+        if {$tag == 1} {
+            set tag info
+        }
         $::Nagelfar(resultWin) configure -state normal
-        $::Nagelfar(resultWin) insert end $str\n [lindex {{} info} $info]
+        $::Nagelfar(resultWin) insert end $str\n $tag
         $::Nagelfar(resultWin) configure -state disabled
     } elseif {$::Nagelfar(embedded)} {
         lappend ::Nagelfar(chkResult) $str
@@ -169,7 +146,8 @@ proc flushMsg {} {
             }
         }
         if {$print} {
-            echo [lindex $msg 1]
+            incr ::Nagelfar(messageCnt)
+            echo [lindex $msg 1] message$::Nagelfar(messageCnt)
             if {$::Nagelfar(exitstatus) < 2 && [string match "*: E *" $msg]} {
                 set ::Nagelfar(exitstatus) 2
             } elseif {$::Nagelfar(exitstatus) < 1 && [string match "*: W *" $msg]} {
@@ -2510,9 +2488,11 @@ proc parseProc {argv indices} {
             if {$prevunlim != $unlim || \
                     ($prevunlim == 0 && $prevmax != [llength $args]) \
                     || $prevmin != $min} {
-                errorMsg W "Procedure \"$name\" does not match previous definition" \
-                        [lindex $indices 0]
-                contMsg "Previous '$syntax($name)'  New '$newsyntax'"
+                    if {!$::Nagelfar(firstpass)} { # Messages in second pass
+                        errorMsg W "Procedure \"$name\" does not match previous definition" \
+                                [lindex $indices 0]
+                        contMsg "Previous '$syntax($name)'  New '$newsyntax'"
+                    }
             } else {
                 # It matched.  Does the new one seem better?
                 if {[regexp {^(?:r )?\d+(?: \d+)?$} $syntax($name)]} {
@@ -2933,9 +2913,17 @@ proc addFilter {pat {reapply 0}} {
         $w configure -state normal
         set ln 1
         while {1} {
-            set line [$w get $ln.0 $ln.end]
+            set tags [$w tag names $ln.0]
+            set tag [lsearch -glob -inline $tags "message*"]
+            if {$tag == ""} {
+                set range [list $ln.0 $ln.end+1c]
+                set line [$w get $ln.0 $ln.end]
+            } else {
+                set range [$w tag nextrange $tag $ln.0]
+                set line [eval \$w get $range]
+            }
             if {[string match $pat $line]} {
-                $w delete $ln.0 $ln.end+1c
+                eval \$w delete $range
             } else {
                 incr ln
             }
@@ -3103,6 +3091,7 @@ proc doCheck {} {
         $::Nagelfar(resultWin) configure -state normal
         $::Nagelfar(resultWin) delete 1.0 end
     }
+    set ::Nagelfar(messageCnt) 0
 
     # Load syntax databases
     loadDatabases
