@@ -283,7 +283,7 @@ proc buildDb {ch} {
     set syntax(subst)           "o* x"
     set special(switch) 1
     set syntax(tell)             1
-    set syntax(time)            "r 1 2"
+    set syntax(time)            "c x?"
     set syntax(trace)           "s x x*"
     set syntax(trace\ add)      "s x x x"
     set syntax(trace\ add\ command)   "x x x"
@@ -349,7 +349,7 @@ proc buildDb {ch} {
 
     if {$useTk} {
         set syntax(bell)     "o* x*"
-        set special(bind) 1
+        set syntax(bind)     "x x? C?"
         set syntax(bindtags) "x x?"
         set syntax(clipboard) "s x*"
         set syntax(console)  "r 1"
