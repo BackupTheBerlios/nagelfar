@@ -127,13 +127,13 @@ test tokens-7.1 {
 } -body {
     createTestFile {
         set apa 1
-        ##nagelfar syntax gurka x c? c
+        ##nagelfar syntax gurka x c* c
         gurka hej {list $apa} [list hej hopp]
-        ##nagelfar syntax hopp x c c
+        ##nagelfar syntax hopp x c? c
         hopp hej $apa {list $apa}
     }
     execTestFile
-} -result {%%Modifier "?" is not supported for "c" in syntax for gurka.
+} -result {%%Modifier "*" is not supported for "c" in syntax for gurka.
 Line   6: W No braces around code in hopp statement.}
 
 test tokens-8.1 {
