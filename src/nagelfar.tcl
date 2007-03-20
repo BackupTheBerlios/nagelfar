@@ -1091,9 +1091,14 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
 		parseExpr [lindex $argv $i] [lindex $indices $i] knownVars
 		incr i
 	    }
-	    c { # A code block
-		if {![string equal $mod ""]} {
-		    echo "Modifier \"$mod\" is not supported for \"c\" in\
+	    c - C { # A code block
+                if {[string equal $mod "?"]} {
+		    if {$i >= $argc} {
+			set i $argc
+			break
+		    }
+		} elseif {![string equal $mod ""]} {
+		    echo "Modifier \"$mod\" is not supported for \"$tok\" in\
                             syntax for $cmd."
 		}
 		if {([lindex $wordstatus $i] & 1) == 0} { # Non constant
@@ -1104,12 +1109,23 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                         # FIXA: Check the code
                         #echo "(List code)"
                     } else {
-                        errorMsg W "No braces around code in $cmd\
-                                statement." [lindex $indices $i]
+                        if {$tok eq "c"} {
+                            errorMsg W "No braces around code in $cmd\
+                                    statement." [lindex $indices $i]
+                        }
                     }
 		} else {
                     set ::instrumenting([lindex $indices $i]) 1
-                    parseBody [lindex $argv $i] [lindex $indices $i] knownVars
+                    if {$tok eq "C"} {
+                        # Check in global context
+                        pushNamespace {}
+                        array unset dummyVars
+                        array set dummyVars {}
+                        parseBody [lindex $argv $i] [lindex $indices $i] dummyVars
+                        popNamespace
+                    } else {
+                        parseBody [lindex $argv $i] [lindex $indices $i] knownVars
+                    }
                 }
 		incr i
 	    }
@@ -1566,9 +1582,6 @@ proc parseStatement {statement index knownVarsName} {
 	.* { # FIXA, check code in any -command.
              # Even widget commands should be checked.
 	     # Maybe in checkOptions ?
-	    return
-	}
-	bind { # FIXA, check the code
 	    return
 	}
 	global {
@@ -3107,12 +3120,12 @@ proc doCheck {} {
     # Do the checking
 
     set ::currentFile ""
+    set ::Nagelfar(exitstatus) 0
     if {$int} {
         initMsg
         parseScript $::Nagelfar(checkEdit)
         flushMsg
     } else {
-        set ::Nagelfar(exitstatus) 0
         foreach f $::Nagelfar(files) {
             if {$::Nagelfar(gui) || [llength $::Nagelfar(files)] > 1} {
                 set ::currentFile $f
