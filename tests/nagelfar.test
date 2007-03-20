@@ -678,9 +678,13 @@ test nagelfar-13.4 {
         time {set x 1}
         time {set y $x} 5
         set y
+        # Correct bind
+        bind .
+        bind . <Key>
+        bind . <Key> { lindex $y 1 }
     }
     execTestFile
-} -result {%%}
+} -result {%%Line  12: E Unknown variable "y"}
 
 # Testing the after command which has the special thing
 # of accepting either an int or a subcommand as first argument.
