@@ -8,9 +8,11 @@ VERSION = 118
 
 # Path to the TclKits used for creating StarPacks.
 TCLKIT = /home/peter/tclkit
-TCLKIT_LINUX   = $(TCLKIT)/tclkit-linux-x86
-TCLKIT_SOLARIS = $(TCLKIT)/tclkit-solaris-sparc
-TCLKIT_WIN     = $(TCLKIT)/tclkit-win32.upx.exe
+TCLKIT_LINUX   = $(TCLKIT)/v84/tclkit-linux-x86
+TCLKIT_SOLARIS = $(TCLKIT)/v84/tclkit-solaris-sparc
+TCLKIT_WIN     = $(TCLKIT)/v84/tclkit-win32.upx.exe
+TCLKIT85_LINUX = $(TCLKIT)/v85/tclkit-linux-x86
+TCLKIT85_WIN   = $(TCLKIT)/v85/tclkit-win32.upx.exe
 
 # Path to the libraries used
 GRIFFIN = /home/peter/tclkit/griffin.vfs/lib/griffin
@@ -177,6 +179,16 @@ wrapexe: base
 	sdx wrap nagelfar.linux   -runtime $(TCLKIT_LINUX)
 	sdx wrap nagelfar.solaris -runtime $(TCLKIT_SOLARIS)
 	sdx wrap nagelfar.exe     -runtime $(TCLKIT_WIN)
+	@cd nagelfar.vfs/lib/app-nagelfar ; ln -fs ../../../syntaxdb.tcl syntaxdb84.tcl
+	@cd nagelfar.vfs/lib/app-nagelfar ; ln -fs ../../../syntaxdb85.tcl syntaxdb.tcl
+	@\rm -f nagelfar85.vfs
+	@ln -s nagelfar.vfs nagelfar85.vfs
+	sdx wrap nagelfar85.kit
+	sdx wrap nagelfar85.linux   -runtime $(TCLKIT85_LINUX)
+	sdx wrap nagelfar85.exe     -runtime $(TCLKIT85_WIN)
+	@\rm -f nagelfar85.vfs
+	@cd nagelfar.vfs/lib/app-nagelfar ; ln -fs ../../../syntaxdb.tcl
+	@cd nagelfar.vfs/lib/app-nagelfar ; ln -fs ../../../syntaxdb85.tcl
 
 distrib: base
 	@\rm -f nagelfar.tar.gz
@@ -191,9 +203,13 @@ release: base distrib wrap wrapexe
 	@cp nagelfar.tar.gz nagelfar`date +%Y%m%d`.tar.gz
 	@mv nagelfar.tar.gz nagelfar$(VERSION).tar.gz
 	@gzip nagelfar.linux
+	@gzip nagelfar85.linux
 	@mv nagelfar.linux.gz nagelfar$(VERSION).linux.gz
+	@mv nagelfar85.linux.gz nagelfar$(VERSION)_85.linux.gz
 	@zip nagelfar$(VERSION).win.zip nagelfar.exe
+	@zip nagelfar$(VERSION)_85.win.zip nagelfar85.exe
 	@gzip nagelfar.solaris
 	@mv nagelfar.solaris.gz nagelfar$(VERSION).solaris.gz
 	@cp nagelfar.kit nagelfar`date +%Y%m%d`.kit
 	@cp nagelfar.kit nagelfar$(VERSION).kit
+	@mv nagelfar85.kit nagelfar$(VERSION)_85.kit
