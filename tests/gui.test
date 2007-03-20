@@ -66,9 +66,9 @@ proc GetTextLines {} {
     return [split [string trim $str] \n]
 }
 
-RestartClient 1
-
 test gui-1.1 {Run check without file} -body {
+    RestartClient 1
+
     tktest::press -async Check
     update
     after 250
@@ -81,9 +81,9 @@ test gui-1.1 {Run check without file} -body {
             [string equal $f "."]
 } -result {0 0 0}
 
-RestartClient 2
-
 test gui-1.2 {Run check without file} -body {
+    RestartClient 2
+
     tktest::press -async Check
     update
     after 250
@@ -280,7 +280,7 @@ test gui-2.5 {Message filter, multiline message} -body {
 } -result {4 1 2}
 
 test gui-3.1 {Debug mode} -body {
-    # Enter degug mode to exercise that code
+    # Enter debug mode to exercise that code
     set w [tktest::widget -class Text]
 
     set str1 [tktest::cmd $w get 1.0 end]
@@ -298,6 +298,59 @@ test gui-3.1 {Debug mode} -body {
     }
     set res
 } -result 0
+
+test gui-4.1 {Edit window} -body {
+    RestartClient
+
+    set rw [tktest::widget -class Text]
+
+    tktest::menu Tools "Edit Window"
+    update
+    set w [tktest::widget -class Text]
+    tktest::cmd focus $w
+    tktest::keys "list apa bepa"
+    tktest::menu Edit Check
+    set str1 [string trim [tktest::cmd $rw get 1.0 end]]
+
+    tktest::keys "\nset apa\n"
+    tktest::menu Edit Check
+    set str2 [string trim [tktest::cmd $rw get 1.0 end]]
+
+    tktest::menu File Close
+
+    set res 0
+    if {$str1 ne "Done"} {
+        set res "$str1 != Done"
+    }
+    if {![string match "*Unknown variable*" $str2]} {
+        set res "str2: $str2"
+    }
+    set res
+} -result 0
+
+test gui-4.2 {Edit window, line counter} -body {
+    set rw [tktest::widget -class Text]
+
+    tktest::menu Tools "Edit Window"
+    update
+    set w [tktest::widget -class Text]
+    set l [tktest::widget -class Label -pos 0]
+
+    set res {}
+    tktest::cmd focus $w
+
+    tktest::keys "list apa bepa"
+    update
+    lappend res [tktest::cmd $l cget -text]
+
+    tktest::keys "\nset apa\n"
+    update
+    lappend res [tktest::cmd $l cget -text]
+
+    tktest::menu File Close
+
+    set res
+} -result {1 3}
 
 send -async Nagelfar exit
 update
