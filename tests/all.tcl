@@ -11,7 +11,8 @@ set thisDir    [file dirname $thisScript]
 package require tcltest
 namespace import tcltest::*
 tcltest::configure -verbose "body error" -singleproc 1
-#tcltest::configure -file pref*
+#tcltest::configure -file gui*
+#tcltest::configure -match gui-6*
 
 testConstraint runin85 [expr {![catch {list {*}{hej}}]}]
 testConstraint runin84 [expr {[catch {list {*}{hej}}]}]
@@ -59,6 +60,7 @@ proc execTestFile {args} {
 
 proc cleanupTestFile {} {
     file delete -force _testfile_
+    file delete -force _testfile2_
     file delete -force _testfile_.syntax
 }
 
