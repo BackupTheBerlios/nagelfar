@@ -8,6 +8,26 @@ lappend ::auto_path /home/peter/src/tktest
 package require TkTest
 wm withdraw .
 
+# Perform a command and wait for a focus change in the application.
+# This is used for buttons or menus that create a dialog or other
+# new window.
+proc tktest::waitFocus {cmd args} {
+    set f [tktest::cmd focus]
+    eval \$cmd -async $args
+    update
+    after 250
+    for {set t 0} {$t < 20} {incr t} {
+        set newf [tktest::cmd focus]
+        update
+        after 100
+        if {$newf ne $f} break
+    }
+    if {$newf eq $f} {
+        return -code error "Timeout in waitFocus"
+    }
+    return
+}
+
 proc RestartClient {{mode 0}} {
     set ::clientfile nagelfar.tcl
     if {[file exists ${::clientfile}_i]} {
@@ -50,9 +70,22 @@ proc DeleteFileToTest {file} {
     tktest::key Delete
 }
 
-proc AddFileToTest {file} {
-    # FIXA: should add file through GUI
-    tktest::cmd fileDropFile $file
+proc AddFileToTest {file {dialog 0}} {
+    # Dialog = 1 : use gui
+    # Dialog = 2 ; use gui+cancel
+    if {$dialog != 0} {
+        tktest::waitFocus press Add 1
+        if {$dialog != 1} {
+            tktest::press Cancel
+        } else {
+            set e [tktest::widget -class Entry]
+            tktest::cmd $e insert end $file
+            tktest::press Open
+        }
+    }
+    if {$dialog != 1} {
+        tktest::cmd fileDropFile $file
+    }
 }
 
 proc ResetFilters {} {
@@ -69,9 +102,7 @@ proc GetTextLines {} {
 test gui-1.1 {Run check without file} -body {
     RestartClient 1
 
-    tktest::press -async Check
-    update
-    after 250
+    tktest::waitFocus press Check
     set f [tktest::cmd focus]
     tktest::key Return
 
@@ -84,9 +115,7 @@ test gui-1.1 {Run check without file} -body {
 test gui-1.2 {Run check without file} -body {
     RestartClient 2
 
-    tktest::press -async Check
-    update
-    after 250
+    tktest::waitFocus press Check
     set f [tktest::cmd focus]
     tktest::key Return
 
@@ -103,7 +132,7 @@ test gui-1.3 {Run check from GUI} -body {
         set apa 1
         set bepa $cepa
     }
-    tktest::press Check
+    tktest::key c Alt
     set output [GetTextLines]
     # Three lines of output, with error about cepa
     list [llength $output] [string match "*cepa*" $output]
@@ -115,7 +144,7 @@ test gui-2.1 {Message filter} -body {
         somecmd $bepa
         set $bepa 1
     }
-    tktest::press Check
+    tktest::key C Alt
     set output [GetTextLines]
     # Five lines of output, with all error classes
     set res [list [llength $output] [string match "* E * W * N *" $output]]
@@ -185,11 +214,11 @@ test gui-2.3 {Message filter, all files} -body {
     createTestFile {
         somecmd bepa
     }
-    file rename -force _testfile_ _testfile2_
+    file rename -force _testfile_ _testfile2_.tcl
     createTestFile {
         somecmd bepa
     }
-    AddFileToTest _testfile2_
+    AddFileToTest _testfile2_.tcl 1
 
     tktest::press Check
     set output [GetTextLines]
@@ -211,8 +240,8 @@ test gui-2.3 {Message filter, all files} -body {
             [string match "*file2_*somecmd*" $output]
     
     ResetFilters
-    file delete -force _testfile2_
-    DeleteFileToTest _testfile2_
+    file delete -force _testfile2_.tcl
+    DeleteFileToTest _testfile2_.tcl
 
     set res
 } -result {5 1 4 1}
@@ -225,7 +254,7 @@ test gui-2.4 {Message filter, all files} -body {
     createTestFile {
         somecmd bepa
     }
-    AddFileToTest _testfile2_
+    AddFileToTest _testfile2_ 2
 
     tktest::press Check
     set output [GetTextLines]
@@ -352,5 +381,67 @@ test gui-4.2 {Edit window, line counter} -body {
     set res
 } -result {1 3}
 
-send -async Nagelfar exit
+test gui-5.1 {Files, add, move delete} -body {
+    createTestFile {
+        somecmd bepa
+    }
+    file rename -force _testfile_ _testfile2_
+    createTestFile {
+        somecmd bepa
+    }
+    AddFileToTest _testfile2_ 2
+
+    # Rearrange files
+    set w [tktest::widget -class Listbox -pos 1]
+    tktest::cmd focus $w
+    tktest::key Down
+    tktest::key Up Shift
+
+    tktest::press Check
+    set output [GetTextLines]
+    set res [list [string match "*file2_*somecmd*file_*somecmd*" $output]]
+
+    tktest::key Up Shift
+    tktest::key Down Shift
+
+    tktest::press Check
+    set output [GetTextLines]
+    lappend res [string match "*file_*somecmd*file2_*somecmd*" $output]
+
+    tktest::key Delete
+
+    tktest::press Check
+    set output [GetTextLines]
+    lappend res [string match "*file_*somecmd*file2_*somecmd*" $output]
+    lappend res [string match "*file_*somecmd*" $output]
+    lappend res [tktest::cmd $w get 0 end]
+
+    file delete -force _testfile2_
+
+    set res
+} -result {1 1 0 1 _testfile_}
+
+test gui-6.1 {Traverse errors} -body {
+    set body [list "set apa 1"]
+    lappend body {set bepa $cepa}
+    for {set t 0} {$t < 100} {incr t} {
+        lappend body {set $bepa}
+    }
+    lappend body {set bepa $cepa}
+    createTestFile [join $body \n]
+    tktest::press Check
+    set res [llength [GetTextLines]]
+    set w [tktest::widget -class Text]
+    lappend res [lindex [tktest::cmd $w yview] 0]
+    tktest::press "Next E"
+    lappend res [lindex [tktest::cmd $w yview] 0]
+    tktest::key n Alt
+    lappend res [lindex [tktest::cmd $w yview] 1]
+    tktest::key N Alt
+    set res
+} -result {104 0 0 1}
+
+
+catch {tktest::menu File Exit}
+catch {send -async Nagelfar exit}
 update
