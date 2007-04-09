@@ -49,6 +49,23 @@ test nagelfar-1.5 {
     execTestFile -glob {_test*}
 } -returnCodes 0 -result {%%Checking file _testfile_}
 
+test nagelfar-1.6 {
+    Command line checks
+} -body {
+    createTestFile {
+        set apa bepa
+    }
+    execTestFile -flags -miffo
+} -returnCodes 0 -result {Unknown option -miffo*} -match glob
+
+test nagelfar-1.7 {
+    Command line checks
+} -body {
+    createTestFile {
+        set apa bepa
+    }
+    execTestFile -flags -h
+} -returnCodes 0 -result {Version*Usage: *} -match glob
 
 test nagelfar-2.1 {
     Basic functionality
@@ -783,3 +800,28 @@ test nagelfar-20.1 {
     }
     execTestFile
 } -result {%%}
+
+test nagelfar-21.1 {
+    Embedded
+} -body {
+    createTestFile {
+        set apa bepa
+    }
+    interp create apa
+    apa eval set ::Nagelfar(embedded) 1
+    set file nagelfar.tcl
+    set instr 0
+    if {[file exists ${file}_i]} {
+        set instr 1
+        set file ${file}_i
+    }
+    apa eval source $file
+    set res [apa eval [list synCheck _testfile_ syntaxdb.tcl]]
+    if {$instr} {
+        apa eval ::_instrument_::cleanup
+    }
+    interp delete apa
+    set res
+} -returnCodes 0 -result {{Checking file _testfile_}}
+
+
