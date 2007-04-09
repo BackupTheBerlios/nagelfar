@@ -157,3 +157,35 @@ test preferences-4.3 {
     file delete .nagelfarrc
     set res
 } -result {%%Line   4: E Badly formed if statement*%%} -match glob
+
+test preferences-5.1 {
+    Command line flags, -WsubN
+} -body {
+    createTestFile {
+        info exist apa
+    }
+    set res [execTestFile -flags -Wsub0]
+    append res [execTestFile -flags -Wsub1]
+} -result {%%%%Line   2: W Shortened*} -match glob
+
+test preferences-6.1 {
+    Command line flags, -severity
+} -body {
+    createTestFile {
+        info exist apa
+    }
+    set res [execTestFile -flags "-severity E"]
+    append res [execTestFile -flags "-severity W"]
+} -result {%%%%Line   2: W Shortened*} -match glob
+
+test preferences-6.2 {
+    Command line flags, -severity
+} -body {
+    createTestFile {
+        set apa {
+         }
+    }
+    set res [execTestFile -flags "-severity X"]
+    append res [execTestFile -flags "-severity N"]
+    append res [execTestFile -flags "-severity W"]
+} -result {Bad severity level 'X', should be E/W/N.%%Line   3: N Close brace*%%} -match glob
