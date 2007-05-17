@@ -791,7 +791,8 @@ proc parseSubst {str index typeName knownVarsName} {
 		    }
 		}
 		if {$i == $len} {
-		    errorMsg E "URGA:$si\n:$str:\n:[string range $str $si end]:" $index
+                    decho "Internal error: Did not find close bracket in parseSubst.\
+                            Line [calcLineNo $index]"
 		}
 		incr si
 		incr i -1
@@ -851,7 +852,7 @@ proc parseExpr {str index knownVarsName} {
                     if {[string equal $c "\$"]} {
                         incr i
                         parseVar $str $len $index i knownVars
-                        append exp {$dummy}
+                        append exp {${dummy}}
                         continue
                     } elseif {[string equal $c "\["]} {
                         set si $i
@@ -861,14 +862,14 @@ proc parseExpr {str index knownVarsName} {
                             }
                         }
                         if {$i == $len} {
-                            errorMsg E "URGA:$si\n:$str:\n:[string range $str $si end]:" $index
+                            errorMsg E "Missing close bracket at end of expression" $index
                         }
                         incr si
                         incr i -1
                         parseBody [string range $str $si $i] \
                                 [expr {$index + $si}] knownVars
                         incr i
-                        append exp {$dummy}
+                        append exp {${dummy}}
                         continue
                     }
                 }
@@ -2749,7 +2750,7 @@ proc parseFile {filename} {
     }
 }
 
-# Experimental instrumenting
+# Write source instrumented for code coverage
 proc dumpInstrumenting {filename} {
 
     set tail [file tail $filename]
@@ -2780,13 +2781,13 @@ proc dumpInstrumenting {filename} {
             if {[string index $iscript $ix] eq "\}"} {
                 incr ix
             }
-            set insert [list unset -nocomplain ::_instrument_::log($item)]
+            set insert [list incr ::_instrument_::log($item)]
             set insert " [list else $insert]"
             set pre [string range $iscript 0 [expr {$ix - 1}]]
             set post [string range $iscript $ix end]
         } else {
             # Normal
-            set insert [list unset -nocomplain ::_instrument_::log($item)]\;
+            set insert [list incr ::_instrument_::log($item)]\;
             set pre [string range $iscript 0 [expr {$ix - 1}]]
             set post [string range $iscript $ix end]
         
@@ -2804,7 +2805,7 @@ proc dumpInstrumenting {filename} {
         }
         set iscript $pre$insert$post
 
-        lappend init [list set log($item) 1]
+        lappend init [list set log($item) 0]
     }
     set ch [open $ifile w]
     # Start with a copy of the original's header
@@ -2842,7 +2843,8 @@ proc dumpInstrumenting {filename} {
                     set ch [open $logFile w]
                     puts $ch [list array unset ::_instrument_::log $src,*]
                     foreach item [lsort -dictionary [array names log $src,*]] {
-                        puts $ch [list set ::_instrument_::log($item) 1]
+                        puts $ch [list set ::_instrument_::log($item) \
+                                $::_instrument_::log($item)]
                     }
                     close $ch
                 }
@@ -2889,6 +2891,7 @@ proc instrumentMarkup {filename} {
     namespace eval ::_instrument_ {}
     source $logfile
     foreach item [array names ::_instrument_::log $tail,*] {
+        if {$::_instrument_::log($item) != 0} continue
         if {[regexp {,(\d+),\d+$} $item -> line]} {
             set lines($line) 1
         } elseif {[regexp {,(\d+)$} $item -> line]} {
@@ -2907,7 +2910,7 @@ proc instrumentMarkup {filename} {
     set lineNo 1
     while {[gets $chi line] >= 0} {
         if {[info exists lines($lineNo)]} {
-            append line "*"
+            append line " ;# Not covered"
         }
         puts $cho $line
         incr lineNo
