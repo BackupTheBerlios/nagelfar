@@ -69,11 +69,15 @@ test coverage-2.1 {
     apa eval [list namespace eval ::_instrument_ {}]
     apa eval source _testfile_1_log
     apa eval source _testfile_2_log
-    set res [apa eval array names ::_instrument_::log]
+    set items [apa eval array get ::_instrument_::log]
     interp delete apa
-
-    lsort -dictionary $res
-} -result {_testfile_1,5 _testfile_1,6 _testfile_2,3 _testfile_2,8} -cleanup {
+    
+    set res {}
+    foreach {item val} $items {
+        lappend res [list $item $val]
+    }
+    lsort -dictionary -index 0 $res
+} -result {{_testfile_1,2 1} {_testfile_1,3 1} {_testfile_1,5 0} {_testfile_1,6 0} {_testfile_1,8 1} {_testfile_2,2 1} {_testfile_2,3 0} {_testfile_2,5 1} {_testfile_2,6 1} {_testfile_2,8 0}} -cleanup {
     file delete _testfile_1_i _testfile_1
     file delete _testfile_2_i _testfile_2
     file delete _testfile_1_log _testfile_2_log
