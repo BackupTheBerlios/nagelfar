@@ -380,7 +380,7 @@ test nagelfar-6.2.2 {
     }
     execTestFile
 } -result {%%Line   3: E Bad expression: missing operand at _@_
-in expression "1 + $dummy /_@_"}
+    in expression "1 + ${dummy} /_@_"}
 
 test nagelfar-6.3 {
     Expression checking
@@ -400,9 +400,20 @@ test nagelfar-6.4 {
     createTestFile {
         set apa 10
         expr {$apa == {$bepa}}
+        expr {$apa == "${apa}_gugg"}
+        expr {$apa == "[list hej]_gugg"}
     }
     execTestFile
 } -result {%%}
+
+test nagelfar-6.5 {
+    Expression checking
+} -body {
+    createTestFile {
+        if {[string length xxx} { set apa 1 }
+    }
+    execTestFile
+} -result {%%Line   2: E Missing close bracket at end of expression}
 
 test nagelfar-7.1 {
     Command: upvar
