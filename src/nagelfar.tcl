@@ -2614,6 +2614,7 @@ proc buildLineDb {str} {
     # in code coverage mode.
     # The first non-empty non-comment line ends the header.
     set ::instrumenting(header) 0
+    set ::instrumenting(already) 0
     set headerLines 1
     set previousWasEscaped 0
 
@@ -2633,9 +2634,12 @@ proc buildLineDb {str} {
         # Check for comments.
 	if {[string equal [string index $line 0] "#"]} {
 	    checkPossibleComment $line $lineNo
-	} elseif {$headerLines && $str ne "" && !$previousWasEscaped} {
+	} elseif {$headerLines && $line ne "" && !$previousWasEscaped} {
             set headerLines 0
             set ::instrumenting(header) [string length $result]
+            if {$line eq "namespace eval ::_instrument_ {}"} {
+                set ::instrumenting(already) 1
+            }
         }
 
         # Count backslashes to determine if it's escaped
@@ -2754,6 +2758,9 @@ proc parseFile {filename} {
 proc dumpInstrumenting {filename} {
 
     set tail [file tail $filename]
+    if {$::instrumenting(already)} {
+        echo "Warning: Instrumenting already instrumented file $tail"
+    }
     set ifile ${filename}_i
     echo "Writing file $ifile" 1
     set iscript $::instrumenting(script)
@@ -2883,6 +2890,7 @@ proc dumpInstrumenting {filename} {
             [file attributes $filename -permissions]}
 }
 
+# Add Code Coverage markup to a file according to measured coverage
 proc instrumentMarkup {filename} {
     set tail [file tail $filename]
     set logfile ${filename}_log
@@ -2909,6 +2917,13 @@ proc instrumentMarkup {filename} {
     set cho [open $mfile w]
     set lineNo 1
     while {[gets $chi line] >= 0} {
+        if {$line eq "        namespace eval ::_instrument_ {}"} {
+            echo "File $filename is instrumented, aborting markup"
+            close $chi
+            close $cho
+            file delete $mfile
+            return
+        }
         if {[info exists lines($lineNo)]} {
             append line " ;# Not covered"
         }
@@ -2978,14 +2993,18 @@ proc loadDatabases {} {
         set data [read $ch]
         close $ch
         if {[string first "##nagelfar" $data] < 0} continue
-        set comments [lsearch -all -inline [split $data \n] "*##nagelfar*"]
-        foreach comment $comments {
+        set lines [split $data \n]
+        set commentlines [lsearch -all $lines "*##nagelfar*"]
+        foreach commentline $commentlines {
+            set comment [lindex $lines $commentline]
             set str [string trim $comment]
             if {![string match "##nagelfar *" $str]} continue
 
+            # Increase to make a line number from the index
+            incr commentline
             set rest [string range $str 11 end]
             if {[catch {llength $rest}]} {
-                errEcho "Bad list in ##nagelfar comment in db"
+                echo "Bad list in ##nagelfar comment in db $f line $commentline"
                 continue
             }
             if {[llength $rest] == 0} continue
@@ -3006,7 +3025,7 @@ proc loadDatabases {} {
                     _ipset ::option($first) $rest
                 }
                 default {
-                    errEcho "Bad type in ##nagelfar comment in db"
+                    echo "Bad type in ##nagelfar comment in db $f line $commentline"
                     continue
                 }
             }
