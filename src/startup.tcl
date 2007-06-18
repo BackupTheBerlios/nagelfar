@@ -203,7 +203,10 @@ if {![info exists gurka]} {
             }
             -markup {
                 incr i
-                instrumentMarkup [lindex $argv $i]
+                if {$i < $argc} {
+                    lappend ::Nagelfar(files) [lindex $argv $i]
+                }
+                instrumentMarkup [lindex $::Nagelfar(files) 0]
                 exit
             }
             -novar {
