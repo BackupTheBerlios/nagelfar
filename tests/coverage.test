@@ -82,3 +82,27 @@ test coverage-2.1 {
     file delete _testfile_2_i _testfile_2
     file delete _testfile_1_log _testfile_2_log
 }
+
+test coverage-3.1 {
+    Repeated instrumenting
+} -body {
+    createTestFile {# header lines
+        # more header lines
+        set apa [list hej hopp]
+    }
+    set res [list [execTestFile -flags -instrument]]
+    file rename -force _testfile__i _testfile_
+    lappend res [execTestFile -flags -instrument]
+
+    interp create apa
+    apa eval source _testfile__i
+    apa eval ::_instrument_::cleanup
+    interp delete apa
+
+    lappend res [execTestFile -flags -markup]
+    file delete _testfile__i
+    file delete _testfile__log
+    set res
+} -result [list {%%Writing file _testfile__i} {%%Warning: Instrumenting already instrumented file _testfile_
+Writing file _testfile__i} {Writing file _testfile__m
+File _testfile_ is instrumented, aborting markup}]
