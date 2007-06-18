@@ -205,3 +205,24 @@ test inline-8.1 {
     file delete apa.miffo
     set res
 } -result {%%}
+
+test inline-8.2 {
+    Inline in db file
+} -body {
+    set ch [open apa.miffo w]
+    puts $ch {
+        ##nagelfar
+        ##nagelfar "aaka
+        ##nagelfar hubert
+    }
+    close $ch
+    createTestFile {
+        set x 1
+    }
+    set res [execTestFile -flags "-s apa.miffo"]
+    file delete apa.miffo
+    set res
+} -result {Bad list in ##nagelfar comment in db apa.miffo line 3
+Bad type in ##nagelfar comment in db apa.miffo line 4
+%%}
+
