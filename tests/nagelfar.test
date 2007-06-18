@@ -46,7 +46,7 @@ test nagelfar-1.5 {
     createTestFile {
         set apa bepa
     }
-    execTestFile -glob {_test*}
+    execTestFile -glob {_test*e_}
 } -returnCodes 0 -result {%%Checking file _testfile_}
 
 test nagelfar-1.6 {
