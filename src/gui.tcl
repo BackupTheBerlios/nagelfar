@@ -465,18 +465,20 @@ proc makeWin {} {
 
     frame .fs
     label .fs.l -text "Syntax database files"
+    button .fs.bd -text "Del" -width 10 -command removeDbFile
     button .fs.b -text "Add" -width 10 -command addDbFile
     set lb [Scroll y listbox .fs.lb \
                     -listvariable ::Nagelfar(allDbView) \
                     -height 4 -width 40 -selectmode single]
     set ::Nagelfar(dbWin) $lb
+
     bind $lb <Key-Delete> "removeDbFile"
     bind $lb <<ListboxSelect>> updateDbSelection
     bind $lb <Button-1> [list focus $lb]
     updateDbSelection 1
 
-    grid .fs.l  .fs.b -sticky w -padx 2 -pady 2
-    grid .fs.lb -     -sticky news
+    grid .fs.l  .fs.bd .fs.b -sticky w -padx 2 -pady 2
+    grid .fs.lb -      -     -sticky news
     grid columnconfigure .fs 0 -weight 1
     grid rowconfigure .fs 1 -weight 1
 
@@ -491,6 +493,7 @@ proc makeWin {} {
                     -listvariable ::Nagelfar(files) \
                     -height 4 -width 40]
     set ::Nagelfar(fileWin) $lb
+
     bind $lb <Key-Delete> "removeFile"
     bind $lb <Button-1> [list focus $lb]
     bind $lb <Shift-Up> {moveFile -1}
