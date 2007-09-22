@@ -103,6 +103,9 @@ test coverage-3.1 {
     file delete _testfile__i
     file delete _testfile__log
     set res
-} -result [list {%%Writing file _testfile__i} {%%Warning: Instrumenting already instrumented file _testfile_
-Writing file _testfile__i} {Writing file _testfile__m
+} -result [list \
+        {%%Writing file _testfile__i} \
+        {%%Warning: Instrumenting already instrumented file _testfile_
+Writing file _testfile__i} \
+        {Writing file _testfile__m (3/13 23.1%)
 File _testfile_ is instrumented, aborting markup}]
