@@ -135,6 +135,7 @@ testcover $(LOGFILES): nagelfar.tcl_i
 	@./nagelfar.tcl -markup $*.tcl
 
 # View code coverage result
+markup: $(MFILES)
 icheck: $(MFILES)
 	@for i in $(SRCFILES) ; do eskil -noparse $$i $${i}_m & done
 
