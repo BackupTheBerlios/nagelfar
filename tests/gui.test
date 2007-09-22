@@ -8,26 +8,6 @@ lappend ::auto_path /home/peter/src/tktest
 package require TkTest
 wm withdraw .
 
-# Perform a command and wait for a focus change in the application.
-# This is used for buttons or menus that create a dialog or other
-# new window.
-proc tktest::waitFocus {cmd args} {
-    set f [tktest::cmd focus]
-    eval \$cmd -async $args
-    update
-    after 250
-    for {set t 0} {$t < 20} {incr t} {
-        set newf [tktest::cmd focus]
-        update
-        after 100
-        if {$newf ne $f} break
-    }
-    if {$newf eq $f} {
-        return -code error "Timeout in waitFocus"
-    }
-    return
-}
-
 proc RestartClient {{mode 0}} {
     set ::clientfile nagelfar.tcl
     if {[file exists ${::clientfile}_i]} {
@@ -152,9 +132,7 @@ test gui-2.1 {Message filter} -body {
     # Coordinates for the warning message
     set w [tktest::widget -class Text]
     set coord [tktest::coord $w bbox 3.3]
-    tktest::mouse right $coord
-    tktest::menu "Filter this message"
-    tktest::key Escape
+    tktest::contextMenu $coord "Filter this message"
 
     set output [GetTextLines]
     # Four lines of output, with W gone
@@ -187,9 +165,7 @@ test gui-2.2 {Message filter, generic} -body {
     # Coordinates for the warning message
     set w [tktest::widget -class Text]
     set coord [tktest::coord $w bbox 3.3]
-    tktest::mouse right $coord
-    tktest::menu "Filter this message"
-    tktest::key Escape
+    tktest::contextMenu $coord "Filter this message"
 
     set output [GetTextLines]
     # Four lines of output
@@ -197,9 +173,7 @@ test gui-2.2 {Message filter, generic} -body {
 
     # Coordinates for the warning message
     set coord [tktest::coord $w bbox 3.3]
-    tktest::mouse right $coord
-    tktest::menu "Filter this generic message"
-    tktest::key Escape
+    tktest::contextMenu $coord "Filter this generic message"
 
     set output [GetTextLines]
     # Two lines of output
@@ -230,9 +204,7 @@ test gui-2.3 {Message filter, all files} -body {
     # Coordinates for the warning message
     set w [tktest::widget -class Text]
     set coord [tktest::coord $w bbox 2.3]
-    tktest::mouse right $coord
-    tktest::menu "Filter this message"
-    tktest::key Escape
+    tktest::contextMenu $coord "Filter this message"
 
     set output [GetTextLines]
     # Four lines of output
@@ -266,9 +238,7 @@ test gui-2.4 {Message filter, all files} -body {
     # Coordinates for the warning message
     set w [tktest::widget -class Text]
     set coord [tktest::coord $w bbox 2.3]
-    tktest::mouse right $coord
-    tktest::menu "Filter this message in all files"
-    tktest::key Escape
+    tktest::contextMenu $coord "Filter this message in all files"
 
     set output [GetTextLines]
     # Three lines of output
@@ -296,9 +266,7 @@ test gui-2.5 {Message filter, multiline message} -body {
     # Coordinates for the warning message
     set w [tktest::widget -class Text]
     set coord [tktest::coord $w bbox 3.3]
-    tktest::mouse right $coord
-    tktest::menu "Filter this message"
-    tktest::key Escape
+    tktest::contextMenu $coord "Filter this message"
 
     set output [GetTextLines]
     lappend res [llength $output]
