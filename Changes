@@ -1,3 +1,15 @@
+2007-06-18
+ Added Del button for Db files. [Bug 11109]
+ Added percentage in coverage output.
+
+2007-06-13
+ Improved error messages for comments in db files. [Bug 11109]
+ Check if file is being reinstrumented. [FR 3424]
+
+2007-05-17
+ Made code coverage count number of runs instead of just run/notrun. [FR 3415]
+ Fixed a bug in expression checking. [Bug 11091]
+
 2007-03-09
  Check bind scripts in global context. New token "C".
  Fixed edit window startup problem.
