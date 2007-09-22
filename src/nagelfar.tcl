@@ -786,6 +786,7 @@ proc parseSubst {str index typeName knownVarsName} {
 	    } elseif {[string equal $c "\["]} {
 		set si $i
 		for {} {$i < $len} {incr i} {
+                    # FIXA: error => complete
 		    if {[info complete [string range $str $si $i]]} {
 			break
 		    }
@@ -2821,7 +2822,7 @@ proc dumpInstrumenting {filename} {
         set iscript [string range $iscript $headerIndex end]
     }
     # Create a prolog equal in all instrumented files
-    puts $ch {
+    puts $ch {\
         namespace eval ::_instrument_ {}
         if {[info commands ::_instrument_::source] == ""} {
             rename ::source ::_instrument_::source
@@ -2898,15 +2899,25 @@ proc instrumentMarkup {filename} {
 
     namespace eval ::_instrument_ {}
     source $logfile
+    set covered 0
+    set noncovered 0
     foreach item [array names ::_instrument_::log $tail,*] {
-        if {$::_instrument_::log($item) != 0} continue
+        if {$::_instrument_::log($item) != 0} {
+            incr covered
+            continue
+        }
+        incr noncovered
         if {[regexp {,(\d+),\d+$} $item -> line]} {
             set lines($line) 1
         } elseif {[regexp {,(\d+)$} $item -> line]} {
             set lines($line) 1
         }
     }
-    echo "Writing file $mfile" 1
+    set total [expr {$covered + $noncovered}]
+    set coverage [expr {100.0 * $covered / $total}]
+    set stats [format "(%d/%d %4.1f%%)" \
+            $covered $total $coverage]
+    echo "Writing file $mfile $stats" 1
     if {[array size lines] == 0} {
         echo "All lines covered in $tail"
         file copy -force $filename $mfile
@@ -2917,7 +2928,7 @@ proc instrumentMarkup {filename} {
     set cho [open $mfile w]
     set lineNo 1
     while {[gets $chi line] >= 0} {
-        if {$line eq "        namespace eval ::_instrument_ {}"} {
+        if {$line eq " namespace eval ::_instrument_ {}"} {
             echo "File $filename is instrumented, aborting markup"
             close $chi
             close $cho
