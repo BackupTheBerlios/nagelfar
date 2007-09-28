@@ -522,7 +522,7 @@ proc buildDb {ch} {
     }
 
     # A fix since puts still gives an unhelpful error
-    if {![info exists option(puts)]} {
+    if {![info exists option(puts)] || [lsearch $option(puts) "-nonewline"] < 0} {
         set option(puts) [list -nonewline]
     }
 
