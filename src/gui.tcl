@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------
 #  Nagelfar, a syntax checker for Tcl.
-#  Copyright (c) 1999-2006, Peter Spjuth  (peter.spjuth@space.se)
+#  Copyright (c) 1999-2007, Peter Spjuth
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -243,6 +243,8 @@ proc resultPopup {x y X Y} {
                     -command [list addFilter "*$post2*" 1]
         }
     }
+    # FIXA: This should be handled abit better.
+    .popup add command -label "Reset all filters" -command resetFilters
 
     tk_popup .popup $X $Y
 }
@@ -448,6 +450,18 @@ proc backDoor {a} {
     }
 }
 
+# Flag that the current run should be stopped
+proc stopCheck {} {
+    set ::Nagelfar(stop) 1
+    $::Nagelfar(stopWin) configure -state disabled
+}
+
+# Allow the stop button to be pressed
+proc allowStop {} {
+    set ::Nagelfar(stop) 0
+    $::Nagelfar(stopWin) configure -state normal
+}
+
 # Create main window
 proc makeWin {} {
     defaultGuiOptions
@@ -518,6 +532,10 @@ proc makeWin {} {
     button .fr.b -text "Check" -underline 0 -width 10 -command "doCheck"
     bind . <Alt-Key-c> doCheck
     bind . <Alt-Key-C> doCheck
+    button .fr.bb -text "Stop" -underline 0 -width 10 -command "stopCheck"
+    bind . <Alt-Key-b> stopCheck
+    bind . <Alt-Key-B> stopCheck
+    set ::Nagelfar(stopWin) .fr.bb
     button .fr.bn -text "Next E" -underline 0 -width 10 -command "seeNextError"
     bind . <Alt-Key-n> seeNextError
     bind . <Alt-Key-N> seeNextError
@@ -528,9 +546,9 @@ proc makeWin {} {
     set ::Nagelfar(resultWin) [Scroll both \
             text .fr.t -width 100 -height 25 -wrap none -font ResultFont]
 
-    grid .fr.b .fr.bn .fr.pr -sticky w -padx 2 -pady {0 2}
-    grid .fr.t -      -      -sticky news
-    grid columnconfigure .fr 1 -weight 1
+    grid .fr.b .fr.bb .fr.bn .fr.pr -sticky w -padx 2 -pady {0 2}
+    grid .fr.t -      -      -      -sticky news
+    grid columnconfigure .fr 2 -weight 1
     grid rowconfigure    .fr 1 -weight 1
 
     $::Nagelfar(resultWin) tag configure info -foreground #707070
@@ -905,7 +923,7 @@ proc makeAboutWin {} {
     $w.t insert end "A syntax checker for Tcl\n\n"
     $w.t insert end "$version\n\n"
     $w.t insert end "Made by Peter Spjuth\n"
-    $w.t insert end "E-Mail: peter.spjuth@space.se\n"
+    $w.t insert end "E-Mail: peter.spjuth@gmail.com\n"
     $w.t insert end "\nURL: http://nagelfar.berlios.de\n"
     $w.t insert end "\nTcl version: [info patchlevel]"
     set d [package provide tkdnd]
