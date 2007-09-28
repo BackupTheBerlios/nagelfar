@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------
 #  Nagelfar, a syntax checker for Tcl.
-#  Copyright (c) 1999-2006, Peter Spjuth  (peter.spjuth@space.se)
+#  Copyright (c) 1999-2007, Peter Spjuth
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -301,15 +301,6 @@ proc scanWord {str len index i} {
                 set si2 $i
             } else {
                 errorMsg N "Standalone {*} can be confusing. I recommend \"*\"." $i
-            }
-        } elseif {[string range $str $i [expr {$i + 7}]] eq "{expand}"} {
-            set ni [expr {$i + 8}]
-            set nc [string index $str $ni]
-            if {![string is space $nc]} {
-                # Non-space detected, it is expansion
-                set c $nc
-                set i $ni
-                set si2 $i
             }
         }
     }
@@ -1030,6 +1021,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
 
 	set tok [string index $token 0]
 	set mod [string index $token 1]
+        if {$mod eq "("} {set mod ""}
 	# Basic checks for modifiers
 	switch -- $mod {
 	    "" { # No modifier, and out of arguments, is an error
@@ -1461,15 +1453,6 @@ proc parseStatement {statement index knownVarsName} {
         if {[string length $word] > 3 && [string match "{\\*}*" $word]} {
             set ws 8
             set word [string range $word 3 end]
-        } elseif {[string length $word] > 8 && \
-                [string match "{expand}*" $word]} {
-            set ws 8
-            set word [string range $word 8 end]
-            if {$::Nagelfar(allowOldExpand)} {
-                errorMsg W "Obsolete {expand} syntax. Use {*}." $index
-            } else {
-                errorMsg E "Obsolete {expand} syntax. Use {*}." $index
-            }
         }
         set char [string index $word 0]
         if {[string equal $char "\{"]} {
@@ -1543,7 +1526,7 @@ proc parseStatement {statement index knownVarsName} {
     set indices [lrange $indices2 1 end]
     set argc [llength $argv]
 
-    # FIXA: handle {expand} better
+    # FIXA: handle {*} better
     foreach ws $wordstatus {
         if {$ws & 8} {
             return
@@ -2374,7 +2357,14 @@ proc parseProc {argv indices} {
     # Initialise a knownVars array with the arguments.
     array set knownVars {}
     set seenDefault 0
-    foreach a $args {
+
+    # Scan the syntax definition in parallel to look for types
+    if {[info exists syntax($name)]} {
+        set syn $syntax($name)
+    } else {
+        set syn ""
+    }
+    foreach a $args token $syn {
         set var [lindex $a 0]
         if {[llength $a] > 1} {
             set seenDefault 1
@@ -2386,7 +2376,11 @@ proc parseProc {argv indices} {
         set knownVars(known,$var) 1
         set knownVars(local,$var) 1
         set knownVars(set,$var)   1
-        set knownVars(type,$var)  ""
+        if {[regexp {\((.*)\)} $token -> type]} {
+            set knownVars(type,$var)  $type
+        } else {
+            set knownVars(type,$var)  ""
+        }
     }
     
     if {$storeIt} {
@@ -2487,6 +2481,9 @@ proc parseProc {argv indices} {
                 foreach token $syntax($name) {
                     set tok [string index $token 0]
                     set mod [string index $token 1]
+                    if {$mod == "("} {
+                        set mod ""
+                    }
                     set n [expr {$tok == "p" ? 2 : 1}]
                     if {$mod == ""} {
                         incr prevmin $n
@@ -2975,6 +2972,10 @@ proc addFilter {pat {reapply 0}} {
     }
 }
 
+# Clear out all filters
+proc resetFilters {} {
+    set ::Nagelfar(filter) {}
+}
 
 # FIXA: Move safe reading to package
 ##nagelfar syntax _ipsource x
@@ -3068,15 +3069,10 @@ proc loadDatabases {} {
     # It also naturally requires an 8.5 database to indicate that it is
     # checking 8.5 scripts
     set ::Nagelfar(allowExpand) 0
-    set ::Nagelfar(allowOldExpand) 0
     if {[package vcompare $::Nagelfar(dbTclVersion) 8.5] >= 0 && \
             [package vcompare $::tcl_version 8.5] >= 0} {
         ##nagelfar ignore
-        if {![catch {list {expand}{hej}}]} {
-            set ::Nagelfar(allowExpand) 1
-            set ::Nagelfar(allowOldExpand) 1
-        ##nagelfar ignore
-        } elseif {![catch {list {*}{hej}}]} {
+        if {![catch {list {*}{hej}}]} {
             set ::Nagelfar(allowExpand) 1
         }
     }
@@ -3127,6 +3123,7 @@ proc doCheck {} {
     }
 
     if {$::Nagelfar(gui)} {
+        allowStop
         busyCursor
     }
 
@@ -3160,6 +3157,7 @@ proc doCheck {} {
         flushMsg
     } else {
         foreach f $::Nagelfar(files) {
+            if {$::Nagelfar(stop)} break
             if {$::Nagelfar(gui) || [llength $::Nagelfar(files)] > 1} {
                 set ::currentFile $f
             }
