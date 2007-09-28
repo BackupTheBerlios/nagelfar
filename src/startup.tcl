@@ -68,7 +68,7 @@ proc StartUp {} {
     set ::Nagelfar(tabSub) [string repeat " " 8]
     set ::Nagelfar(tabMap) [list \t $::Nagelfar(tabSub)]
     set ::Nagelfar(procs) {}
-    set ::Nagelfar(break) 0
+    set ::Nagelfar(stop) 0
     if {![info exists ::Nagelfar(embedded)]} {
         set ::Nagelfar(embedded) 0
     }
