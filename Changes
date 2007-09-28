@@ -1,6 +1,11 @@
+2007-09-27
+ Added a reset filter option in GUI. [FR 3586]
+ Added break button in GUI. [FR 3412]
+ Removed old {expand} syntax.
+
 2007-06-18
  Added Del button for Db files. [Bug 11109]
- Added percentage in coverage output.
+ Added percentage in coverage output. [FR 3428]
 
 2007-06-13
  Improved error messages for comments in db files. [Bug 11109]
