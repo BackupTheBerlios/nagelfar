@@ -15,7 +15,7 @@ foreach gurkmeja [array names auto_index] {
     }
 }
 if {[info exists gurkmeja]} {
-	unset gurkmeja
+    unset gurkmeja
 }
 
 
@@ -49,17 +49,19 @@ if 0 { # Not working yet
 proc getSubCmds {args} {
     catch {eval $args} err
 
-    lappend res {option .* must be (.*)$}
-    lappend res {option .* should be one of (.*)$}
-    lappend res {bad .* must be (.*)$}
-    lappend res {: must be (.*)$}
+    lappend regexps {option .* must be (.*)$}
+    lappend regexps {option .* should be one of (.*)$}
+    lappend regexps {bad .* must be (.*)$}
+    lappend regexps {: must be (.*)$}
+    lappend regexps {: should be (.*)$}
 
-    foreach re $res {
+    foreach re $regexps {
 	if {[regexp $re $err -> apa]} {
 	    regsub -all {( or )|(, or )|(, )} $apa " " apa
 	    return [lsort -dictionary [lrange $apa 0 end]]
 	}
     }
+    #puts "Error '$err' from '$args'"
     return {}
 }
 
@@ -197,10 +199,40 @@ proc buildDb {ch} {
     set syntax(fblocked)         1
     set syntax(fconfigure)      "x o. x. p*"
     set syntax(fcopy)           "x x p*"
-    set syntax(file)            "s x*"   ;# FIXA: All subcommands
+    set syntax(file)            "s x*"
+    set syntax(file\ atime)      "x x?"
     set syntax(file\ attributes) "x o. x. p*"
-    set syntax(file\ lstat)     "x n"
-    set syntax(file\ stat)      "x n"
+    set syntax(file\ channels)   "x?"
+    set syntax(file\ copy)       "o* x x x*"
+    set syntax(file\ delete)     "o* x x*"
+    set syntax(file\ dirname)    "x"
+    set syntax(file\ executable) "x"
+    set syntax(file\ exists)     "x"
+    set syntax(file\ extension)  "x"
+    set syntax(file\ isdirectory) "x"
+    set syntax(file\ isfile)     "x"
+    set syntax(file\ join)       "x x*"
+    set syntax(file\ link)       "o? x x?"
+    set syntax(file\ lstat)      "x n"
+    set syntax(file\ mkdir)      "x x*"
+    set syntax(file\ mtime)      "x x?"
+    set syntax(file\ nativename) "x"
+    set syntax(file\ normalize)  "x"
+    set syntax(file\ owned)      "x"
+    set syntax(file\ pathtype)   "x"
+    set syntax(file\ readable)   "x"
+    set syntax(file\ readlink)   "x"
+    set syntax(file\ rename)     "o* x x x*"
+    set syntax(file\ rootname)   "x"
+    set syntax(file\ separator)  "x?"
+    set syntax(file\ size)       "x"
+    set syntax(file\ split)      "x"
+    set syntax(file\ stat)       "x n"
+    set syntax(file\ system)     "x"
+    set syntax(file\ tail)       "x"
+    set syntax(file\ type)       "x"
+    set syntax(file\ volumes)    0
+    set syntax(file\ writable)   "x"
     set syntax(fileevent)       "x x x?"
     set syntax(flush)            1
     set syntax(for)             "c E c c"
@@ -325,7 +357,9 @@ proc buildDb {ch} {
         set syntax(lassign)    "x n n*"
         set syntax(lrepeat)    "r 2"
         set syntax(lreverse)   "1"
+        set syntax(string\ reverse)   "1"
         set syntax(unload)     "o* x x*"
+        # FIXA: chan subcommands
         set syntax(chan)       "s x*"
         set syntax(apply)      "x x*"
         set syntax(source)     "p* x"
@@ -415,6 +449,8 @@ proc buildDb {ch} {
                 }
             }
         }
+        set option(.\ configure)       $option(toplevel)
+        set option(.\ cget)            $option(toplevel)
     }
 
     # Build a database of options and subcommands
@@ -449,6 +485,7 @@ proc buildDb {ch} {
     set option(fconfigure) [getSubCmds fconfigure stdin -gurkmeja]
     set option(fcopy)      [getSubCmds fcopy stdin stdout -gurkmeja x]
     set option(unset)      [list -nocomplain --]
+    set option(clock\ format) [getSubCmds clock format 1 -gurkmeja x]
 
     # Add additonal fconfigure, known for serial channels
     lappend option(fconfigure) -mode -handshake -queue -timeout -ttycontrol -ttystatus -xchar -pollinterval -sysbuffer -lasterror
