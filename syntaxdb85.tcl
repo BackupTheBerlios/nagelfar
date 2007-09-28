@@ -1,5 +1,5 @@
 # Automatically generated syntax database.
-# Generated with syntaxbuild Revision: 1.34 
+# Generated with syntaxbuild Revision: 1.36 
 
 lappend ::dbInfo {Tcl 8.5b1 unix, Tk 8.5b1 x11}
 set ::dbTclVersion 8.5
@@ -131,9 +131,39 @@ set ::syntax(fblocked) 1
 set ::syntax(fconfigure) {x o. x. p*}
 set ::syntax(fcopy) {x x p*}
 set ::syntax(file) {s x*}
+set {::syntax(file atime)} {x x?}
 set {::syntax(file attributes)} {x o. x. p*}
+set {::syntax(file channels)} x?
+set {::syntax(file copy)} {o* x x x*}
+set {::syntax(file delete)} {o* x x*}
+set {::syntax(file dirname)} x
+set {::syntax(file executable)} x
+set {::syntax(file exists)} x
+set {::syntax(file extension)} x
+set {::syntax(file isdirectory)} x
+set {::syntax(file isfile)} x
+set {::syntax(file join)} {x x*}
+set {::syntax(file link)} {o? x x?}
 set {::syntax(file lstat)} {x n}
+set {::syntax(file mkdir)} {x x*}
+set {::syntax(file mtime)} {x x?}
+set {::syntax(file nativename)} x
+set {::syntax(file normalize)} x
+set {::syntax(file owned)} x
+set {::syntax(file pathtype)} x
+set {::syntax(file readable)} x
+set {::syntax(file readlink)} x
+set {::syntax(file rename)} {o* x x x*}
+set {::syntax(file rootname)} x
+set {::syntax(file separator)} x?
+set {::syntax(file size)} x
+set {::syntax(file split)} x
 set {::syntax(file stat)} {x n}
+set {::syntax(file system)} x
+set {::syntax(file tail)} x
+set {::syntax(file type)} x
+set {::syntax(file volumes)} 0
+set {::syntax(file writable)} x
 set ::syntax(fileevent) {x x x?}
 set ::syntax(flush) 1
 set ::syntax(focus) {o? x?}
@@ -220,6 +250,7 @@ set {::syntax(string match)} {o? x x}
 set {::syntax(string range)} 3
 set {::syntax(string repeat)} 2
 set {::syntax(string replace)} {r 3 4}
+set {::syntax(string reverse)} 1
 set {::syntax(string tolower)} {r 1 3}
 set {::syntax(string totitle)} {r 1 3}
 set {::syntax(string toupper)} {r 1 3}
@@ -368,6 +399,8 @@ set ::subCmd(update) idletasks
 set ::subCmd(winfo) {atom atomname cells children class colormapfull containing depth exists fpixels geometry height id interps ismapped manager name parent pathname pixels pointerx pointerxy pointery reqheight reqwidth rgb rootx rooty screen screencells screendepth screenheight screenmmheight screenmmwidth screenvisual screenwidth server toplevel viewable visual visualid visualsavailable vrootheight vrootwidth vrootx vrooty width x y}
 set ::subCmd(wm) {aspect attributes client colormapwindows command deiconify focusmodel frame geometry grid group iconbitmap iconify iconmask iconname iconphoto iconposition iconwindow maxsize minsize overrideredirect positionfrom protocol resizable sizefrom stackorder state title transient withdraw}
 
+set {::option(. cget)} {-bd -borderwidth -class -menu -relief -screen -use -background -bg -colormap -container -cursor -height -highlightbackground -highlightcolor -highlightthickness -padx -pady -takefocus -visual -width}
+set {::option(. configure)} {-bd -borderwidth -class -menu -relief -screen -use -background -bg -colormap -container -cursor -height -highlightbackground -highlightcolor -highlightthickness -padx -pady -takefocus -visual -width}
 set {::option(_obj,button cget)} {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -default -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -justify -overrelief -padx -pady -relief -repeatdelay -repeatinterval -state -takefocus -text -textvariable -underline -width -wraplength}
 set {::option(_obj,button configure)} {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -default -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -justify -overrelief -padx -pady -relief -repeatdelay -repeatinterval -state -takefocus -text -textvariable -underline -width -wraplength}
 set {::option(_obj,button configure -textvariable)} n
@@ -432,6 +465,10 @@ set ::option(exec) {-- -ignorestderr -keepnewline}
 set ::option(fconfigure) {-blocking -buffering -buffersize -encoding -eofchar -error -handshake -lasterror -mode -peername -pollinterval -queue -sockname -sysbuffer -timeout -translation -ttycontrol -ttystatus -xchar}
 set ::option(fcopy) {-command -size}
 set {::option(file attributes)} {-group -owner -permissions}
+set {::option(file copy)} {-- -force}
+set {::option(file delete)} {-- -force}
+set {::option(file link)} {-hard -symbolic}
+set {::option(file rename)} {-- -force}
 set ::option(focus) {-displayof -force -lastfor}
 set ::option(frame) {-bd -borderwidth -class -relief -background -bg -colormap -container -cursor -height -highlightbackground -highlightcolor -highlightthickness -padx -pady -takefocus -visual -width}
 set ::option(glob) {-- -directory -join -nocomplain -path -tails -types}
