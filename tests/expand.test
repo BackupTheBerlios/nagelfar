@@ -55,16 +55,6 @@ test expand-2.3 {
 } -result {%%Line   3: E Wrong number of arguments (3) to "set"}
 
 test expand-3.1 {
-    Old syntax warning
-} -constraints {runin85} -body {
-    createTestFile {
-        set apa [list hej hopp]
-        set bepa [list {expand}$apa]
-    }
-    execTestFile -s syntaxdb85.tcl
-} -result {%%Line   3: W Obsolete {expand} syntax. Use {*}.}
-
-test expand-3.2 {
     New syntax warning
 } -constraints {runin85} -body {
     createTestFile {
