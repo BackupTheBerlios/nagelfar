@@ -1,22 +1,22 @@
-Syntaxflagga för "globalt variabelnamn" (-variable).
-Skippa "Suspiscious variable name" för dessa.
+Syntaxflagga fÃ¶r "globalt variabelnamn" (-variable).
+Skippa "Suspiscious variable name" fÃ¶r dessa.
 
 Alt. hantera typen "variable". (fixat, "varName")
 
 Borde inte 2pass se upvar i procedurerna?
 
-Detektera att detta inte är en misstänkt variabel?
+Detektera att detta inte Ã¤r en misstÃ¤nkt variabel?
     if {![info exists ${type}::Snit_info]} {
 
-Detta är ok, åtminstonde ska Snit_info kännas igen.
+Detta Ã¤r ok, Ã¥tminstonde ska Snit_info kÃ¤nnas igen.
     variable ${type}::Snit_info
 
-Detta fås ofta fel, kanske ha en flagga för att ta bort den?
+Detta fÃ¥s ofta fel, kanske ha en flagga fÃ¶r att ta bort den?
 snit.tcl: Line 1825: N Suspicious # char. Possibly a bad comment.
 
-Kanske kunna sätta kommando-rads-options i ##nagelfar ?
-Så att .syntax-filen kan anpassa till filen.  Kräver
-option-stack för att inte påverka andra filer?
+Kanske kunna sÃ¤tta kommando-rads-options i ##nagelfar ?
+SÃ¥ att .syntax-filen kan anpassa till filen.  KrÃ¤ver
+option-stack fÃ¶r att inte pÃ¥verka andra filer?
 
 Save report, menu.
 
@@ -26,10 +26,10 @@ gitk: Line 432: W Unknown command "tk_optionMenu"
 -----------------------------------------------------------------------------
 Static call graph.
 Samla all info om vem som anropar vad.
-Sammanställ i graf.
-gwlester efterlyste något sånt.
+SammanstÃ¤ll i graf.
+gwlester efterlyste nÃ¥got sÃ¥nt.
 -----------------------------------------------------------------------------
-Från Uwe:
+FrÃ¥n Uwe:
 
 FEATURE
 o use ctext to hightlight the tcl source code
@@ -136,7 +136,7 @@ the Error: "E Could not complete statement. ..." was entirely
 correct and not caused by my strange formatting.  Well, just
 forget about it ;-)
 -----------------------------------------------------------------------------
-För detta:
+FÃ¶r detta:
 proc demo {} {
     if 1 (}
     return 0
@@ -154,14 +154,14 @@ Frink:
 *** ../../bad.tcl Warning : statement is unreachable (line 4)
 *** ../../bad.tcl Warning : unmatched } found (line 4)
 
-Kanske ska ta efter något meddelande?
-unmatched bättre än first in statement?  (fixat)
-rapportera return utanför proc body som not?
+Kanske ska ta efter nÃ¥got meddelande?
+unmatched bÃ¤ttre Ã¤n first in statement?  (fixat)
+rapportera return utanfÃ¶r proc body som not?
 
-Kanske ha ett annat "unknown command" om det inte är alfanumeriskt? (fixat)
-Ok, : ' och annat används ofta i kommandon. Rena tecken-kommandon?
+Kanske ha ett annat "unknown command" om det inte Ã¤r alfanumeriskt? (fixat)
+Ok, : ' och annat anvÃ¤nds ofta i kommandon. Rena tecken-kommandon?
 -----------------------------------------------------------------------------
-Testa om värdet till switch är konstant. t.ex. switch {$apa} {xxx}.
+Testa om vÃ¤rdet till switch Ã¤r konstant. t.ex. switch {$apa} {xxx}.
 
 Kunna ha t.ex.:
 ##nagelfar nocover
@@ -170,35 +170,35 @@ Hur hantera tcl::mathfunc i 8.5?
 Separat hantering av expr?
 Kolla expr i safe interp med dummy mathfunc?
 -----------------------------------------------------------------------------
-Lägg till syntax för variabel-lista. För att kunna klara method.
+LÃ¤gg till syntax fÃ¶r variabel-lista. FÃ¶r att kunna klara method.
 
 
    ::itcl::body OUR_GUI::showMessage {a b c} {
         set x [string range 0 4]
     }
-En metod att definiera block som är proc-liknande.
+En metod att definiera block som Ã¤r proc-liknande.
 
 proc x {a b} {code}
 method x {a b} {code}
 itcl::body x {a b} {code}
 
 1. Nytt scope
-2. Variablerna måste vara kända.
+2. Variablerna mÃ¥ste vara kÃ¤nda.
 
-Detta är exakt som proc.
+Detta Ã¤r exakt som proc.
 
 3. Implicita variabler i snit???
 
-4. Komma ihåg metoden?
-Kanske inte nödvändigt till att börja med.
-Räcker att köra parseproc utan att lagra namn.
-Bryt ut den delen av parseproc som gör 1+2
+4. Komma ihÃ¥g metoden?
+Kanske inte nÃ¶dvÃ¤ndigt till att bÃ¶rja med.
+RÃ¤cker att kÃ¶ra parseproc utan att lagra namn.
+Bryt ut den delen av parseproc som gÃ¶r 1+2
 till egen del.
 
-5. Syntaxdb för detta?
-En bokstav för "namn arg body"?
-En bokstav för varje?
-Vad säger att det är en proc-klon?
+5. Syntaxdb fÃ¶r detta?
+En bokstav fÃ¶r "namn arg body"?
+En bokstav fÃ¶r varje?
+Vad sÃ¤ger att det Ã¤r en proc-klon?
 
 proc parseBodyNewScope {body index ns arguments {implicitvars {}}} {
     # Initialise a knownVars array with the arguments.
