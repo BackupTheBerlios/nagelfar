@@ -409,6 +409,35 @@ test gui-6.1 {Traverse errors} -body {
     set res
 } -result {104 0 0 1}
 
+test gui-7.1 {Stop Button} -body {
+    set body [list "set apa 1"]
+    for {set t 0} {$t < 1000} {incr t} {
+        lappend body {set bepa 1}
+    }
+    createTestFile [join $body \n]
+    AddFileToTest _testfile_
+    AddFileToTest _testfile_
+    AddFileToTest _testfile_
+    AddFileToTest _testfile_
+    AddFileToTest _testfile_
+    AddFileToTest _testfile_
+    AddFileToTest _testfile_
+    AddFileToTest _testfile_
+    AddFileToTest _testfile_
+
+    tktest::press -async Check
+    after 1000 "set xyz 1"
+    vwait xyz
+    tktest::press Stop
+    after 100
+
+    set lines [GetTextLines]
+    set succ [expr {[llength $lines] < 10 && [string match *Done* $lines]}]
+    if {!$succ} {
+        set succ '[join $lines \n]'
+    }
+    set succ
+} -result {1}
 
 catch {tktest::menu File Exit}
 catch {send -async Nagelfar exit}
