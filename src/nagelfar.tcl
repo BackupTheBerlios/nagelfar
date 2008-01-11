@@ -1174,7 +1174,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
 			set i $argc
 			break
 		    } elseif {$::Nagelfar(dbpicky)} {
-                        #errorMsg N "DB: Missing syntax for subcommand $sub" 0
+                        errorMsg N "DB: Missing syntax for subcommand $sub" 0
                     }
 		}
 		incr i
@@ -2040,8 +2040,7 @@ proc parseStatement {statement index knownVarsName} {
                     set type [checkCommand $cmd $index $argv $wordstatus \
                             $wordtype $indices]
                 } elseif {$::Nagelfar(dbpicky)} {
-                    errorMsg N "DB: Missing syntax for command $cmd" \
-                            [lindex $indices 0]
+                    errorMsg N "DB: Missing syntax for command $cmd" 0
                 }
 	    }
 	}
@@ -2364,7 +2363,10 @@ proc parseProc {argv indices} {
     } else {
         set syn ""
     }
-    foreach a $args token $syn {
+    # Do not loop $syn in the foreach command since it can be shorter
+    set i -1
+    foreach a $args {
+        incr i
         set var [lindex $a 0]
         if {[llength $a] > 1} {
             set seenDefault 1
@@ -2376,7 +2378,7 @@ proc parseProc {argv indices} {
         set knownVars(known,$var) 1
         set knownVars(local,$var) 1
         set knownVars(set,$var)   1
-        if {[regexp {\((.*)\)} $token -> type]} {
+        if {[regexp {\((.*)\)} [lindex $syn $i] -> type]} {
             set knownVars(type,$var)  $type
         } else {
             set knownVars(type,$var)  ""
