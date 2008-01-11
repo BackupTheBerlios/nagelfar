@@ -1109,16 +1109,22 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                         }
                     }
 		} else {
+                    set body [lindex $argv $i]
+                    # Special fix to support bind's "+".
+                    if {$tok eq "C" && [string match "+*" $body] && \
+                            $cmd eq "bind"} {
+                        set body [string range $body 1 end]
+                    }
                     set ::instrumenting([lindex $indices $i]) 1
                     if {$tok eq "C"} {
                         # Check in global context
                         pushNamespace {}
                         array unset dummyVars
                         array set dummyVars {}
-                        parseBody [lindex $argv $i] [lindex $indices $i] dummyVars
+                        parseBody $body [lindex $indices $i] dummyVars
                         popNamespace
                     } else {
-                        parseBody [lindex $argv $i] [lindex $indices $i] knownVars
+                        parseBody $body [lindex $indices $i] knownVars
                     }
                 }
 		incr i
