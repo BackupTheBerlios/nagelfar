@@ -36,3 +36,13 @@ test tk-3.1 {
     }
     execTestFile
 } -result {%%}
+
+test tk-4.1 {
+    Tk, bind command
+} -body {
+    createTestFile {
+        bind .t <Enter> {set x y}
+        bind .t <Enter> {+set x $y}
+    }
+    execTestFile
+} -result {%%Line   3: E Unknown variable "y"}
