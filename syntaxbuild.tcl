@@ -481,7 +481,7 @@ proc buildDb {ch} {
     # option(cmd subcmd) defines options for subcommands
 
     # Get options for commands that can't use the standard loop below.
-    set option(switch)     [getSubCmds switch -gurkmeja]
+    set option(switch)     [getSubCmds switch -gurkmeja x x]
     set option(fconfigure) [getSubCmds fconfigure stdin -gurkmeja]
     set option(fcopy)      [getSubCmds fcopy stdin stdout -gurkmeja x]
     set option(unset)      [list -nocomplain --]
