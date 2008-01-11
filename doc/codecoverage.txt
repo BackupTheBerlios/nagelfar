@@ -33,7 +33,7 @@ Create a markup file for displaying result:
 nagelfar.tcl -markup apa.tcl
 
 This reads coverage data from apa.tcl_log and creates apa.tcl_m. The markup
-file contains asterisks in blocks that were not run.
+file contains markers in blocks that were not run.
 
 See uncovered parts by comparing original with markup in a graphical
 diff tool, like eskil:
