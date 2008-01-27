@@ -2782,6 +2782,7 @@ proc dumpInstrumenting {filename} {
         if {$ix <= $headerIndex} break
         set line [calcLineNo $ix]
         set item "$tail,$line"
+        set skip 0
         set i 2
         while {[info exists done($item)]} {
             set item "$tail,$line,$i"
@@ -2803,6 +2804,12 @@ proc dumpInstrumenting {filename} {
             set insert [list incr ::_instrument_::log($item)]\;
             set pre [string range $iscript 0 [expr {$ix - 1}]]
             set post [string range $iscript $ix end]
+
+            # FIXA: A good and offical way to declare nocover
+            if {[regexp {^\s*\#+\s*nocover} $post]} {
+                set insert ""
+                set skip 1
+            }
         
             set c [string index $pre end]
             if {$c ne "\[" && $c ne "\{" && $c ne "\""} {
@@ -2818,7 +2825,9 @@ proc dumpInstrumenting {filename} {
         }
         set iscript $pre$insert$post
 
-        lappend init [list set log($item) 0]
+        if {!$skip} {
+            lappend init [list set log($item) 0]
+        }
     }
     set ch [open $ifile w]
     # Start with a copy of the original's header
