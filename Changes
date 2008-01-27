@@ -1,3 +1,9 @@
+2008-01-27
+ Started on a nocover pragma.
+
+2007-12-09
+ Support initial "+" in bind scripts. [FR 3893]
+
 Version 1.1.8
 
 2007-09-27
