@@ -41,6 +41,14 @@ test coverage-1.2 {
                 set apa [list hej hopp]
             }
             if {$z} break
+            switch $y {
+                1 {
+                    set x y
+                }
+                default { ##nagelfar nocover
+                    set x y
+                }
+            }
         }
     }
     set res [list [execTestFile -flags -instrument]]
@@ -52,7 +60,7 @@ test coverage-1.2 {
         lappend res $lineNo
     }
     set res
-} -result [list {%%Writing file _testfile__i} 9 9 8 3 3 8 9 9]
+} -result [list {%%Writing file _testfile__i} 11 9 9 8 3 3 8 9 9 11]
 
 test coverage-2.1 {
     Multiple files
