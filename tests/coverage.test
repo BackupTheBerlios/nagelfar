@@ -29,6 +29,31 @@ test coverage-1.1 {
     set res
 } -result [list {%%Writing file _testfile__i} 9 9 8 5 3 3 5 8 9 9]
 
+test coverage-1.2 {
+    Simple test case, with pragma
+} -body {
+    createTestFile {
+        set apa [list hej hopp]
+        proc x {y z} {
+            set apa [list hej hopp]
+            if {$y} { ##nagelfar nocover
+                puts $z
+                set apa [list hej hopp]
+            }
+            if {$z} break
+        }
+    }
+    set res [list [execTestFile -flags -instrument]]
+    set ch [open _testfile__i r]
+    set data [read $ch]
+    close $ch
+    file delete _testfile__i
+    foreach {item lineNo} [regexp -inline -all {_testfile_,(\d+)} $data] {
+        lappend res $lineNo
+    }
+    set res
+} -result [list {%%Writing file _testfile__i} 9 9 8 3 3 8 9 9]
+
 test coverage-2.1 {
     Multiple files
 } -body {
