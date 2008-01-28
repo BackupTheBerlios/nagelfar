@@ -2863,6 +2863,10 @@ proc dumpInstrumenting {filename} {
         lappend init [list set log($item) 0]
     }
     set ch [open $ifile w]
+    if {[info exists ::Nagelfar(encoding)] && \
+            $::Nagelfar(encoding) ne "system"} {
+        fconfigure $ch -encoding $::Nagelfar(encoding)
+    }
     # Start with a copy of the original's header
     if {$headerIndex > 0} {
         puts $ch [string range $iscript 0 [expr {$headerIndex - 1}]]
@@ -2973,6 +2977,11 @@ proc instrumentMarkup {filename} {
 
     set chi [open $filename r]
     set cho [open $mfile w]
+    if {[info exists ::Nagelfar(encoding)] && \
+            $::Nagelfar(encoding) ne "system"} {
+        fconfigure $chi -encoding $::Nagelfar(encoding)
+        fconfigure $cho -encoding $::Nagelfar(encoding)
+    }
     set lineNo 1
     while {[gets $chi line] >= 0} {
         if {$line eq " namespace eval ::_instrument_ {}"} {
