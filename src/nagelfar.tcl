@@ -224,6 +224,9 @@ proc checkComment {str index knownVarsName} {
                 set type [join $rest]
                 markVariable $first 1 "" 1 $index knownVars type
             }
+            nocover {
+                set ::instrumenting(no,$index) 1
+            }
             ignore -
             filter {
                 # FIXA, syntax for several lines
@@ -2760,6 +2763,36 @@ proc parseFile {filename} {
     }
 }
 
+# Find an element that is less than or equal, in a decreasing sorted list
+proc binSearch {sortedList ix} {
+    # Shortcut for exact match
+    set i [lsearch -decreasing -integer -sorted $sortedList $ix]
+    if {$i >= 0} {
+        return $i
+    }
+
+    # Binary search
+    if {$ix > [lindex $sortedList 0]} {return 0}
+    set first 0
+    set last [expr {[llength $sortedList] - 1}]
+    if {$ix < [lindex $sortedList end]} {return -1}
+
+    while {$first < ($last - 1)} {
+        set n [expr {($first + $last) / 2}]
+        set ni [lindex $sortedList $n]
+        if {$ni > $ix} {
+            set first $n
+        } elseif {$ni < $ix} {
+            set last $n
+        } else {
+            # Equality should have been caught in the lsearch above.
+            decho "Internal error: Equal element slipped through in binSearch"
+            return [expr {$n + 1}]
+        }
+    }
+    return $last
+}
+
 # Write source instrumented for code coverage
 proc dumpInstrumenting {filename} {
 
@@ -2776,13 +2809,21 @@ proc dumpInstrumenting {filename} {
             lappend indices $item
         }
     }
+    set indices [lsort -decreasing -integer $indices]
+    # Look for lines marked with nocover
+    foreach item [array names ::instrumenting no,*] {
+        set index [lindex [split $item ","] end]
+        set i [binSearch $indices $index]
+        if {$i >= 0} {
+            set indices [lreplace $indices $i $i]
+        }
+    }
     set init [list [list set current $tail]]
     set headerIndex $::instrumenting(header)
-    foreach ix [lsort -decreasing -integer $indices] {
+    foreach ix $indices {
         if {$ix <= $headerIndex} break
         set line [calcLineNo $ix]
         set item "$tail,$line"
-        set skip 0
         set i 2
         while {[info exists done($item)]} {
             set item "$tail,$line,$i"
@@ -2805,12 +2846,6 @@ proc dumpInstrumenting {filename} {
             set pre [string range $iscript 0 [expr {$ix - 1}]]
             set post [string range $iscript $ix end]
 
-            # FIXA: A good and offical way to declare nocover
-            if {[regexp {^\s*\#+\s*nocover} $post]} {
-                set insert ""
-                set skip 1
-            }
-        
             set c [string index $pre end]
             if {$c ne "\[" && $c ne "\{" && $c ne "\""} {
                 if {[regexp {^(\s*\w+)(\s.*)$} $post -> word rest]} {
@@ -2825,9 +2860,7 @@ proc dumpInstrumenting {filename} {
         }
         set iscript $pre$insert$post
 
-        if {!$skip} {
-            lappend init [list set log($item) 0]
-        }
+        lappend init [list set log($item) 0]
     }
     set ch [open $ifile w]
     # Start with a copy of the original's header
