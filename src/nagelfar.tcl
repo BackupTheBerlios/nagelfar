@@ -227,6 +227,14 @@ proc checkComment {str index knownVarsName} {
             nocover {
                 set ::instrumenting(no,$index) 1
             }
+            cover {
+                if {$first ne "variable"} {
+                    
+                } else {
+                    set varname [lindex $rest 0]
+                    set ::instrumenting($index) [list var $varname]
+                }
+            }
             ignore -
             filter {
                 # FIXA, syntax for several lines
@@ -420,6 +428,7 @@ proc splitStatement {statement index indicesName} {
 # If 'pair' is set, all options should take a value.
 proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
     global option
+    ##nagelfar cover variable max
 
     # How many is the limit imposed by the number of arguments?
     set maxa [expr {[llength $argv] - $startI}]
@@ -2838,8 +2847,17 @@ proc dumpInstrumenting {filename} {
             incr i
         }
         set done($item) 1
+        set default 0
 
-        if {$::instrumenting($ix) == 2} {
+        if {[llength $::instrumenting($ix)] > 1} {
+            foreach {type varname} $::instrumenting($ix) break
+            set endix [string first \n $iscript $ix]
+            set pre [string range $iscript 0 [expr {$ix - 1}]]
+            set post [string range $iscript $endix end]
+            append item ",var"
+            set insert "[list lappend ::_instrument_::log($item)] \$[list $varname]"
+            set default {}
+        } elseif {$::instrumenting($ix) == 2} {
             # Missing else clause
             if {[string index $iscript $ix] eq "\}"} {
                 incr ix
@@ -2868,7 +2886,7 @@ proc dumpInstrumenting {filename} {
         }
         set iscript $pre$insert$post
 
-        lappend init [list set log($item) 0]
+        lappend init [list set log($item) $default]
     }
     set ch [open $ifile w]
     if {[info exists ::Nagelfar(encoding)] && \
@@ -2961,15 +2979,25 @@ proc instrumentMarkup {filename} {
     set covered 0
     set noncovered 0
     foreach item [array names ::_instrument_::log $tail,*] {
+        if {[string match "*,var" $item]} {
+            set values [lsort -dictionary -uniq $::_instrument_::log($item)]
+            # FIXA: Maybe support expected values check
+            if {[regexp {,(\d+),\d+,var$} $item -> line]} {
+                set lines($line) ";# $values"
+            } elseif {[regexp {,(\d+),var$} $item -> line]} {
+                set lines($line) ";# $values"
+            }
+            continue
+        }
         if {$::_instrument_::log($item) != 0} {
             incr covered
             continue
         }
         incr noncovered
         if {[regexp {,(\d+),\d+$} $item -> line]} {
-            set lines($line) 1
+            set lines($line) " ;# Not covered"
         } elseif {[regexp {,(\d+)$} $item -> line]} {
-            set lines($line) 1
+            set lines($line) " ;# Not covered"
         }
     }
     set total [expr {$covered + $noncovered}]
@@ -3000,7 +3028,7 @@ proc instrumentMarkup {filename} {
             return
         }
         if {[info exists lines($lineNo)]} {
-            append line " ;# Not covered"
+            append line $lines($lineNo)
         }
         puts $cho $line
         incr lineNo
