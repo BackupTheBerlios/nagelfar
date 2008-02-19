@@ -11,7 +11,7 @@ set thisDir    [file dirname $thisScript]
 package require tcltest
 namespace import tcltest::*
 tcltest::configure -verbose "body error" -singleproc 1
-#tcltest::configure -file gui*
+#tcltest::configure -file nag*
 #tcltest::configure -match gui-6*
 
 testConstraint runin85 [expr {![catch {list {*}{hej}}]}]
@@ -28,7 +28,7 @@ proc createTestFile {scr {syntaxfile 0}} {
     } else {
         set ch [open _testfile_ w]
     }
-    puts $ch $scr
+    puts -nonewline $ch $scr
     close $ch
 }
 
