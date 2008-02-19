@@ -1022,8 +1022,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
         set token [lindex $syn 0]
         set syn [lrange $syn 1 end]
 
-	set tok [string index $token 0]
-	set mod [string index $token 1]
+        regexp {^(\w+)(\W*)$} $token -> tok mod
         if {$mod eq "("} {set mod ""}
 	# Basic checks for modifiers
 	switch -- $mod {
@@ -1045,7 +1044,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
             continue
         }
 	switch -- $tok {
-	    x - X {
+	    x - xComm {
 		# x* matches anything up to the end.
 		if {[string equal $mod "*"]} {
                     checkForCommentL [lrange $argv $i end] \
@@ -1056,7 +1055,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
 		}
 		if {![string equal $mod "?"] || $i < $argc} {
                     # Check braced for comments
-                    if {([lindex $wordstatus $i] & 2) && $tok != "X"} {
+                    if {([lindex $wordstatus $i] & 2) && $tok != "xComm"} {
                         checkForComment [lindex $argv $i] [lindex $indices $i]
                     }
 		    incr i
@@ -1780,7 +1779,7 @@ proc parseStatement {statement index knownVarsName} {
 		switch -- $state {
                     skip {
                         # This will behave bad with "if 0 then then"...
-                        lappend ifsyntax X
+                        lappend ifsyntax xComm
 			if {![string equal $arg then]} {
                             set state else
 			}
@@ -1858,14 +1857,23 @@ proc parseStatement {statement index knownVarsName} {
 		WA
 		return
 	    }
-	    set i [llength [checkOptions $cmd $argv $wordstatus $indices]]
-	    incr i
+            # FIXA: As of 8.5.1, two args are not checked for options,
+            # does this imply anything
+            set i 0
+            if {$argc > 2} {
+                set max [expr {$argc - 2}]
+                set i [llength [checkOptions $cmd $argv $wordstatus $indices\
+                       0 $max]]
+            }
+            if {[lindex $wordstatus $i] & 1 == 1} {
+                # First argument to switch is constant, suspiscious
+                errorMsg N "String argument to switch is constant" \
+                        [lindex $indices $i]
+            }
+            incr i
 	    set left [expr {$argc - $i}]
-
-	    if {$left < 1} {
-		WA
-		return
-	    } elseif {$left == 1} {
+            
+	    if {$left == 1} {
 		# One block. Split it into a list.
                 # FIXA. Changing argv messes up the constant check.
 
