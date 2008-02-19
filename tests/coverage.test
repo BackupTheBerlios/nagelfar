@@ -142,3 +142,18 @@ test coverage-3.1 {
 Writing file _testfile__i} \
         {Writing file _testfile__m (3/13 23.1%)
 File _testfile_ is instrumented, aborting markup}]
+
+test coverage-4.1 {
+    Variable coverage
+} -body {
+    createTestFile {
+        set apa [list hej hopp]
+        ##nagelfar cover variable apa
+    }
+    set res [list [execTestFile -flags -instrument]]
+    set ch [open _testfile__i r]
+    set data [read $ch]
+    close $ch
+    file delete _testfile__i
+    set data
+} -match glob -result {*lappend ::_instrument_::log(_testfile_,3,var) $apa*}
