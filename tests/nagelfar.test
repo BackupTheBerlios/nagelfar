@@ -595,11 +595,19 @@ test nagelfar-11.2 {
     execTestFile
 } -result {%%Line   1: W Unknown command "apa"}
 
+test nagelfar-11.3 {
+    Line numbers, last line without newline
+} -body {
+    createTestFile {
+        apa bepa}
+    execTestFile
+} -result {%%Line   2: W Unknown command "apa"}
+
 test nagelfar-12.1 {
     Comments, bad in switch
 } -body {
     createTestFile {
-        switch apa {
+        switch [list] {
             hej {
                 set x 1
             }
@@ -811,6 +819,16 @@ test nagelfar-20.1 {
     }
     execTestFile
 } -result {%%}
+
+test nagelfar-20.2 {
+    switch
+} -body {
+    createTestFile {
+        set y {1 5}
+        set apa [switch -glob $y]
+    }
+    execTestFile
+} -result {%%Line   3: N String argument to switch is constant}
 
 test nagelfar-21.1 {
     Embedded
