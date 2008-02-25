@@ -21,9 +21,9 @@ CTEXT   = /home/peter/src/ctext
 TEXTSEARCH = /home/peter/src/textsearch
 
 # Path to the interpreter used for generating the syntax database
-TCLSHDB  = ~/tcl/install/bin/wish8.4
-TCLSHDB2 = ~/tcl/install/bin/wish8.5
-DB2NAME  = syntaxdb85.tcl
+TCLSHDB  = ~/tcl/install/bin/wish8.5
+TCLSHDB2 = ~/tcl/install/bin/wish8.4
+DB2NAME  = syntaxdb84.tcl
 TCLSH85  = ~/tcl/install/bin/tclsh8.5
 
 all: base
@@ -110,7 +110,7 @@ MFILES   = $(SRCFILES:.tcl=.tcl_m)
 	@./nagelfar.tcl -instrument $<
 
 # Target to prepare for code coverage run. Makes sure log file is clear.
-instrument: $(IFILES) nagelfar.tcl_i
+instrument: base $(IFILES) nagelfar.tcl_i
 	@rm -f $(LOGFILES)
 
 # Top file for coverage run
