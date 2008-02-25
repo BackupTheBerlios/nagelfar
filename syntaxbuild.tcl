@@ -94,6 +94,14 @@ proc createSyntax {procName} {
     return $result
 }
 
+proc markCmdAsKnown {args} {
+    foreach cmd $args {
+        if {[lsearch $::kC $cmd] == -1} {
+            lappend ::kC $cmd
+        }
+    }
+}
+
 # Build a syntax database and write it to a channel
 proc buildDb {ch} {
     set patch [info patchlevel]
@@ -419,11 +427,45 @@ proc buildDb {ch} {
         set syntax(.\ cget)            "o"
 
         # FIXA: Starting on better Tk support
-        foreach class {frame entry label button checkbutton radiobutton \
+        set classCmds {frame entry label button checkbutton radiobutton \
                 listbox labelframe spinbox panedwindow toplevel menu message \
-                scrollbar text canvas scale menubutton} {
+                scrollbar text canvas scale menubutton}
+        # Handle tk::xxx usage
+        foreach cmd $classCmds {
+            if {[info commands tk::$cmd] ne ""} {
+                lappend classCmds tk::$cmd
+            }
+        }
+        if {[info commands ttk::frame] ne ""} {
+            lappend classCmds ttk::scale ttk::label ttk::panedwindow
+            lappend classCmds ttk::separator ttk::menubutton
+            lappend classCmds ttk::entry ttk::radiobutton ttk::frame
+            lappend classCmds ttk::labelframe ttk::button ttk::sizegrip
+            lappend classCmds ttk::combobox ttk::notebook
+            lappend classCmds ttk::progressbar ttk::checkbutton
+            lappend classCmds ttk::treeview ttk::scrollbar
+            set syntax(ttk::style) "s x*"
+            set syntax(ttk::style\ configure) "x o. x. p*"
+            set syntax(ttk::style\ map) "x p*"
+            set syntax(ttk::style\ lookup) "r 2 4"
+            set syntax(ttk::style\ layout) "x x?"
+            set syntax(ttk::style\ element) "s x*"
+            set syntax(ttk::style\ element\ create) "x x x*"
+            set syntax(ttk::style\ element\ names) 0
+            set syntax(ttk::style\ element\ options) x
+            set syntax(ttk::style\ theme) "s x*"
+            set syntax(ttk::style\ theme\ create) "x p*"
+            set syntax(ttk::style\ theme\ settings) 2
+            set syntax(ttk::style\ theme\ names) 0
+            set syntax(ttk::style\ theme\ use) x
+            set syntax(ttk::themes) x?
+            set syntax(ttk::setTheme) x
+            markCmdAsKnown ttk::style ttk::themes  ttk::setTheme
+        }
+        foreach class $classCmds {
             destroy .w
             if {[catch {$class .w}]} continue
+            markCmdAsKnown $class
             set syntax($class) "x p*"
             set return($class) _obj,$class
             set option($class) {}
