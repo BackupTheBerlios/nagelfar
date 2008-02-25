@@ -1,3 +1,9 @@
+2008-02-25
+ Added ttk commands to syntaxbuild.
+ Use the selected encoding on instrumented file and markup file.
+ Warn if string argument to switch is constant.
+ Experimental variable coverage
+
 2008-01-27
  Started on a nocover pragma.
 
