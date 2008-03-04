@@ -38,8 +38,8 @@ nagelfar.vfs/lib/app-nagelfar/nagelfar.tcl:
 	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../nagelfar.tcl
 nagelfar.vfs/lib/app-nagelfar/syntaxdb.tcl:
 	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../syntaxdb.tcl
-nagelfar.vfs/lib/app-nagelfar/syntaxdb85.tcl:
-	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../syntaxdb85.tcl
+nagelfar.vfs/lib/app-nagelfar/syntaxdb84.tcl:
+	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../syntaxdb84.tcl
 nagelfar.vfs/lib/app-nagelfar/doc:
 	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../doc
 nagelfar.vfs/lib/griffin:
@@ -53,7 +53,7 @@ nagelfar.vfs/lib/textsearch:
 
 links: nagelfar.vfs/lib/app-nagelfar/nagelfar.tcl \
 	nagelfar.vfs/lib/app-nagelfar/syntaxdb.tcl \
-	nagelfar.vfs/lib/app-nagelfar/syntaxdb85.tcl \
+	nagelfar.vfs/lib/app-nagelfar/syntaxdb84.tcl \
 	nagelfar.vfs/lib/app-nagelfar/doc \
 	nagelfar.vfs/lib/griffin \
 	nagelfar.vfs/lib/tkdnd \
@@ -177,25 +177,15 @@ wrap: base
 
 wrapexe: base
 	@\rm -f nagelfar nagelfar.exe nagelfar.solaris
-	sdx wrap nagelfar.linux   -runtime $(TCLKIT_LINUX)
+	sdx wrap nagelfar.linux   -runtime $(TCLKIT85_LINUX)
 	sdx wrap nagelfar.solaris -runtime $(TCLKIT_SOLARIS)
-	sdx wrap nagelfar.exe     -runtime $(TCLKIT_WIN)
-	@cd nagelfar.vfs/lib/app-nagelfar ; ln -fs ../../../syntaxdb.tcl syntaxdb84.tcl
-	@cd nagelfar.vfs/lib/app-nagelfar ; ln -fs ../../../syntaxdb85.tcl syntaxdb.tcl
-	@\rm -f nagelfar85.vfs
-	@ln -s nagelfar.vfs nagelfar85.vfs
-	sdx wrap nagelfar85.kit
-	sdx wrap nagelfar85.linux   -runtime $(TCLKIT85_LINUX)
-	sdx wrap nagelfar85.exe     -runtime $(TCLKIT85_WIN)
-	@\rm -f nagelfar85.vfs
-	@cd nagelfar.vfs/lib/app-nagelfar ; ln -fs ../../../syntaxdb.tcl
-	@cd nagelfar.vfs/lib/app-nagelfar ; ln -fs ../../../syntaxdb85.tcl
+	sdx wrap nagelfar.exe     -runtime $(TCLKIT85_WIN)
 
 distrib: base
 	@\rm -f nagelfar.tar.gz
 	@tar --directory=..  --exclude CVS -zcvf nagelfar.tar.gz nagelfar/COPYING \
 		nagelfar/README.txt nagelfar/syntaxbuild.tcl \
-		nagelfar/syntaxdb.tcl nagelfar/syntaxdb85.tcl \
+		nagelfar/syntaxdb.tcl nagelfar/syntaxdb84.tcl \
 		nagelfar/nagelfar.syntax nagelfar/nagelfar.tcl \
 		nagelfar/misctests/test.tcl nagelfar/misctests/test.syntax \
 		nagelfar/doc
@@ -204,13 +194,9 @@ release: base distrib wrap wrapexe
 	@cp nagelfar.tar.gz nagelfar`date +%Y%m%d`.tar.gz
 	@mv nagelfar.tar.gz nagelfar$(VERSION).tar.gz
 	@gzip nagelfar.linux
-	@gzip nagelfar85.linux
 	@mv nagelfar.linux.gz nagelfar$(VERSION).linux.gz
-	@mv nagelfar85.linux.gz nagelfar$(VERSION)_85.linux.gz
 	@zip nagelfar$(VERSION).win.zip nagelfar.exe
-	@zip nagelfar$(VERSION)_85.win.zip nagelfar85.exe
 	@gzip nagelfar.solaris
 	@mv nagelfar.solaris.gz nagelfar$(VERSION).solaris.gz
 	@cp nagelfar.kit nagelfar`date +%Y%m%d`.kit
 	@cp nagelfar.kit nagelfar$(VERSION).kit
-	@mv nagelfar85.kit nagelfar$(VERSION)_85.kit
