@@ -1,3 +1,6 @@
+2008-03-14
+ Detect Ctrl-Z in scripts, notifying about it.
+
 2008-02-25
  Added ttk commands to syntaxbuild.
  Use the selected encoding on instrumented file and markup file.

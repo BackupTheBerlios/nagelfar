@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------
 #  Nagelfar, a syntax checker for Tcl.
-#  Copyright (c) 1999-2007, Peter Spjuth
+#  Copyright (c) 1999-2008, Peter Spjuth
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -2767,10 +2767,22 @@ proc parseFile {filename} {
     set script [read $ch]
     close $ch
 
+    # Check for Ctrl-Z
+    set i [string first \u001a $script]
+    if {$i >= 0} {
+        # Cut off the script as source would do
+        set script [string range $script 0 [expr {$i - 1}]]
+    }
+
     array unset ::instrumenting
 
     initMsg
     parseScript $script
+    if {$i >= 0} {
+        # Add a note about the Ctrl-Z
+        errorMsg N "Aborted script due to end-of-file marker" \
+                [expr {[string length $::instrumenting(script)] - 1}]
+    }
     flushMsg
     
     if {$::Nagelfar(instrument) && \

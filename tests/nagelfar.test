@@ -853,4 +853,14 @@ test nagelfar-21.1 {
     set res
 } -returnCodes 0 -result {{Checking file _testfile_}}
 
-
+test nagelfar-22.1 {
+    end-of-file
+} -body {
+    createTestFile "
+        set x 1
+        set y \u001a
+        set apa \$miffo
+    "
+    execTestFile
+} -result {%%Line   3: E Unknown variable "y"
+Line   3: N Aborted script due to end-of-file marker}
