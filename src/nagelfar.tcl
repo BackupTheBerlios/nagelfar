@@ -2992,7 +2992,7 @@ proc instrumentMarkup {filename} {
     set noncovered 0
     foreach item [array names ::_instrument_::log $tail,*] {
         if {[string match "*,var" $item]} {
-            set values [lsort -dictionary -uniq $::_instrument_::log($item)]
+            set values [lsort -dictionary -unique $::_instrument_::log($item)]
             # FIXA: Maybe support expected values check
             if {[regexp {,(\d+),\d+,var$} $item -> line]} {
                 set lines($line) ";# $values"

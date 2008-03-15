@@ -17,7 +17,7 @@ TCLKIT85_WIN   = $(TCLKIT)/v85/tclkit-win32.upx.exe
 # Path to the libraries used
 GRIFFIN = /home/peter/tclkit/griffin.vfs/lib/griffin
 TKDND   = /home/peter/tkdnd/lib/tkdnd1.0
-CTEXT   = /home/peter/src/ctext
+#CTEXT   = /home/peter/src/ctext
 TEXTSEARCH = /home/peter/src/textsearch
 
 # Path to the interpreter used for generating the syntax database
@@ -34,31 +34,26 @@ base: nagelfar.tcl setup misctest db
 # Setup symbolic links from the VFS to the real files
 #----------------------------------------------------------------
 
-nagelfar.vfs/lib/app-nagelfar/nagelfar.tcl:
-	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../nagelfar.tcl
-nagelfar.vfs/lib/app-nagelfar/syntaxdb.tcl:
-	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../syntaxdb.tcl
-nagelfar.vfs/lib/app-nagelfar/syntaxdb84.tcl:
-	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../syntaxdb84.tcl
-nagelfar.vfs/lib/app-nagelfar/doc:
-	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../doc
+#nagelfar.vfs/lib/app-nagelfar/nagelfar.tcl:
+#	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../nagelfar.tcl
+#nagelfar.vfs/lib/app-nagelfar/syntaxdb.tcl:
+#	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../syntaxdb.tcl
+#nagelfar.vfs/lib/app-nagelfar/syntaxdb84.tcl:
+#	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../syntaxdb84.tcl
+#nagelfar.vfs/lib/app-nagelfar/doc:
+#	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../doc
 nagelfar.vfs/lib/griffin:
 	cd nagelfar.vfs/lib ; ln -s $(GRIFFIN) griffin
 nagelfar.vfs/lib/tkdnd:
 	cd nagelfar.vfs/lib ; ln -s $(TKDND) tkdnd
-nagelfar.vfs/lib/ctext:
+#nagelfar.vfs/lib/ctext:
 #	cd nagelfar.vfs/lib ; ln -s $(CTEXT) ctext
 nagelfar.vfs/lib/textsearch:
 	cd nagelfar.vfs/lib ; ln -s $(TEXTSEARCH) textsearch
 
-links: nagelfar.vfs/lib/app-nagelfar/nagelfar.tcl \
-	nagelfar.vfs/lib/app-nagelfar/syntaxdb.tcl \
-	nagelfar.vfs/lib/app-nagelfar/syntaxdb84.tcl \
-	nagelfar.vfs/lib/app-nagelfar/doc \
-	nagelfar.vfs/lib/griffin \
+links: nagelfar.vfs/lib/griffin \
 	nagelfar.vfs/lib/tkdnd \
-	nagelfar.vfs/lib/textsearch \
-	nagelfar.vfs/lib/ctext
+	nagelfar.vfs/lib/textsearch
 
 setup: links
 
@@ -183,12 +178,14 @@ wrapexe: base
 
 distrib: base
 	@\rm -f nagelfar.tar.gz
-	@tar --directory=..  --exclude CVS -zcvf nagelfar.tar.gz nagelfar/COPYING \
-		nagelfar/README.txt nagelfar/syntaxbuild.tcl \
-		nagelfar/syntaxdb.tcl nagelfar/syntaxdb84.tcl \
-		nagelfar/nagelfar.syntax nagelfar/nagelfar.tcl \
-		nagelfar/misctests/test.tcl nagelfar/misctests/test.syntax \
-		nagelfar/doc
+	@ln -s . nagelfar$(VERSION)
+	@tar --exclude .svn -zcvf nagelfar.tar.gz nagelfar$(VERSION)/COPYING \
+		nagelfar$(VERSION)/README.txt nagelfar$(VERSION)/syntaxbuild.tcl \
+		nagelfar$(VERSION)/syntaxdb.tcl nagelfar$(VERSION)/syntaxdb84.tcl \
+		nagelfar$(VERSION)/nagelfar.syntax nagelfar$(VERSION)/nagelfar.tcl \
+		nagelfar$(VERSION)/misctests/test.tcl nagelfar$(VERSION)/misctests/test.syntax \
+		nagelfar$(VERSION)/doc
+	@\rm nagelfar$(VERSION)
 
 release: base distrib wrap wrapexe
 	@cp nagelfar.tar.gz nagelfar`date +%Y%m%d`.tar.gz
