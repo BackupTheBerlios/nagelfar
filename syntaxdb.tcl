@@ -1,5 +1,5 @@
 # Automatically generated syntax database.
-# Generated with syntaxbuild Revision: 1.38 
+# Generated with syntaxbuild Revision: 420 
 
 lappend ::dbInfo {Tcl 8.5.1 unix, Tk 8.5.1 x11}
 set ::dbTclVersion 8.5
@@ -307,6 +307,7 @@ set ::syntax(menu) {x p*}
 set ::syntax(menubutton) {x p*}
 set ::syntax(message) {x p*}
 set ::syntax(namespace) {s x*}
+set {::syntax(namespace import)} {o* x*}
 set ::syntax(open) {r 1 3}
 set ::syntax(option) {s x*}
 set ::syntax(pack) {x x*}
