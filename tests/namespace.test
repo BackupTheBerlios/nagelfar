@@ -62,8 +62,6 @@ test namespace-1.3 {
 
 test namespace-2.1 {
     Namespaces, imported procs
-} -constraints {
-    knownbug
 } -body {
     createTestFile {
         namespace eval apa {}
@@ -73,6 +71,27 @@ test namespace-2.1 {
         namespace import apa::bepa
         proc cepa {hej hopp} {
             set apa [bepa $hej $hopp]
+        }
+    }
+    execTestFile
+} -result {%%}
+
+test namespace-2.2 {
+    Namespaces, imported procs
+} -body {
+    createTestFile {
+        namespace eval apa {}
+        proc apa::bepa {hej hopp} {
+            set apa $hej
+        }
+        namespace eval gurka {
+            namespace import apa::bepa
+            proc depa {hej hopp} {
+                set apa [bepa $hej $hopp]
+            }
+        }
+        proc cepa {hej hopp} {
+            set apa [gurka::bepa $hej $hopp]
         }
     }
     execTestFile

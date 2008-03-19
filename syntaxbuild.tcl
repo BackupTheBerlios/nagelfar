@@ -280,6 +280,7 @@ proc buildDb {ch} {
     set syntax(lsort)           "o* x"
     # "namespace" is handled specially
     set syntax(namespace)       "s x*" ;# FIXA: All subcommands
+    set syntax(namespace\ import) "o* x*"
     set syntax(open)            "r 1 3"
     # "package" is handled specially
     set syntax(package)         "s x*" ;# FIXA: All subcommands

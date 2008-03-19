@@ -1434,7 +1434,9 @@ proc lookForCommand {cmd ns index} {
         return [list $cmd]
     }
 
-    lappend ::unknownCommands [list $cmd $cmd1 $cmd2 $index]
+    if {$index >= 0} {
+        lappend ::unknownCommands [list $cmd $cmd1 $cmd2 $index]
+    }
     return ""
 }
 
@@ -1985,7 +1987,7 @@ proc parseStatement {statement index knownVarsName} {
             set type [checkCommand $cmd $index $argv $wordstatus $wordtype \
                               $indices]
         }
-	namespace { # FIXA, also handle import
+	namespace {
             if {$argc < 1} {
                 WA
                 return
@@ -2026,6 +2028,46 @@ proc parseStatement {statement index knownVarsName} {
                                 [lindex $indices 0]
                     }
                 }
+            } elseif {([lindex $wordstatus 0] & 1) && \
+                    [string match "im*" [lindex $argv 0]]} {
+                # Handle namespace import
+                if {$argc < 2} {
+                    WA
+                    return
+                }
+                set ns [currentNamespace]
+                if {[lindex $argv 1] eq "-force"} {
+                    set t 2
+                } else {
+                    set t 1
+                }
+                for {} {$t < [llength $argv]} {incr t} {
+                    if {([lindex $wordstatus $t] & 1) == 0} {
+                        continue
+                    }
+                    set other [lookForCommand [lindex $argv $t] $ns -1]
+                    set other [lindex $other 0]
+                    set tail [namespace tail $other]
+                    if {$ns eq ""} {
+                        set me $tail
+                    } else {
+                        set me ${ns}::$tail
+                        if {[string match "::*" $me]} {
+                            set me [string range $me 2 end]
+                        }
+                    }
+                    #puts "ME: $me : OTHER: $other"
+                    # Copy the command info
+                    if {[lsearch -exact $::knownCommands $me] < 0} {
+                        lappend ::knownCommands $me
+                    }
+                    if {![info exists ::syntax($me)] && \
+                            [info exists ::syntax($other)]} {
+                        set ::syntax($me) $::syntax($other)
+                    }
+                }
+                set type [checkCommand $cmd $index $argv $wordstatus \
+                        $wordtype $indices]
             } else {
                 set type [checkCommand $cmd $index $argv $wordstatus \
                                   $wordtype $indices]
