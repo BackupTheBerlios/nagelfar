@@ -13,6 +13,7 @@ test oo-1.1 {
         ##nagelfar syntax constructor x cl
         ##nagelfar syntax destructor cl
         ##nagelfar syntax option x p*
+        ##nagelfar syntax apa x*
         snit::type apa {
             option -x -default 10
             constructor {c d} {

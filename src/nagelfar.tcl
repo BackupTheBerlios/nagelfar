@@ -2795,7 +2795,7 @@ proc parseScript {script} {
 	    # Close brace is reported elsewhere
             if {$cmd ne "\}"} {
 		# Different messages depending on name
-		if {[regexp {^(?:[\w',:.]+)|(?:%W)$} $cmd]} {
+		if {[regexp {^(?:(?:[\w',:.]+)|(?:%W))$} $cmd]} {
 		    errorMsg W "Unknown command \"$cmd\"" $index
 		} else {
 		    errorMsg E "Strange command \"$cmd\"" $index
