@@ -957,7 +957,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
         set type $::return($cmd)
         #puts T:$cmd:$type
     }
-#    decho "Checking $cmd against syntax $syn"
+#miffo    puts "Checking $cmd ([lindex $argv]) against syntax $syn"
 
     # Check if the syntax definition has multiple entries
     if {[string index [lindex $syn 0] end] == ":"} {
@@ -1096,7 +1096,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
 		parseExpr [lindex $argv $i] [lindex $indices $i] knownVars
 		incr i
 	    }
-	    c - C { # A code block
+	    c - C - cl - cn { # A code block
                 if {[string equal $mod "?"]} {
 		    if {$i >= $argc} {
 			set i $argc
@@ -1126,7 +1126,9 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                             $cmd eq "bind"} {
                         set body [string range $body 1 end]
                     }
-                    set ::instrumenting([lindex $indices $i]) 1
+                    if {$tok ne "cn"} {
+                        set ::instrumenting([lindex $indices $i]) 1
+                    }
                     if {$tok eq "C"} {
                         # Check in global context
                         pushNamespace {}
@@ -1134,6 +1136,20 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                         array set dummyVars {}
                         parseBody $body [lindex $indices $i] dummyVars
                         popNamespace
+                    } elseif {$tok eq "cn"} {
+                        # Check in namespace context
+                        pushNamespace $cmd
+                        #puts "Pushing NS '$cmd' to check '$body'"
+                        array unset dummyVars
+                        array set dummyVars {}
+                        parseBody $body [lindex $indices $i] dummyVars
+                        popNamespace
+                    } elseif {$tok eq "cl"} {
+                        #puts "Checking '$body' in local context"
+                        # Check in local context
+                        array unset dummyVars
+                        array set dummyVars {}
+                        parseBody $body [lindex $indices $i] dummyVars
                     } else {
                         parseBody $body [lindex $indices $i] knownVars
                     }
@@ -2371,6 +2387,7 @@ proc parseBody {body index knownVarsName} {
         splitScript $body $index statements indices knownVars
     }
 
+#miffo    puts "Parsing a body with [llength $statements] stmts"
     set type ""
     foreach statement $statements index $indices {
 	set type [parseStatement $statement $index knownVars]
@@ -2778,7 +2795,7 @@ proc parseScript {script} {
 	    # Close brace is reported elsewhere
             if {$cmd ne "\}"} {
 		# Different messages depending on name
-		if {[regexp {^[\w',:.]+$} $cmd]} {
+		if {[regexp {^(?:[\w',:.]+)|(?:%W)$} $cmd]} {
 		    errorMsg W "Unknown command \"$cmd\"" $index
 		} else {
 		    errorMsg E "Strange command \"$cmd\"" $index
