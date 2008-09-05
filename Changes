@@ -1,3 +1,8 @@
+Version 1.1.9
+
+2008-03-14
+ Changed to use 8.5 as default.
+
 2008-03-14
  Detect Ctrl-Z in scripts, notifying about it.
 
