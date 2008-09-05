@@ -1,0 +1,33 @@
+#------------------------------------------------------------*- tcl -*-
+# Tests for objects
+#----------------------------------------------------------------------
+# $Revision: 384 $
+#----------------------------------------------------------------------
+
+test oo-1.1 {
+    Object definition experiment
+} -body {
+    createTestFile {
+        ##nagelfar syntax snit::type x cn
+        ##nagelfar syntax snit::type::method x x cl
+        ##nagelfar syntax constructor x cl
+        ##nagelfar syntax destructor cl
+        ##nagelfar syntax option x p*
+        snit::type apa {
+            option -x -default 10
+            constructor {c d} {
+                puts $c
+            }
+            destructor {
+                list hej
+            }
+            method gugg {a b} {
+                puts $a
+            }
+        }
+        set x [apa %AUTO% -x 5]
+        $x gugg 5 7
+        $x destroy
+    }
+    execTestFile
+} -result {%%} -match glob

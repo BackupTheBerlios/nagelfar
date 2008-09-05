@@ -11,7 +11,7 @@ set thisDir    [file dirname $thisScript]
 package require tcltest
 namespace import tcltest::*
 tcltest::configure -verbose "body error" -singleproc 1
-#tcltest::configure -file nag*
+tcltest::configure -file oo*
 #tcltest::configure -match gui-6*
 
 testConstraint runin85 [expr {![catch {list {*}{hej}}]}]
