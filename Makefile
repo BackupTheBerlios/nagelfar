@@ -11,8 +11,10 @@ TCLKIT = /home/peter/tclkit
 TCLKIT_LINUX   = $(TCLKIT)/v84/tclkit-linux-x86
 TCLKIT_SOLARIS = $(TCLKIT)/v84/tclkit-solaris-sparc
 TCLKIT_WIN     = $(TCLKIT)/v84/tclkit-win32.upx.exe
+TCLKITSH_WIN   = $(TCLKIT)/v84/tclkitsh-win32.upx.exe
 TCLKIT85_LINUX = $(TCLKIT)/v85/tclkit-linux-x86
 TCLKIT85_WIN   = $(TCLKIT)/v85/tclkit-win32.upx.exe
+TCLKITSH85_WIN = $(TCLKIT)/v85/tclkitsh-win32.upx.exe
 
 # Path to the libraries used
 GRIFFIN = /home/peter/tclkit/griffin.vfs/lib/griffin
@@ -24,6 +26,8 @@ TEXTSEARCH = /home/peter/src/textsearch
 TCLSHDB  = ~/tcl/install/bin/wish8.5
 TCLSHDB2 = ~/tcl/install/bin/wish8.4
 DB2NAME  = syntaxdb84.tcl
+TCLSHDB3 = ~/tcl/install/bin/wish8.6
+DB3NAME  = syntaxdb86.tcl
 TCLSH85  = ~/tcl/install/bin/tclsh8.5
 
 all: base
@@ -161,7 +165,10 @@ syntaxdb.tcl: syntaxbuild.tcl $(TCLSHDB)
 $(DB2NAME): syntaxbuild.tcl $(TCLSHDB2)
 	$(TCLSHDB2) syntaxbuild.tcl $(DB2NAME)
 
-db: syntaxdb.tcl $(DB2NAME)
+$(DB3NAME): syntaxbuild.tcl $(TCLSHDB3)
+	$(TCLSHDB3) syntaxbuild.tcl $(DB3NAME)
+
+db: syntaxdb.tcl $(DB2NAME) $(DB3NAME)
 
 #----------------------------------------------------------------
 # Packaging/Releasing
@@ -171,10 +178,12 @@ wrap: base
 	sdx wrap nagelfar.kit
 
 wrapexe: base
-	@\rm -f nagelfar nagelfar.exe nagelfar.solaris
+	@\rm -f nagelfar nagelfar.exe nagelfar.solaris nagelfar_sh.exe
 	sdx wrap nagelfar.linux   -runtime $(TCLKIT85_LINUX)
 	sdx wrap nagelfar.solaris -runtime $(TCLKIT_SOLARIS)
 	sdx wrap nagelfar.exe     -runtime $(TCLKIT85_WIN)
+	sdx wrap nagelfar.shexe   -runtime $(TCLKITSH85_WIN)
+	mv nagelfar.shexe nagelfar_sh.exe
 
 distrib: base
 	@\rm -f nagelfar.tar.gz
@@ -193,6 +202,7 @@ release: base distrib wrap wrapexe
 	@gzip nagelfar.linux
 	@mv nagelfar.linux.gz nagelfar$(VERSION).linux.gz
 	@zip nagelfar$(VERSION).win.zip nagelfar.exe
+	@zip nagelfar_sh$(VERSION).win.zip nagelfar_sh.exe
 	@gzip nagelfar.solaris
 	@mv nagelfar.solaris.gz nagelfar$(VERSION).solaris.gz
 	@cp nagelfar.kit nagelfar`date +%Y%m%d`.kit

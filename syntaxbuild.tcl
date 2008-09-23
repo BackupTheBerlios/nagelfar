@@ -362,7 +362,9 @@ proc buildDb {ch} {
         set syntax(dict\ with)    "n x* c"
         # FIXA: handle variables in dict for
         set syntax(dict\ for)     "x x c"
-
+        
+        # Initialising incr
+        set syntax(incr)       "n x?"
         set syntax(lassign)    "x n n*"
         set syntax(lrepeat)    "r 2"
         set syntax(lreverse)   "1"
