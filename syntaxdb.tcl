@@ -1,10 +1,10 @@
 # Automatically generated syntax database.
-# Generated with syntaxbuild Revision: 420 
+# Generated with syntaxbuild Revision: 426 
 
-lappend ::dbInfo {Tcl 8.5.5b1 unix, Tk 8.5.5b1 x11}
+lappend ::dbInfo {Tcl 8.5.6 unix, Tk 8.5.6 x11}
 set ::dbTclVersion 8.5
 set ::knownGlobals {argc argv argv0 auto_index auto_path env errorCode errorInfo tcl_interactive tcl_library tcl_nonwordchars tcl_patchLevel tcl_pkgPath tcl_platform tcl_rcFileName tcl_version tcl_wordchars tk_library tk_patchLevel tk_strictMotif tk_version}
-set ::knownCommands {. EvalAttached after append apply array auto_execok auto_import auto_load auto_load_index auto_mkindex auto_mkindex_old auto_qualify auto_reset bell bgerror binary bind bindtags break button canvas case catch cd chan checkbutton clipboard clock close concat continue destroy dict encoding entry eof error eval event exec exit expr fblocked fconfigure fcopy file fileevent flush focus font for foreach format frame gets glob global grab grid history if image incr info interp join label labelframe lappend lassign lindex linsert list listbox llength load lower lrange lrepeat lreplace lreverse lsearch lset lsort menu menubutton message namespace open option pack package panedwindow parray pid pkg_mkIndex place proc puts pwd radiobutton raise read regexp regsub rename return scale scan scrollbar seek selection send set socket source spinbox split string subst switch tclLdAout tclListValidFlags tclLog tclParseConfigSpec tclPkgSetup tclPkgUnknown tcl_endOfWord tcl_findLibrary tcl_startOfNextWord tcl_startOfPreviousWord tcl_wordBreakAfter tcl_wordBreakBefore tell text time tk tk_bindForTraversal tk_bisque tk_chooseColor tk_chooseDirectory tk_dialog tk_focusFollowsMouse tk_focusNext tk_focusPrev tk_getFileType tk_getOpenFile tk_getSaveFile tk_menuBar tk_menuSetFocus tk_messageBox tk_optionMenu tk_popup tk_setPalette tk_textCopy tk_textCut tk_textPaste tkwait toplevel trace unknown unload unset update uplevel upvar variable vwait while winfo wm}
+set ::knownCommands {. EvalAttached after append apply array auto_execok auto_import auto_load auto_load_index auto_mkindex auto_mkindex_old auto_qualify auto_reset bell bgerror binary bind bindtags break button canvas case catch cd chan checkbutton clipboard clock close concat continue destroy dict encoding entry eof error eval event exec exit expr fblocked fconfigure fcopy file fileevent flush focus font for foreach format frame gets glob global grab grid history if image incr info interp join label labelframe lappend lassign lindex linsert list listbox llength load lower lrange lrepeat lreplace lreverse lsearch lset lsort menu menubutton message namespace open option pack package panedwindow parray pid pkg_mkIndex place proc puts pwd radiobutton raise read regexp regsub rename return scale scan scrollbar seek selection send set socket source spinbox split string subst switch tclListValidFlags tclLog tclParseConfigSpec tclPkgSetup tclPkgUnknown tcl_endOfWord tcl_findLibrary tcl_startOfNextWord tcl_startOfPreviousWord tcl_wordBreakAfter tcl_wordBreakBefore tell text time tk tk_bindForTraversal tk_bisque tk_chooseColor tk_chooseDirectory tk_dialog tk_focusFollowsMouse tk_focusNext tk_focusPrev tk_getFileType tk_getOpenFile tk_getSaveFile tk_menuBar tk_menuSetFocus tk_messageBox tk_optionMenu tk_popup tk_setPalette tk_textCopy tk_textCut tk_textPaste tkwait toplevel trace unknown unload unset update uplevel upvar variable vwait while winfo wm}
 set ::syntax(.) {s x*}
 set {::syntax(. cget)} o
 set {::syntax(. configure)} {o. x. p*}
@@ -361,7 +361,6 @@ set {::syntax(string trimright)} {r 1 2}
 set {::syntax(string wordend)} 2
 set {::syntax(string wordstart)} 2
 set ::syntax(subst) {o* x}
-set ::syntax(tclLdAout) {r 0 3}
 set ::syntax(tclListValidFlags) 1
 set ::syntax(tclLog) 1
 set ::syntax(tclParseConfigSpec) 4
