@@ -94,13 +94,18 @@ proc addOptionsMenu {m} {
     $m.mo.med add radiobutton -label "Vim" \
             -variable ::Prefs(editor) -value vim
 
+    if {$::tcl_platform(platform) == "windows"} {
+        $m.mo.med add radiobutton -label "Pfe" \
+                -variable ::Prefs(editor) -value pfe
+    }
+
     $m.mo add separator
 
     $m.mo add cascade -label "Severity level" -menu $m.mo.ms
     menu $m.mo.ms
-    $m.mo.ms add radiobutton -label "Show All (N)" \
+    $m.mo.ms add radiobutton -label "Show All (E/W/N)" \
             -variable ::Prefs(severity) -value N
-    $m.mo.ms add radiobutton -label {Show Warnings (W)} \
+    $m.mo.ms add radiobutton -label {Show Warnings (E/W)} \
             -variable ::Prefs(severity) -value W
     $m.mo.ms add radiobutton -label {Show Errors (E)} \
             -variable ::Prefs(severity) -value E
@@ -119,6 +124,8 @@ proc addOptionsMenu {m} {
             -variable ::Prefs(forceElse)
     $m.mo add checkbutton -label "Strict (l)append" \
             -variable ::Prefs(strictAppend)
+    $m.mo add checkbutton -label "Disable variable checking" \
+            -variable ::Prefs(noVar)
 
     $m.mo add cascade -label "Script encoding" -menu $m.mo.me
     menu $m.mo.me
@@ -131,6 +138,6 @@ proc addOptionsMenu {m} {
 
 
     $m.mo add separator
-    $m.mo add command -label "Save Defaults" -command saveOptions
+    $m.mo add command -label "Save Options" -command saveOptions
 
 }

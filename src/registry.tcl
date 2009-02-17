@@ -48,7 +48,8 @@ proc makeRegistryWin {} {
     if {[regexp {^(.*wish)\d+\.exe$} $exe -> pre]} {
         set alt $pre.exe
         if {[file exists $alt]} {
-            set a [tk_messageBox -icon question -title "Which Wish" -message \
+            set a [tk_messageBox -title "Nagelfar" -icon question \
+                    -title "Which Wish" -message \
                     "Would you prefer to use the executable\n\
                     \"$alt\"\ninstead of\n\
                     \"$exe\"\nin the registry settings?" -type yesno]

@@ -1,3 +1,15 @@
+2009-02-17
+ Misc improvments from Hans Goetz, including:
+   bug removed in the result window context menu, add filter
+   added new menu item "Save Result" in the result window context menu
+   added option "Disable variable checking" in the options menu
+   added option for editor "PFE" which is a popular freeware editor under WIN
+
+2008-09-23
+ Support initialising incr for 8.5
+ Generate db for 8.6.
+ Make a cmd line exe for Windows when wrapping.
+
 Version 1.1.9
 
 2008-03-14

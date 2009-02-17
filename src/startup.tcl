@@ -259,7 +259,7 @@ if {![info exists gurka]} {
                 set ::Nagelfar(files) [concat $::Nagelfar(files) $files]
             }
              -* {
-                puts "Unknown option $arg."
+                puts "Unknown option $arg"
                 usage
             }
             default {

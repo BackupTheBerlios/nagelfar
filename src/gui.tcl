@@ -105,8 +105,9 @@ proc addFile {} {
 
     set newpwd [file dirname [lindex $apa 0]]
     if {[llength $::Nagelfar(files)] == 0 && $newpwd ne [pwd]} {
-        set res [tk_messageBox -icon question -type yesno -message \
-                "Change current directory to $newpwd?"]
+        set res [tk_messageBox -title "Nagelfar" -icon question -type yesno \
+                -message \
+                "Change current directory to [file nativename $newpwd] ?"]
         if {$res eq "yes"} {
             cd $newpwd
         }
@@ -122,7 +123,7 @@ proc addFile {} {
         set ::Nagelfar(lastdir) [file dirname $file]
     }
     if {[llength $skipped] > 0} {
-        tk_messageBox -message \
+        tk_messageBox -title "Nagelfar" -icon info -type ok -message \
                 "Skipped duplicate file"
     }
 }
@@ -225,7 +226,7 @@ proc resultPopup {x y X Y} {
     }
 
     destroy .popup
-    menu .popup -tearoff 0
+    menu .popup
 
     if {[regexp {^(.*): Line\s+(\d+):} $line -> fileName fileLine]} {
         .popup add command -label "Show File" \
@@ -246,7 +247,44 @@ proc resultPopup {x y X Y} {
     # FIXA: This should be handled abit better.
     .popup add command -label "Reset all filters" -command resetFilters
 
+    if {[$::Nagelfar(resultWin) get 1.0 1.end] ne ""} {
+        .popup add command -label "Save Result" -command saveResult
+    }
+
     tk_popup .popup $X $Y
+}
+
+# Save result as file
+proc saveResult {} {
+    # set initial filename to 1st file in list
+    set iniFile [file rootname [lindex $::Nagelfar(files) 0]]
+    if {$iniFile == ""} {
+        set iniFile "noname"
+    }
+    append iniFile ".nfr"
+    set iniDir [file dirname $iniFile]
+    set types {
+        {"Nagelfar Result" {.nfr}}
+        {"All Files" {*}}
+    }
+    set file [tk_getSaveFile -initialdir $iniDir -initialfile $iniFile \
+            -filetypes $types -title "Save File"]
+    if {$file != ""} {
+        set ret [catch {open $file w} msg]
+        if {!$ret} {
+            set fid $msg
+            fconfigure $fid -translation {auto lf}
+            set ret [catch {puts $fid [$::Nagelfar(resultWin) get 1.0 end-1c]} msg]
+        }
+        catch {close $fid}
+        if {!$ret} {
+            tk_messageBox -title "Nagelfar" -icon info -type ok \
+                    -message "Result saved as [file nativename $file]"
+        } else {
+            tk_messageBox -title "Nagelfar Error" -type ok -icon error \
+                    -message "Cannot write [file nativename $file]:\n$msg"
+        }
+    }
 }
 
 # Update the selection in the db listbox to or from the db list.
@@ -346,9 +384,7 @@ if {[catch {package require snit}]} {
         } else {
             $win.s configure -yscrollcommand {}
         }
-
     }
-
 }
 
 # A little helper to make a scrolled window
@@ -697,10 +733,23 @@ proc tryVim {filename lineNo} {
     return 1
 }
 
+# Try to show a file using pfe
+proc tryPfe {filename lineNo} {
+    if {$lineNo > 0} {
+        if {[catch {exec [auto_execok pfe32] /g $lineNo $filename &}]} {
+            return 0
+        }
+    } elseif {[catch {exec [auto_execok pfe32] &}]} {
+        return 0
+    }
+    return 1
+}
+
 # Edit a file using internal or external editor.
 proc editFile {filename lineNo} {
     if {$::Prefs(editor) eq "emacs" && [tryEmacs $filename $lineNo]} return
     if {$::Prefs(editor) eq "vim"   && [tryVim   $filename $lineNo]} return
+    if {$::Prefs(editor) eq "pfe"   && [tryPfe   $filename $lineNo]} return
 
     if {[winfo exists .fv]} {
         wm deiconify .fv
@@ -1019,11 +1068,11 @@ proc fileRelative {dir file} {
 proc defaultGuiOptions {} {
     catch {package require griffin}
 
+    option add *Menu.tearOff 0
     if {[tk windowingsystem]=="x11"} {
         option add *Menu.activeBorderWidth 1
         option add *Menu.borderWidth 1
 
-        option add *Menu.tearOff 0
         option add *Listbox.exportSelection 0
         option add *Listbox.borderWidth 1
         option add *Listbox.highlightThickness 1

@@ -258,7 +258,6 @@ proc checkComment {str index knownVarsName} {
         incr line
         addFilter "*Line *$line:*"
     }
-
 }
 
 # Handle a stack of current namespaces.
@@ -3125,6 +3124,13 @@ proc addFilter {pat {reapply 0}} {
                 set line [$w get $ln.0 $ln.end]
             } else {
                 set range [$w tag nextrange $tag $ln.0]
+                if {$range == ""} {
+                    incr ln
+                    if {[$w index end] <= $ln} {
+                        break
+                    }
+                    continue
+                }
                 set line [eval \$w get $range]
             }
             if {[string match $pat $line]} {
@@ -3372,7 +3378,20 @@ proc doCheck {} {
         }
     }
     if {$::Nagelfar(gui)} {
-        echo "Done" 1
+        if {[info exists ::Nagelfar(resultWin)]} {
+            set result [$::Nagelfar(resultWin) get 1.0 end-1c]
+            set n [regsub -all {Line\s+\d+: N } $result "" ->]
+            set w [regsub -all {Line\s+\d+: W } $result "" ->]
+            set e [regsub -all {Line\s+\d+: E } $result "" ->]
+            # show statistics depending on severity level
+            switch $::Prefs(severity) {
+                N {echo "Done (E/W/N: $e/$w/$n)" 1}
+                W {echo "Done (E/W: $e/$w)" 1}
+                E {echo "Done (E: $e)" 1}
+            }
+        } else {
+            echo "Done" 1
+        }
         normalCursor
         progressUpdate -1
     }
