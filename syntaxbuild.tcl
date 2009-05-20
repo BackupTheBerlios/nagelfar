@@ -22,7 +22,13 @@ if {[info exists gurkmeja]} {
 # First get some data about the system
 
 set ::kG [lsort [info globals]]
-set ::kC [lsort [info commands]]
+set ::kC [info commands]
+foreach p [info commands {tcl::[a-z]*}] {
+    if {[string match ::* $p]} {
+        set p [string range $p 2 end]
+    }
+    lappend ::kC $p
+}
 
 # Collect exported namespace commands
 if 0 { # Not working yet
@@ -124,7 +130,7 @@ proc buildDb {ch} {
     puts $ch [list lappend ::dbInfo $dbstring]
     puts $ch [list set ::dbTclVersion $::tcl_version]
     puts $ch [list set ::knownGlobals $::kG]
-    puts $ch [list set ::knownCommands $::kC]
+    puts $ch [list set ::knownCommands [lsort $::kC]]
 
     # Below is the hardcoded syntax for many core commands.
     # It is defined using the "language" below.
@@ -376,6 +382,22 @@ proc buildDb {ch} {
         set syntax(source)     "p* x"
         set option(interp\ invokehidden\ -namespace) 1
     }
+
+    # Things added in 8.6
+    if {[info commands try] ne ""} {
+        set syntax(try)          "r 0"
+        set syntax(throw)        "2"
+        set syntax(coroutine)    "x x x*"
+        set syntax(tailcall)     "x x*"
+        set syntax(yield)        "x?"
+        set syntax(zlib)         "s x*"
+        set syntax(zlib\ stream) "s x*"
+        set syntax(zlib\ push)   "s x*"
+        # FIXA: All zlib
+        set syntax(tcl::prefix)  "s x*"
+        # FIXA: oo
+    }
+        
 
     # Some special Tcl commands
     set syntax(dde)             "o? s x*"  ;# FIXA: is this correct?
