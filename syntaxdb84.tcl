@@ -1,5 +1,5 @@
 # Automatically generated syntax database.
-# Generated with syntaxbuild Revision: 426 
+# Generated with syntaxbuild Revision: 429 
 
 lappend ::dbInfo {Tcl 8.4.18 unix, Tk 8.4.18 x11}
 set ::dbTclVersion 8.4

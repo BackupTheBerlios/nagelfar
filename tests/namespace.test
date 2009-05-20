@@ -203,3 +203,35 @@ test namespace-5.2 {
     }
     execTestFile
 } -result {%%Line   3: N Non constant argument to variable: $ns}
+
+test namespace-6.1 {
+    Fully qualified path
+} -body {
+    createTestFile {
+        ##nagelfar syntax apa x v
+        ::apa 1 2
+        ##nagelfar syntax bepa::cepa x v
+        ::bepa::cepa 1 2
+    }
+    execTestFile
+} -result {%%Line   3: E Unknown variable "2"
+Line   5: E Unknown variable "2"}
+
+test namespace-6.2 {
+    Fully qualified path
+} -body {
+    createTestFile {
+        proc apa {a bName} {
+            upvar 1 $bName b
+            return $b
+        }
+        ::apa 1 2
+        proc bepa::cepa {a bName} {
+            upvar 1 $bName b
+            return $b
+        }
+        ::bepa::cepa 1 2
+    }
+    execTestFile
+} -result {%%Line   6: E Unknown variable "2"
+Line  11: E Unknown variable "2"}

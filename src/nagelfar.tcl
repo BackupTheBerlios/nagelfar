@@ -209,7 +209,9 @@ proc checkComment {str index knownVarsName} {
         set rest [lrange $rest 2 end]
         switch -- $cmd {
             syntax {
+#                decho "Syntax for '$first' : '$rest'"
                 set ::syntax($first) $rest
+                lappend ::knownCommands $first
             }
             return {
                 set ::return($first) $rest
@@ -2094,11 +2096,13 @@ proc parseStatement {statement index knownVarsName} {
 	default {
             set ns [currentNamespace]
 	    if {$ns eq "" && [info exists ::syntax($cmd)]} {
+#                decho "Checking '$cmd' in '$ns' res"
 		set type [checkCommand $cmd $index $argv $wordstatus \
                         $wordtype $indices]
 	    } else {
                 # Resolve commands in namespace
                 set rescmd [lookForCommand $cmd $ns $index]
+#                decho "Checking '$cmd' in '$ns' resolved '$rescmd'"
                 if {[llength $rescmd] > 0 && \
                         [info exists ::syntax([lindex $rescmd 0])]} {
                     set cmd [lindex $rescmd 0]
@@ -2597,11 +2601,12 @@ proc parseProc {argv indices} {
                     #if {$syntax($name) != $newsyntax} {
                     #    decho "$name : Prev: '$syntax($name)'  New: '$newsyntax'"
                     #}
+#                    decho "Syntax for '$name' : '$newsyntax'"
                     set syntax($name) $newsyntax
                 }
             }
         } else {
-            #decho "Syntax for '$name' : '$newsyntax'"
+#            decho "Syntax for '$name' : '$newsyntax'"
             set syntax($name) $newsyntax
         }
     }
