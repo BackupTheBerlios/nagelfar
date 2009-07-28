@@ -8,6 +8,22 @@ lappend ::auto_path /home/peter/src/tktest
 package require TkTest
 wm withdraw .
 
+proc XauthSecure {} {
+    global tcl_platform
+
+    if {[string compare unix $tcl_platform(platform)]} {
+	# This makes no sense outside of Unix
+	return
+    }
+    set hosts [exec xhost]
+    # the first line is info only
+    foreach host [lrange [split $hosts \n] 1 end] {
+	exec xhost -$host
+    }
+    exec xhost -
+}
+XauthSecure
+
 proc RestartClient {{mode 0}} {
     set ::clientfile nagelfar.tcl
     if {[file exists ${::clientfile}_i]} {
@@ -316,8 +332,8 @@ test gui-4.1 {Edit window} -body {
     tktest::menu File Close
 
     set res 0
-    if {$str1 ne "Done"} {
-        set res "$str1 != Done"
+    if {$str1 ne "Done (E/W/N: 0/0/0)"} {
+        set res "$str1 != Done (E/W/N: 0/0/0)"
     }
     if {![string match "*Unknown variable*" $str2]} {
         set res "str2: $str2"
