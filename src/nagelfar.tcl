@@ -733,8 +733,22 @@ proc parseVar {str len index iName knownVarsName} {
         }
 	return ""
     }
+    # FIXA: Use markVariable
     if {![info exists knownVars(known,$var)]} {
-	errorMsg E "Unknown variable \"$var\"" $index
+        if {[string match "*::*" $var]} {
+            set tail [namespace tail $var]
+            set ns [namespace qualifiers $var]
+            #decho "'$var' '$ns' '$tail'"
+            #parray knownVars *$tail
+            if {![info exists knownVars(known,$tail)] || \
+                    ![info exists knownVars(namespace,$tail)] || \
+                    ($knownVars(namespace,$tail) ne $ns && \
+                    $knownVars(namespace,$tail) ne "::$ns")} {
+                errorMsg E "Unknown variable \"$var\"" $index
+            }
+        } else {
+            errorMsg E "Unknown variable \"$var\"" $index
+        }
     }
     if {![info exists knownVars(set,$var)]} {
         set knownVars(read,$var) 1

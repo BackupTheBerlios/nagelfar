@@ -148,6 +148,18 @@ test namespace-3.3 {
     execTestFile
 } -result {%%}
 
+test namespace-3.4 {
+    Namespaces, eval and variable
+} -body {
+    createTestFile {
+        namespace eval nspace {
+            set rundir "rdir"
+        }
+        puts "$nspace::rundir"
+    }
+    execTestFile
+} -result {%%}
+
 test namespace-4.1 {
     Namespaces, procs 2-pass
 } -body {

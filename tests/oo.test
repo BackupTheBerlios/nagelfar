@@ -6,7 +6,7 @@
 
 test oo-1.1 {
     Object definition experiment
-} -body {
+} -constraints knownbug -body {
     createTestFile {
         ##nagelfar syntax snit::type x cn
         ##nagelfar syntax snit::type::method x x cl

@@ -1,3 +1,13 @@
+2009-05-20
+ Handle namespace variables better. [Bug 15644]
+
+2009-05-20
+ Fixed a bug where a command added though inline commend was not
+ fully recognised internally. [Bug 15645]
+
+2009-05-20
+ Added info about some 8.6 commands to syntax db.
+
 2009-02-17
  Misc improvments from Hans Goetz, including:
    bug removed in the result window context menu, add filter
