@@ -171,7 +171,7 @@ test nagelfar-3.4 {
 
 test nagelfar-3.5 {
     Basic errors
-} -body {
+} -constraints runin84 -body {
     createTestFile {
         proc apa {w} {
             set Miffo(gurka) 1
@@ -380,7 +380,7 @@ test nagelfar-6.2.2 {
     }
     execTestFile
 } -result {%%Line   3: E Bad expression: missing operand at _@_
-    in expression "1 + ${dummy} /_@_"}
+in expression "1 + ${dummy} /_@_"}
 
 test nagelfar-6.3 {
     Expression checking
