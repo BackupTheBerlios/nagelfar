@@ -28,6 +28,7 @@ TCLSHDB2 = ~/tcl/install/bin/wish8.4
 DB2NAME  = syntaxdb84.tcl
 TCLSHDB3 = ~/tcl/install/bin/wish8.6
 DB3NAME  = syntaxdb86.tcl
+TCLSH84  = tclsh
 TCLSH85  = ~/tcl/install/bin/tclsh8.5
 
 all: base
@@ -89,10 +90,10 @@ check: nagelfar.tcl nagelfar_h.syntax
 	@./nagelfar.tcl -strictappend nagelfar_h.syntax $(CATFILES)
 
 test: base
-	@./tests/all.tcl $(TESTFLAGS)
-
-test85: base
 	@$(TCLSH85) ./tests/all.tcl $(TESTFLAGS)
+
+test84: base
+	@$(TCLSH84) ./tests/all.tcl $(TESTFLAGS)
 
 #----------------------------------------------------------------
 # Coverage
