@@ -1,3 +1,6 @@
+2009-10-03
+ Added a check for expr calls in expressions.
+
 2009-05-20
  Handle namespace variables better. [Bug 15644]
 

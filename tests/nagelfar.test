@@ -415,6 +415,18 @@ test nagelfar-6.5 {
     execTestFile
 } -result {%%Line   2: E Missing close bracket at end of expression}
 
+test nagelfar-6.6 {
+    Expression checking
+} -body {
+    createTestFile {
+        # Noone should call expr from an expression
+        if {[expr {5 + 3}]} { set apa 1 }
+        # Nested is ok
+        if {[lindex x [expr {5 + 3}]]} { set apa 1 }
+    }
+    execTestFile
+} -result {%%Line   3: N Expr called in expression}
+
 test nagelfar-7.1 {
     Command: upvar
 } -body {

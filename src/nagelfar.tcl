@@ -885,8 +885,13 @@ proc parseExpr {str index knownVarsName} {
                         }
                         incr si
                         incr i -1
-                        parseBody [string range $str $si $i] \
-                                [expr {$index + $si}] knownVars
+                        # Warn if the called command is expr
+                        set body [string range $str $si $i]
+                        if {[string match "expr*" $body]} {
+                            errorMsg N "Expr called in expression" \
+                                    [expr {$index + $si}]
+                        }
+                        parseBody $body [expr {$index + $si}] knownVars
                         incr i
                         append exp {${dummy}}
                         continue
