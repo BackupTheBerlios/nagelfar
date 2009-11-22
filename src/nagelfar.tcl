@@ -80,9 +80,21 @@ proc errEcho {msg} {
     }
 }
 
+# Add html quiting on a string
+proc Text2Html {data} {
+    string map {\& \&amp; \< \&lt; \> \&gt; \" \&quot;} $data
+}
+
 # Standard error message.
 # severity : How severe a message is E/W/N for Error/Warning/Note
 proc errorMsg {severity msg i} {
+    if {$::Prefs(html)} {
+        set msg [Text2Html $msg]
+        if {$msg == "Expr without braces"} {
+            append msg " (see <a href=\"http://tclhelp.net/unb/194\" target=\"_tclforum\">http://tclhelp.net/unb/194</a>)"
+        }
+    }
+
     if {[info exists ::Nagelfar(currentMessage)] && \
             $::Nagelfar(currentMessage) != ""} {
         lappend ::Nagelfar(messages) [list $::Nagelfar(currentMessageLine) \
@@ -105,7 +117,17 @@ proc errorMsg {severity msg i} {
         set pre "$::currentFile: "
     }
     set line [calcLineNo $i]
+
+    switch $severity {
+        E { set color "#DD0000"; set severityMsg "ERROR" }
+        W { set color "#FFAA00"; set severityMsg "WARNING" }
+        N { set color "#66BB00"; set severityMsg "NOTICE" }
+    }
     set pre "${pre}Line [format %3d $line]: $severity "
+    if {$::Prefs(html)} {
+        set pre "<a href=#$::Prefs(htmlprefix)$line>Line [format %3d $line]</a>: <font color=$color><strong>$severityMsg</strong></font>: "
+    }
+
     set ::Nagelfar(indent) [string repeat " " [string length $pre]]
     set ::Nagelfar(currentMessage) $pre$msg
     set ::Nagelfar(currentMessageLine) $line
@@ -135,7 +157,9 @@ proc flushMsg {} {
         lappend ::Nagelfar(messages) [list $::Nagelfar(currentMessageLine) \
                 $::Nagelfar(currentMessage)]
     }
+
     set msgs [lsort -integer -index 0 $::Nagelfar(messages)]
+
     foreach msg $msgs {
         set text [lindex $msg 1]
         set print 1
@@ -1051,7 +1075,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
         set token [lindex $syn 0]
         set syn [lrange $syn 1 end]
 
-        regexp {^(\w+)(\W*)$} $token -> tok mod
+        regexp {^(\w+?)(\d*)(\W*)$} $token -> tok tokCount mod
         if {$mod eq "("} {set mod ""}
 	# Basic checks for modifiers
 	switch -- $mod {
@@ -1141,6 +1165,9 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                     }
 		} else {
                     set body [lindex $argv $i]
+                    if {$tokCount ne ""} {
+                        append body [string repeat " x" $tokCount]
+                    }
                     # Special fix to support bind's "+".
                     if {$tok eq "C" && [string match "+*" $body] && \
                             $cmd eq "bind"} {
@@ -1559,6 +1586,7 @@ proc parseStatement {statement index knownVarsName} {
     # If the command contains substitutions we can not determine
     # which command it is, so we skip it, unless the type is known
     # to be an object.
+
     if {($cmdws & 1) == 0} {
         if {[string match "_obj,*" $cmdtype]} {
             set cmd $cmdtype
@@ -1598,6 +1626,7 @@ proc parseStatement {statement index knownVarsName} {
     # have their own special check implemented here.
     # Any command that can be checked by checkCommand should
     # be in the syntax database.
+
     switch -glob -- $cmd {
 	proc {
 	    if {$argc != 3} {

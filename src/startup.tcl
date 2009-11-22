@@ -33,6 +33,8 @@ proc usage {} {
  -encoding <enc>   : Read script with this encoding.
  -filter <p>       : Any message that matches the glob pattern is suppressed.
  -severity <level> : Set severity level filter to N/W/E (default N).
+ -html             : Generate html-output.
+ -prefix <pref>    : Prefix for line anchors (html output)
  -novar            : Disable variable checking.
  -WexprN           : Sets expression warning level to N.
    2 (def)         = Warn about any unbraced expression.
@@ -241,6 +243,13 @@ if {![info exists gurka]} {
                     exit
                 }
             }
+            -html {
+                set ::Prefs(html) 1
+            }
+            -prefix {
+                incr i
+                set ::Prefs(htmlprefix) [lindex $argv $i]
+            }
  	    -tab {
                 incr i
                 set arg [lindex $argv $i]
@@ -311,6 +320,7 @@ if {![info exists gurka]} {
     }
 
     doCheck
+
     #_dumplogme
     #if {[array size _stats] > 0} {
     #    array set _apa [array get _stats]

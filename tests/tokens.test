@@ -136,6 +136,26 @@ test tokens-7.1 {
 } -result {%%Modifier "*" is not supported for "c" in syntax for gurka.
 Line   6: W No braces around code in hopp statement.}
 
+test tokens-7.2 {
+    Code token, partial commands
+} -body {
+    createTestFile {
+        # Test eggdrop bind style
+        ##nagelfar syntax bind s x x c
+        ##nagelfar subcmd bind load link sent
+        ##nagelfar syntax bind\ load x x c1
+        ##nagelfar syntax bind\ link x x c2
+        ##nagelfar syntax bind\ sent x x c3
+        bind load _ _ {llength}
+        bind link _ _ {string index}
+        bind sent _ _ {lrange}
+        bind link _ _ {llength a;#}
+        bind link _ _ {llength}
+    }
+    execTestFile
+} -result {%%Line  12: E Wrong number of arguments (2) to "llength"
+            Argument 2 at line 14}
+
 test tokens-8.1 {
     Subcommand token
 } -body {

@@ -51,6 +51,8 @@ proc getOptions {} {
         editor internal
         extensions {.tcl .test .adp .tk}
         exitcode 0
+        html 0
+        htmlprefix ""
     }
 
     # Do not load anything during test
