@@ -153,8 +153,33 @@ test tokens-7.2 {
         bind link _ _ {llength}
     }
     execTestFile
+    # Known bug: Prefix errors give bad extra info
 } -result {%%Line  12: E Wrong number of arguments (2) to "llength"
             Argument 2 at line 14}
+
+test tokens-7.3 {
+    Code token, partial commands
+} -body {
+    createTestFile {
+        trace add variable ::x write "llength x ;#"
+        trace add variable ::x write "lrange"
+        trace add execution _ _ "string index"
+        trace add command   _ _ "lrange"
+
+        trace add execution _ _ "lrange"
+        trace add command   _ _ "string index"
+        trace add variable  ::x _ "string index"
+    }
+    execTestFile
+    # Known bug: Prefix errors give bad extra info
+} -result {%%Line   7: E Wrong number of arguments (2) to "lrange"
+            Argument 2 at line 8
+Line   8: E Wrong number of arguments (4) to "string index"
+            Argument 3 at line 9
+            Argument 4 at line 9
+Line   9: E Wrong number of arguments (4) to "string index"
+            Argument 3 at line 11
+            Argument 4 at line 10}
 
 test tokens-8.1 {
     Subcommand token

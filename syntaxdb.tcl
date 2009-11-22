@@ -418,9 +418,9 @@ set {::syntax(tkwait variable)} l
 set ::syntax(toplevel) {x p*}
 set ::syntax(trace) {s x x*}
 set {::syntax(trace add)} {s x x x}
-set {::syntax(trace add command)} {x x x}
-set {::syntax(trace add execution)} {x x x}
-set {::syntax(trace add variable)} {v x x}
+set {::syntax(trace add command)} {x x c3}
+set {::syntax(trace add execution)} {x x c2}
+set {::syntax(trace add variable)} {v x c3}
 set {::syntax(trace info)} {s x x x}
 set {::syntax(trace info command)} x
 set {::syntax(trace info execution)} x
