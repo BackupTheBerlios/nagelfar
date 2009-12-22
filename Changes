@@ -1,3 +1,6 @@
+2009-12-21
+ Note when a newline breaks a command substitution
+
 2009-11-22
  Added support for partial command tokens
 

@@ -455,6 +455,30 @@ test gui-7.1 {Stop Button} -body {
     set succ
 } -result {1}
 
+test gui-8.1 {DB Browser} -body {
+    tktest::waitFocus menu Tools "Browse Database"
+    set w [tktest::widget -class Entry]
+    tktest::cmd focus $w
+    tktest::keys "gurkmeja"
+    tktest::press Search
+    set info [GetTextLines]
+    set top [tktest::cmd winfo toplevel $w]
+    tktest::cmd destroy $top
+    set info
+} -result {{No match!}}
+
+test gui-8.2 {DB Browser} -body {
+    tktest::waitFocus menu Tools "Browse Database"
+    set w [tktest::widget -class Entry]
+    tktest::cmd focus $w
+    tktest::keys "lsearch"
+    tktest::press Search
+    set info [GetTextLines]
+    set top [tktest::cmd winfo toplevel $w]
+    tktest::cmd destroy $top
+    set info
+} -result {No match!}
+
 catch {tktest::menu File Exit}
 catch {send -async Nagelfar exit}
 update

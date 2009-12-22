@@ -760,8 +760,8 @@ test nagelfar-18.1 {
     # apa is a variable name.
     createTestFile {
         set apa 1
-        trace variable apa w Hej
-        trace add variable apa write Hej
+        trace variable apa w list
+        trace add variable apa write list
     }
     execTestFile
 } -result {%%}
@@ -887,3 +887,25 @@ test nagelfar-23.1 {
     }
     execTestFile -flags -html
 } -result {%%<a href=#4>Line   4</a>: <font color=#DD0000><strong>ERROR</strong></font>: Wrong number of arguments (2) to &quot;hej&quot;}
+
+test nagelfar-24.1 {
+    New line in subst body
+} -body {
+    createTestFile {
+        set apa [list x;list y]
+        set apa [list x
+                 list y]
+    }
+    execTestFile
+} -result {%%Line   3: N Newline in command substitution}
+
+test nagelfar-24.2 {
+    New line in subst body
+} -body {
+    createTestFile {
+        set apa [expr {[list x ; list y]}]
+        set apa [expr {[list x
+                        list y]}]
+    }
+    execTestFile
+} -result {%%Line   3: N Newline in command substitution}

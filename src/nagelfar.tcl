@@ -840,7 +840,7 @@ proc parseSubst {str index typeName knownVarsName} {
 		incr si
 		incr i -1
 		lappend types [parseBody [string range $str $si $i] \
-                        [expr {$index + $si}] knownVars]
+                        [expr {$index + $si}] knownVars 1]
 		incr i
 		set result 0
 	    } else {
@@ -915,7 +915,7 @@ proc parseExpr {str index knownVarsName} {
                             errorMsg N "Expr called in expression" \
                                     [expr {$index + $si}]
                         }
-                        parseBody $body [expr {$index + $si}] knownVars
+                        parseBody $body [expr {$index + $si}] knownVars 1
                         incr i
                         append exp {${dummy}}
                         continue
@@ -2424,7 +2424,7 @@ proc splitScript {script index statementsName indicesName knownVarsName} {
 }
 
 # Returns the return type of the script
-proc parseBody {body index knownVarsName} {
+proc parseBody {body index knownVarsName {warnCommandSubst 0}} {
     upvar $knownVarsName knownVars
 
     #set ::instrumenting($index) 1
@@ -2436,6 +2436,16 @@ proc parseBody {body index knownVarsName} {
         set indices $::Nagelfar(cacheIndices,$body)
     } else {
         splitScript $body $index statements indices knownVars
+    }
+    # Unescaped newline in command substitution body is probably wrong
+    if {$warnCommandSubst && [llength $statements] > 1} {
+        foreach statement [lrange $statements 0 end-1] \
+                stmtIndex [lrange $indices 0 end-1] {
+            if {[string index $statement end] eq "\n"} {
+                errorMsg N "Newline in command substitution" $stmtIndex
+                break
+            }
+        }
     }
 
 #miffo    puts "Parsing a body with [llength $statements] stmts"
@@ -2449,6 +2459,7 @@ proc parseBody {body index knownVarsName} {
         set ::Nagelfar(cacheStatements,$body) $statements
         set ::Nagelfar(cacheIndices,$body) $indices
     } else {
+        # FIXA: Why is this here? Tests pass without it
         unset -nocomplain ::Nagelfar(cacheBody)
     }
     return $type

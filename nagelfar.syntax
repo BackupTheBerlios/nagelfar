@@ -19,7 +19,7 @@
 # This procedure takes three arguments, the third being a
 # call-by-name where the variable should exist before.
 
-##nagelfar syntax parseBody x x v
+##nagelfar syntax parseBody x x v x?
 
 # Argument 6 and 7 to markVariable is a call-by-name where
 # the variable is set by this call and need not exist before.
