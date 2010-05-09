@@ -147,20 +147,23 @@ proc buildDb {ch} {
     # Example "1: x 2: n n : e x*"
 
     # If a token is an integer, just check the number of arguments against it.
-    # r min ?max?  Specify a range for number of arguments
+    # r min ?max?  Specifies a range for number of arguments
 
-    # x Any
-    # o Option, i.e anything starting with -
-    # p Option+Any (p as in option Pair)
-    # s Subcommand
-    # e Expression
-    # E Expression that should be in braces
-    # c Code
+    # x  Any
+    # o  Option, i.e anything starting with -
+    # p  Option+Any (p as in option Pair)
+    # s  Subcommand
+    # e  Expression
+    # E  Expression that should be in braces
+    # c  Code, checked in surrounding context
+    # cg Code, checked in global context
+    # cn Code, checked in namespace context
+    # cl Code, checked in its own local context
     # n, v and l all marks variable names. Those arguments will not be
     #   checked against known variables to detect missing $.
-    # n The variable does not have to exist, and is set by the command.
-    # v The variable must exist. It is not marked as set.
-    # l Does not have to exist. It will be marked as known, but not set.
+    # n  The variable does not have to exist, and is set by the command.
+    # v  The variable must exist. It is not marked as set.
+    # l  Does not have to exist. It will be marked as known, but not set.
 
     # Modifiers that apply to some of the above
     # ? Zero or One
@@ -423,7 +426,7 @@ proc buildDb {ch} {
 
     if {$useTk} {
         set syntax(bell)     "o* x*"
-        set syntax(bind)     "x x? C?"
+        set syntax(bind)     "x x? cg?"
         set syntax(bindtags) "x x?"
         set syntax(clipboard) "s x*"
         set syntax(console)  "r 1"

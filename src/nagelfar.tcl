@@ -1028,6 +1028,18 @@ proc WA {} {
     }
 }
 
+proc SplitToken {token tokName tokCountName modName} {
+    upvar 1 $tokName tok $tokCountName tokCount $modName mod
+    set mod ""
+    set tokCount ""
+    set tok _baad_
+    if {[regexp {^(\w+?)(\d*)(\W*)$} $token -> tok tokCount mod]} return
+    # Type in parenthesis
+    if {[regexp {^(\w+)\(.*\)$} $token -> tok]} return
+    #echo "Unsupported token $token in syntax for $cmd"
+    return
+}
+
 # Check a command that have a syntax defined in the database
 # 'firsti' says at which index in argv et.al. the arguments begin.
 # Returns the return type of the command
@@ -1067,6 +1079,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
         set syn $newsyn
     }
 
+    # An integer token directly specifies number of arguments
     if {[string is integer -strict $syn]} {
 	if {($argc - $firsti) != $syn} {
 	    WA
@@ -1074,6 +1087,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
         checkForCommentL $argv $wordstatus $indices
 	return $type
     } elseif {[string equal [lindex $syn 0] "r"]} {
+        # A range of number of arguments
 	if {($argc - $firsti) < [lindex $syn 1]} {
 	    WA
 	} elseif {[llength $syn] >= 3 && ($argc - $firsti) > [lindex $syn 2]} {
@@ -1112,11 +1126,11 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
 
     set i $firsti
     while {[llength $syn] > 0} {
+        # Pop first token from stack
         set token [lindex $syn 0]
         set syn [lrange $syn 1 end]
 
-        regexp {^(\w+?)(\d*)(\W*)$} $token -> tok tokCount mod
-        if {$mod eq "("} {set mod ""}
+        SplitToken $token tok tokCount mod
 	# Basic checks for modifiers
 	switch -- $mod {
 	    "" { # No modifier, and out of arguments, is an error
@@ -1180,7 +1194,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
 		parseExpr [lindex $argv $i] [lindex $indices $i] knownVars
 		incr i
 	    }
-	    c - C - cl - cn { # A code block
+	    c - cg - cl - cn { # A code block
                 if {[string equal $mod "?"]} {
 		    if {$i >= $argc} {
 			set i $argc
@@ -1209,14 +1223,14 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                         append body [string repeat " x" $tokCount]
                     }
                     # Special fix to support bind's "+".
-                    if {$tok eq "C" && [string match "+*" $body] && \
+                    if {$tok eq "cg" && [string match "+*" $body] && \
                             $cmd eq "bind"} {
                         set body [string range $body 1 end]
                     }
                     if {$tok ne "cn"} {
                         set ::instrumenting([lindex $indices $i]) 1
                     }
-                    if {$tok eq "C"} {
+                    if {$tok eq "cg"} {
                         # Check in global context
                         pushNamespace {}
                         array unset dummyVars
@@ -1225,8 +1239,17 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                         popNamespace
                     } elseif {$tok eq "cn"} {
                         # Check in namespace context
-                        pushNamespace $cmd
-                        #puts "Pushing NS '$cmd' to check '$body'"
+                        set ns [currentNamespace]
+                        if {[string match "::*" $cmd]} {
+                            set ns ""
+                        } elseif {$ns ne "__unknown__" } {
+                            set cmd1 "${ns}::$cmd"
+                            set ns [namespace qualifiers $cmd1]
+                        } else {
+                            set ns [namespace qualifiers $cmd]
+                        }
+                        pushNamespace $ns
+                        #puts "Pushing NS '$ns' for cmd '$cmd' to check '$body'"
                         array unset dummyVars
                         array set dummyVars {}
                         parseBody $body [lindex $indices $i] dummyVars
@@ -2668,11 +2691,7 @@ proc parseProc {argv indices} {
                 }
             } else {
                 foreach token $syntax($name) {
-                    set tok [string index $token 0]
-                    set mod [string index $token 1]
-                    if {$mod == "("} {
-                        set mod ""
-                    }
+                    SplitToken $token tok tokCount mod
                     set n [expr {$tok == "p" ? 2 : 1}]
                     if {$mod == ""} {
                         incr prevmin $n

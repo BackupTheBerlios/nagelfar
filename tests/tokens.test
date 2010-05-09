@@ -230,6 +230,45 @@ Line   9: E Wrong number of arguments (4) to "string index"
             Argument 3 at line 11
             Argument 4 at line 10}
 
+test tokens-7.4 {
+    Code token, global context
+} -body {
+    createTestFile {
+        set apa 1
+        ##nagelfar syntax gurka x cg
+        gurka hej {list $apa ; set bepa 1}
+        set bepa
+    }
+    execTestFile
+} -result {%%Line   4: E Unknown variable "apa"
+Line   5: E Unknown variable "bepa"}
+
+test tokens-7.5 {
+    Code token, namespace context
+} -body {
+    createTestFile {
+        proc ns::meee {x} {
+            list a
+        }
+        ##nagelfar syntax ns::gurka x cn
+        ns::gurka hej {meee x y}
+    }
+    execTestFile
+} -result {%%Line   6: E Wrong number of arguments (2) to "ns::meee"}
+
+test tokens-7.6 {
+    Code token, local context
+} -body {
+    createTestFile {
+        set apa 1
+        ##nagelfar syntax gurka x cl
+        gurka hej {list $apa ; set bepa 1}
+        set bepa
+    }
+    execTestFile
+} -result {%%Line   4: E Unknown variable "apa"
+Line   5: E Unknown variable "bepa"}
+
 test tokens-8.1 {
     Subcommand token
 } -body {

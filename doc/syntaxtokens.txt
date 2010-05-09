@@ -14,7 +14,11 @@ p Option+Any (p as in option Pair)
 s Subcommand
 e Expression
 E Expression that should be in braces
-c Code
+
+c  Code, checked in surrounding context
+cg Code, checked in global context
+cn Code, checked in namespace context
+cl Code, checked in its own local context
 
 n, v and l all marks variable names.  Those arguments will not be
   checked against known variables to detect missing $.

@@ -1,3 +1,7 @@
+2010-05-10
+ Cleaned up code syntax tokens. Renamed C to cg for global context.
+ Made cn work reasonably. Added tests for cg, cn and cl.
+
 2010-05-09
  Added inline syntax of "copy", to copy syntax from command to command
 
