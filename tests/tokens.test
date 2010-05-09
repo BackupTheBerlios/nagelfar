@@ -46,6 +46,38 @@ test tokens-2.1 {
     execTestFile
 } -result {%%Line   9: E Wrong number of arguments (3) to "gurka"}
 
+test tokens-2.2 {
+    Token p* and --
+} -body {
+    createTestFile {
+        ##nagelfar syntax gurka p* x
+        ##nagelfar option gurka -- -flag -miffo
+        gurka x
+        gurka -- x
+        gurka -flag 1 x
+        gurka -flag 1 -- x
+        gurka -miffo 1 --
+        gurka -miffu 1 x
+    }
+    execTestFile
+} -result {%%Line   9: E Bad option -miffu to gurka}
+
+test tokens-2.3 {
+    Token p* and --
+} -body {
+    createTestFile {
+        ##nagelfar syntax gurka p*
+        ##nagelfar option gurka -- -flag -miffo
+        gurka
+        gurka --
+        gurka -flag 1
+        gurka -flag 1 --
+        gurka -miffo 1 --
+        gurka -miffu 1
+    }
+    execTestFile
+} -result {%%Line   9: E Bad option -miffu to gurka}
+
 test tokens-3.1 {
     Modifier .
 } -body {

@@ -454,12 +454,28 @@ proc splitStatement {statement index indicesName} {
 proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
     global option
     ##nagelfar cover variable max
+    
+    # Special case: the first option is "--"
+    if {[lindex $argv $startI] == "--"} {
+        # Allowed?
+        set ix [lsearch -exact $option($cmd) --]
+        if {$ix >= 0} {
+            return [list x]
+        }
+    }
 
     # How many is the limit imposed by the number of arguments?
     set maxa [expr {[llength $argv] - $startI}]
+
     # Pairs swallow an even number of args.
     if {$pair && ($maxa % 2) == 1} {
-        incr maxa -1
+        # If the odd one is "--", it may continue
+        if {[lindex $argv [expr {$maxa - 1}]] == "--" && \
+                [lsearch -exact $option($cmd) --] >= 0} {
+            # Nothing
+        } else {
+            incr maxa -1
+        }
     }
 
     if {$max == 0 || $maxa < $max} {
