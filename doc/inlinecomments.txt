@@ -47,6 +47,7 @@ set hejsan [set $apaName]
 
 ##nagelfar syntax cmd tokens
 ##nagelfar subcmd cmd subcmds
+##nagelfar subcmd+ cmd subcmds
 ##nagelfar option cmd options
 ##nagelfar return cmd type
 
@@ -60,6 +61,10 @@ Examples:
 ##nagelfar syntax binary\\ scan x x n n*
 ##nagelfar syntax fcopy x x p*
 ##nagelfar option fcopy -size -command
+
+Add to subcmd list, e.g. when using namespace ensemble:
+##nagelfar subcmd+ string mysubcmd
+##nagelfar syntax string\ mysubcmd x x
 
 For more examples, use the database browser to see how the comments
 would look like for the commands known in the database.

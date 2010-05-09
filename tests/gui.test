@@ -4,7 +4,7 @@
 # $Revision$
 #----------------------------------------------------------------------
 
-lappend ::auto_path /home/peter/src/tktest
+lappend ::auto_path /home/peter/src/TkTest
 package require TkTest
 wm withdraw .
 

@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------
 #  Nagelfar, a syntax checker for Tcl.
-#  Copyright (c) 1999-2008, Peter Spjuth
+#  Copyright (c) 1999-2010, Peter Spjuth
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -242,6 +242,9 @@ proc checkComment {str index knownVarsName} {
             }
             subcmd {
                 set ::subCmd($first) $rest
+            }
+            subcmd+ {
+                eval [list lappend ::subCmd($first)] $rest
             }
             option {
                 set ::option($first) $rest

@@ -47,6 +47,18 @@ test inline-2.1 {
 } -result {%%Line   5: E Wrong number of arguments (3) to "Miffo"
 Line   6: E Ambigous subcommand for "Miffo", be -> bepa/beepa}
 
+test inline-2.2 {
+    Subcommands, append
+} -body {
+    createTestFile {
+        ##nagelfar subcmd+ string mysubcmd
+        ##nagelfar syntax string\ mysubcmd x x
+        string mysubcmd x y
+        string mysubcmd x y z
+    }
+    execTestFile
+} -result {%%Line   5: E Wrong number of arguments (4) to "string mysubcmd"}
+
 test inline-3.1 {
     Options
 } -body {
