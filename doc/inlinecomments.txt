@@ -50,6 +50,7 @@ set hejsan [set $apaName]
 ##nagelfar subcmd+ cmd subcmds
 ##nagelfar option cmd options
 ##nagelfar return cmd type
+##nagelfar copy from to
 
 All these provides access directly into the syntax database that
 usually is loaded from syntaxdb.tcl.
@@ -65,6 +66,9 @@ Examples:
 Add to subcmd list, e.g. when using namespace ensemble:
 ##nagelfar subcmd+ string mysubcmd
 ##nagelfar syntax string\ mysubcmd x x
+
+Copy syntax from command
+##nagelfar copy binary mybinary
 
 For more examples, use the database browser to see how the comments
 would look like for the commands known in the database.

@@ -216,6 +216,24 @@ proc checkPossibleComment {str lineNo} {
     }
 }
 
+# Copy the syntax from one command to another
+proc CopyCmdInDatabase {from to} {
+    foreach arrName {::syntax ::return ::subCmd ::option} {
+        foreach item [array names $arrName] {
+            if {$item eq $from} {
+                set ${arrName}($to) [set ${arrName}($item)]
+            } else {
+                set len [expr {[string length $from] + 1}]
+                if {[string equal -length $len $item "$from "]} {
+                    set to2 "$to [string range $item $len end]"
+                    set ${arrName}($to2) [set ${arrName}($item)]
+                }
+            }
+        }
+    }
+    lappend ::knownCommands $to
+}
+
 # This is called when a comment is encountered.
 # It allows syntax information to be stored in comments
 proc checkComment {str index knownVarsName} {
@@ -252,6 +270,9 @@ proc checkComment {str index knownVarsName} {
             variable {
                 set type [join $rest]
                 markVariable $first 1 "" 1 $index knownVars type
+            }
+            copy {
+                CopyCmdInDatabase $first [lindex $rest 0]
             }
             nocover {
                 set ::instrumenting(no,$index) 1
@@ -473,7 +494,7 @@ proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
     # Pairs swallow an even number of args.
     if {$pair && ($maxa % 2) == 1} {
         # If the odd one is "--", it may continue
-        if {[lindex $argv [expr {$maxa - 1}]] == "--" && \
+        if {[lindex $argv [expr {$startI + $maxa - 1}]] == "--" && \
                 [lsearch -exact $option($cmd) --] >= 0} {
             # Nothing
         } else {

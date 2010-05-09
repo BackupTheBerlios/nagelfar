@@ -78,6 +78,23 @@ test tokens-2.3 {
     execTestFile
 } -result {%%Line   9: E Bad option -miffu to gurka}
 
+test tokens-2.4 {
+    Token p* and --
+} -body {
+    createTestFile {
+        ##nagelfar subcmd+ string gurka
+        ##nagelfar syntax string\ gurka p*
+        ##nagelfar option string\ gurka -- -flag -miffo
+        string gurka
+        string gurka --
+        string gurka -flag 1
+        string gurka -flag 1 --
+        string gurka -miffo 1 --
+        string gurka -miffu 1
+    }
+    execTestFile
+} -result {%%Line  10: E Bad option -miffu to string gurka}
+
 test tokens-3.1 {
     Modifier .
 } -body {

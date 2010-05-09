@@ -1,28 +1,31 @@
 # This is an experiment to get tdbc-style OO checked.
 
 ##nagelfar syntax tdbc::sqlite3::connection s x x
+##nagelfar subcmd tdbc::sqlite3::connection create new
+##nagelfar syntax tdbc::sqlite3::connection\ create x x p*
+##nagelfar return tdbc::sqlite3::connection\ create _obj,database
+##nagelfar syntax tdbc::sqlite3::connection\ new x p*
+##nagelfar return tdbc::sqlite3::connection\ new _obj,database
 
-tdbc::sqlite3::connection create ::db $::testDBName
-
-##nagelfar syntax db s x*
-##nagelfar subcmd db prepare allrows foreach begintransaction commit rollback transaction tables columns configure resultsets
-##nagelfar syntax db\ prepare x
-##nagelfar syntax db\ begintransaction 0
-##nagelfar syntax db\ commit 0
-##nagelfar syntax db\ configure o. x. p*
-##nagelfar option db\ configure -encoding -isolation -timeout
-##nagelfar syntax db\ columns x x?
-##nagelfar syntax db\ tables x?
-##nagelfar syntax db\ rollback 0
-##nagelfar syntax db\ resultsets 0
-##nagelfar syntax db\ transaction c
-##nagelfar syntax db\ allrows p* x x?
-##nagelfar option db\ allrows -as -- -columnsvar
-##nagelfar option db\ allrows\ -columnsvar n
-##nagelfar syntax db\ foreach p* n x c
-##nagelfar option db\ foreach -as -- -columnsvar
-##nagelfar option db\ foreach\ -columnsvar n
-##nagelfar return db\ prepare _obj,statement
+##nagelfar syntax _obj,database s x*
+##nagelfar subcmd _obj,database prepare allrows foreach begintransaction commit rollback transaction tables columns configure resultsets
+##nagelfar syntax _obj,database\ prepare x
+##nagelfar syntax _obj,database\ begintransaction 0
+##nagelfar syntax _obj,database\ commit 0
+##nagelfar syntax _obj,database\ configure o. x. p*
+##nagelfar option _obj,database\ configure -encoding -isolation -timeout
+##nagelfar syntax _obj,database\ columns x x?
+##nagelfar syntax _obj,database\ tables x?
+##nagelfar syntax _obj,database\ rollback 0
+##nagelfar syntax _obj,database\ resultsets 0
+##nagelfar syntax _obj,database\ transaction c
+##nagelfar syntax _obj,database\ allrows p* x x?
+##nagelfar option _obj,database\ allrows -as -- -columnsvar
+##nagelfar option _obj,database\ allrows\ -columnsvar n
+##nagelfar syntax _obj,database\ foreach p* n x c
+##nagelfar option _obj,database\ foreach -as -- -columnsvar
+##nagelfar option _obj,database\ foreach\ -columnsvar n
+##nagelfar return _obj,database\ prepare _obj,statement
 
 ##nagelfar syntax _obj,statement s x*
 ##nagelfar subcmd _obj,statement execute paramtype close foreach params allrows resultsets
@@ -53,6 +56,10 @@ tdbc::sqlite3::connection create ::db $::testDBName
 ##nagelfar syntax _obj,result\ nextrow p* n
 ##nagelfar option _obj,result\ nextrow -as --
 
+##nagelfar copy _obj,database db
+tdbc::sqlite3::connection create ::db $::testDBName
+set db2 [tdbc::sqlite3::connection new $::testDBName]
+
 set stmt [::db prepare {
     CREATE TABLE people(
                         idnum INTEGER PRIMARY KEY,
@@ -60,83 +67,37 @@ set stmt [::db prepare {
                         info INTEGER
                         )
 }]
-set rs [$stmt execute]
-list [expr {[$rs rowcount] <= 0}] [$rs columns] [$rs nextrow nothing]
-rename $rs {}
-rename $stmt {}
-
-set stmt [::db prepare {
-    INSERT INTO people(idnum, name, info) values(1, 'fred', 0)
-}]
-set rs [$stmt execute]
-list [$rs rowcount] [$rs columns] [$rs nextrow nothing]
-rename $rs {}
-rename $stmt {}
-
-set stmt [::db prepare {
-    INSERT INTO people(idnum, name, info) values(:idnum, :name, 0)
-}]
-$stmt paramtype idnum integer
-set rs [$stmt execute]
-list [$rs rowcount] [$rs columns] [$rs nextrow nothing]
-rename $rs {}
-rename $stmt {}
-
-set stmt [::db prepare {
-    INSERT INTO people(idnum, name, info) values(:idnum, :name, :info)
-}]
-set stmt2 [::db prepare {
+set stmt2 [db prepare {
     SELECT name, info FROM people WHERE idnum = :idnum
 }]
-$stmt2 paramtype idnum integer
-
-set name "mr. gravel"
-set idnum 100
 set rs [$stmt execute]
-rename $rs {}
-set rs [$stmt2 execute]
-$rs nextrow -as dicts row
+list [expr {[$rs rowcount] <= 0}] [$rs columns] [$rs nextrow nothing]
+
+$stmt paramtype idnum integer
+
+set rs2 [$stmt2 execute]
+$rs2 nextrow -as dicts row
 set row
 
-set stmt [::db prepare {
-    SELECT * FROM people
-}]
-set rs [$stmt execute]
 $rs columns
-rename $rs {}
-rename $stmt {}
 
-set stmt [::db prepare {
-    SELECT idnum, name FROM people ORDER BY idnum
-}]
-set rs [$stmt execute]
-set idnum 1
-set names {}
 $rs nextrow -- names
 set names
 
 $rs nextrow -as lists -- row
 
-set stmt [::db prepare {
-    SELECT idnum, name FROM people WHERE name LIKE 'b%'
-}]
-set rs [$stmt execute]
-#set result {}
 $rs foreach row {
     lappend result $row
 }
 set result
+
 $rs close
 $stmt close
 
-set stmt [::db prepare {
-    SELECT idnum, name FROM people WHERE name LIKE 'b%'
-}]
 $stmt foreach rowX {
     lappend resultX $rowX
 }
 set resultX
-$stmt close
 
 db foreach rowY {
     SELECT idnum, name FROM people WHERE name LIKE 'b%'
@@ -144,6 +105,13 @@ db foreach rowY {
     lappend resultY $rowY
 }
 set resultY
+
+$db2 foreach rowYQ {
+    SELECT idnum, name FROM people WHERE name LIKE 'b%'
+} {
+    lappend resultYQ $rowYQ
+}
+set resultYQ
 
 $rs foreach -- row {
     lappend resultZ $row
@@ -235,7 +203,6 @@ db allrows -as lists {
     SELECT idnum, name FROM people WHERE name LIKE 'b%'
 }
 
-set rs [$stmt execute]
 $rs allrows -as lists --
 $stmt allrows -as lists --
 
@@ -275,10 +242,7 @@ set dict [::db tables p%]
 ::db columns rubbish
 ::db columns people i%
 
-set s [::db prepare {
-    SELECT name FROM people 
-}]
-$s params
+$stmt2 params
 
 ::db configure
 ::db configure -encoding utf-8

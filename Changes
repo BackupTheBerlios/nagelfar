@@ -1,5 +1,8 @@
 2010-05-09
- Added inline syntax of subcmd+, to handle adding subcmds.
+ Added inline syntax of "copy", to copy syntax from command to command
+
+2010-05-09
+ Added inline syntax of "subcmd+", to handle adding subcmds.
 
 2010-05-09
  Handle -- better in some cases.
