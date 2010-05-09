@@ -8,7 +8,7 @@
 # $Revision$
 
 # Autoload stuff to have them available
-catch {parray} ; catch {tk_dialog}
+catch {parray} ; catch {tk_dialog} ; catch {package require msgcat}
 foreach gurkmeja [array names auto_index] {
     if {[info procs $gurkmeja] == ""} {
         catch {eval $auto_index($gurkmeja)}
@@ -23,11 +23,13 @@ if {[info exists gurkmeja]} {
 
 set ::kG [lsort [info globals]]
 set ::kC [info commands]
-foreach p [info commands {tcl::[a-z]*}] {
-    if {[string match ::* $p]} {
-        set p [string range $p 2 end]
+foreach pat {{tcl::[a-z]*} {msgcat::[a-z]*}} {
+    foreach p [info commands $pat] {
+        if {[string match ::* $p]} {
+            set p [string range $p 2 end]
+        }
+        lappend ::kC $p
     }
-    lappend ::kC $p
 }
 
 # Collect exported namespace commands
@@ -287,6 +289,9 @@ proc buildDb {ch} {
     # "namespace" is handled specially
     set syntax(namespace)       "s x*" ;# FIXA: All subcommands
     set syntax(namespace\ import) "o* x*"
+    set syntax(namespace\ which) "o* x?"
+    set option(namespace\ which) "-variable -command"
+    set option(namespace\ which\ -variable) v
     set syntax(open)            "r 1 3"
     # "package" is handled specially
     set syntax(package)         "s x*" ;# FIXA: All subcommands
@@ -354,6 +359,7 @@ proc buildDb {ch} {
     set special(variable) 1
     set syntax(vwait)           "n"
     set syntax(while)           "E c"
+    set syntax(msgcat::mc)  "x"
 
     # Things added in 8.5
     if {[info commands dict] ne ""} {
@@ -385,6 +391,7 @@ proc buildDb {ch} {
 
     # Things added in 8.6
     if {[info commands try] ne ""} {
+        set syntax(catch)        "c n? n?" ;# FIXA make a test for this
         set syntax(try)          "r 0"
         set syntax(throw)        "2"
         set syntax(coroutine)    "x x x*"
