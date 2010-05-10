@@ -1,5 +1,5 @@
 # Automatically generated syntax database.
-# Generated with syntaxbuild Revision: 446 
+# Generated with syntaxbuild Revision: 449 
 
 lappend ::dbInfo {Tcl 8.6b1.2 unix, Tk 8.6b1.2 x11}
 set ::dbTclVersion 8.6
@@ -186,6 +186,14 @@ set ::syntax(auto_reset) 0
 set ::syntax(bell) {o* x*}
 set ::syntax(bgerror) 1
 set ::syntax(binary) {s x*}
+set {::syntax(binary decode)} {s x*}
+set {::syntax(binary decode base64)} {o* x}
+set {::syntax(binary decode hex)} {o* x}
+set {::syntax(binary decode uuencode)} {o* x}
+set {::syntax(binary encode)} {s x*}
+set {::syntax(binary encode base64)} {p* x}
+set {::syntax(binary encode hex)} x
+set {::syntax(binary encode uuencode)} {p* x}
 set {::syntax(binary scan)} {x x n n*}
 set ::syntax(bind) {x x? cg?}
 set ::syntax(bindtags) {x x?}
@@ -196,6 +204,10 @@ set ::syntax(case) x*
 set ::syntax(catch) {c n? n?}
 set ::syntax(cd) {r 0 1}
 set ::syntax(chan) {s x*}
+set {::syntax(chan close)} {x x?}
+set {::syntax(chan pipe)} 0
+set {::syntax(chan pop)} x
+set {::syntax(chan push)} {x c}
 set ::syntax(checkbutton) {x p*}
 set ::syntax(clipboard) {s x*}
 set ::syntax(clock) {s x*}
@@ -203,13 +215,14 @@ set {::syntax(clock clicks)} o?
 set {::syntax(clock format)} {x p*}
 set {::syntax(clock scan)} {x p*}
 set {::syntax(clock seconds)} 0
-set ::syntax(close) 1
+set ::syntax(close) {x x?}
 set ::syntax(concat) {r 0}
 set ::syntax(continue) 0
 set ::syntax(coroutine) {x x x*}
 set ::syntax(destroy) x*
 set ::syntax(dict) {s x*}
 set {::syntax(dict append)} {n x x*}
+set {::syntax(dict filter)} {x x x*}
 set {::syntax(dict for)} {x x c}
 set {::syntax(dict incr)} {n x x*}
 set {::syntax(dict lappend)} {n x x*}
@@ -236,7 +249,7 @@ set {::syntax(file atime)} {x x?}
 set {::syntax(file attributes)} {x o. x. p*}
 set {::syntax(file channels)} x?
 set {::syntax(file copy)} {o* x x x*}
-set {::syntax(file delete)} {o* x x*}
+set {::syntax(file delete)} {o* x*}
 set {::syntax(file dirname)} x
 set {::syntax(file executable)} x
 set {::syntax(file exists)} x
@@ -246,7 +259,7 @@ set {::syntax(file isfile)} x
 set {::syntax(file join)} {x x*}
 set {::syntax(file link)} {o? x x?}
 set {::syntax(file lstat)} {x n}
-set {::syntax(file mkdir)} {x x*}
+set {::syntax(file mkdir)} x*
 set {::syntax(file mtime)} {x x?}
 set {::syntax(file nativename)} x
 set {::syntax(file normalize)} x
@@ -262,6 +275,7 @@ set {::syntax(file split)} x
 set {::syntax(file stat)} {x n}
 set {::syntax(file system)} x
 set {::syntax(file tail)} x
+set {::syntax(file tempfile)} {n? x?*}
 set {::syntax(file type)} x
 set {::syntax(file volumes)} 0
 set {::syntax(file writable)} x
@@ -273,7 +287,7 @@ set ::syntax(for) {c E c c}
 set ::syntax(format) {r 1}
 set ::syntax(frame) {x p*}
 set ::syntax(gets) {x n?}
-set ::syntax(glob) {o* x x*}
+set ::syntax(glob) {o* x*}
 set ::syntax(grab) {x x*}
 set ::syntax(grid) {x x*}
 set ::syntax(history) {s x*}
@@ -281,24 +295,26 @@ set ::syntax(if) {e c}
 set ::syntax(image) {s x*}
 set ::syntax(incr) {n x?}
 set ::syntax(info) {s x*}
+set {::syntax(info coroutine)} 0
 set {::syntax(info default)} {x x n}
 set {::syntax(info exists)} l
 set ::syntax(interp) {s x*}
+set {::syntax(interp cancel)} {o* x? x?}
 set {::syntax(interp invokehidden)} {x o* x x*}
 set ::syntax(join) {r 1 2}
 set ::syntax(label) {x p*}
 set ::syntax(labelframe) {x p*}
 set ::syntax(lappend) {n x*}
-set ::syntax(lassign) {x n n*}
+set ::syntax(lassign) {x n*}
 set ::syntax(lindex) {r 2}
-set ::syntax(linsert) {r 3}
+set ::syntax(linsert) {r 2}
 set ::syntax(list) {r 0}
 set ::syntax(listbox) {x p*}
 set ::syntax(llength) 1
 set ::syntax(load) {r 1 3}
 set ::syntax(lower) {x x?}
 set ::syntax(lrange) 3
-set ::syntax(lrepeat) {r 2}
+set ::syntax(lrepeat) {r 1}
 set ::syntax(lreplace) {r 3}
 set ::syntax(lreverse) 1
 set ::syntax(lsearch) {o* x x}
@@ -607,6 +623,8 @@ set ::subCmd(_obj,ttk::sizegrip) {cget configure identify instate state}
 set ::subCmd(_obj,ttk::treeview) {bbox cget children column configure delete detach drag exists focus heading identify index insert instate item move next parent prev see selection set state tag xview yview}
 set ::subCmd(array) {anymore donesearch exists get names nextelement set size startsearch statistics unset}
 set ::subCmd(binary) {decode encode format scan}
+set {::subCmd(binary decode)} {base64 hex uuencode}
+set {::subCmd(binary encode)} {base64 hex uuencode}
 set ::subCmd(chan) {blocked close configure copy create eof event flush gets names pending pipe pop postevent push puts read seek tell truncate}
 set ::subCmd(clipboard) {append clear get}
 set ::subCmd(clock) {add clicks format microseconds milliseconds scan seconds}
@@ -784,6 +802,11 @@ set {::option(_obj,ttk::sizegrip configure)} {-takefocus -cursor -style -class}
 set {::option(_obj,ttk::treeview cget)} {-takefocus -columns -displaycolumns -show -selectmode -height -padding -xscrollcommand -yscrollcommand -takefocus -cursor -style -class}
 set {::option(_obj,ttk::treeview configure)} {-takefocus -columns -displaycolumns -show -selectmode -height -padding -xscrollcommand -yscrollcommand -takefocus -cursor -style -class}
 set ::option(bell) {-displayof -nice}
+set {::option(binary decode base64)} -strict
+set {::option(binary decode hex)} -strict
+set {::option(binary decode uuencode)} -strict
+set {::option(binary encode base64)} {-maxlen -wrapchar}
+set {::option(binary encode uuencode)} {-maxlen -wrapchar}
 set ::option(button) {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -default -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -justify -overrelief -padx -pady -relief -repeatdelay -repeatinterval -state -takefocus -text -textvariable -underline -width -wraplength}
 set {::option(button -textvariable)} n
 set ::option(canvas) {-background -bd -bg -borderwidth -closeenough -confine -cursor -height -highlightbackground -highlightcolor -highlightthickness -insertbackground -insertborderwidth -insertofftime -insertontime -insertwidth -offset -relief -scrollregion -selectbackground -selectborderwidth -selectforeground -state -takefocus -width -xscrollcommand -xscrollincrement -yscrollcommand -yscrollincrement}
@@ -809,6 +832,7 @@ set ::option(glob) {-- -directory -join -nocomplain -path -tails -types}
 set {::option(glob -directory)} 1
 set {::option(glob -path)} 1
 set {::option(glob -types)} 1
+set {::option(interp cancel)} {-- -unwind}
 set {::option(interp invokehidden)} {-- -global -namespace}
 set {::option(interp invokehidden -namespace)} 1
 set ::option(label) {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -compound -cursor -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -justify -padx -pady -relief -state -takefocus -text -textvariable -underline -width -wraplength}
@@ -822,6 +846,7 @@ set {::option(lsearch -start)} 1
 set ::option(lsort) {-ascii -command -decreasing -dictionary -increasing -index -indices -integer -nocase -real -stride -unique}
 set {::option(lsort -command)} 1
 set {::option(lsort -index)} 1
+set {::option(lsort -stride)} 1
 set ::option(menu) {-activebackground -activeborderwidth -activeforeground -background -bd -bg -borderwidth -cursor -disabledforeground -fg -font -foreground -postcommand -relief -selectcolor -takefocus -tearoff -tearoffcommand -title -type}
 set ::option(menubutton) {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -cursor -direction -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -indicatoron -justify -menu -padx -pady -relief -compound -state -takefocus -text -textvariable -underline -width -wraplength}
 set {::option(menubutton -textvariable)} n

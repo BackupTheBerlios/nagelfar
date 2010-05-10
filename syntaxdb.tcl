@@ -1,5 +1,5 @@
 # Automatically generated syntax database.
-# Generated with syntaxbuild Revision: 446 
+# Generated with syntaxbuild Revision: 449 
 
 lappend ::dbInfo {Tcl 8.5.6 unix, Tk 8.5.6 x11}
 set ::dbTclVersion 8.5
@@ -209,6 +209,7 @@ set ::syntax(continue) 0
 set ::syntax(destroy) x*
 set ::syntax(dict) {s x*}
 set {::syntax(dict append)} {n x x*}
+set {::syntax(dict filter)} {x x x}
 set {::syntax(dict for)} {x x c}
 set {::syntax(dict incr)} {n x x*}
 set {::syntax(dict lappend)} {n x x*}
