@@ -370,6 +370,7 @@ proc buildDb {ch} {
         set syntax(dict)          "s x*"
         set syntax(dict\ append)  "n x x*"
         set syntax(dict\ incr)    "n x x*"
+        set syntax(dict\ filter)  "x x x"
         set syntax(dict\ lappend) "n x x*"
         set syntax(dict\ set)     "n x x*"
         set syntax(dict\ unset)   "n x x*"
@@ -395,7 +396,34 @@ proc buildDb {ch} {
 
     # Things added in 8.6
     if {[info commands try] ne ""} {
+        # Changed commands
         set syntax(catch)        "c n? n?" ;# FIXA make a test for this
+        set syntax(close)           "x x?"
+        set syntax(chan\ close)     "x x?"
+        set syntax(dict\ filter)    "x x x*"
+        # Do nothing gracefully
+        set syntax(file\ delete)     "o* x*"
+        set syntax(file\ mkdir)      "x*"
+        set syntax(glob)             "o* x*"
+        set syntax(lassign)          "x n*"
+        set syntax(linsert)          "r 2"
+        set syntax(lrepeat)          "r 1"
+        # New subcommands
+        set syntax(binary\ decode)           "s x*"
+        set syntax(binary\ decode\ base64)   "o* x"
+        set syntax(binary\ decode\ hex)      "o* x"
+        set syntax(binary\ decode\ uuencode) "o* x"
+        set syntax(binary\ encode)           "s x*"
+        set syntax(binary\ encode\ base64)   "p* x"
+        set syntax(binary\ encode\ hex)      "x"
+        set syntax(binary\ encode\ uuencode) "p* x"
+        set syntax(chan\ pipe)               0
+        set syntax(chan\ pop)                "x"
+        set syntax(chan\ push)               "x c"
+        set syntax(file\ tempfile)           "n? x?*"
+        set syntax(info\ coroutine)          0
+        set syntax(interp\ cancel)           "o* x? x?"
+        # New commands
         set syntax(try)          "r 0"
         set syntax(throw)        "2"
         set syntax(coroutine)    "x x x*"
@@ -407,6 +435,8 @@ proc buildDb {ch} {
         # FIXA: All zlib
         set syntax(tcl::prefix)  "s x*"
         # FIXA: oo
+        # New options
+        set option(lsort\ -stride) 1
     }
         
 
