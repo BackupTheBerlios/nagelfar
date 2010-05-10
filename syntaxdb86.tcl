@@ -1,5 +1,5 @@
 # Automatically generated syntax database.
-# Generated with syntaxbuild Revision: 440 
+# Generated with syntaxbuild Revision: 446 
 
 lappend ::dbInfo {Tcl 8.6b1.2 unix, Tk 8.6b1.2 x11}
 set ::dbTclVersion 8.6
@@ -187,7 +187,7 @@ set ::syntax(bell) {o* x*}
 set ::syntax(bgerror) 1
 set ::syntax(binary) {s x*}
 set {::syntax(binary scan)} {x x n n*}
-set ::syntax(bind) {x x? C?}
+set ::syntax(bind) {x x? cg?}
 set ::syntax(bindtags) {x x?}
 set ::syntax(break) 0
 set ::syntax(button) {x p*}
