@@ -6,11 +6,11 @@
 
 test oo-1.1 {
     Object definition experiment
-} -constraints knownbug -body {
+} -body {
     createTestFile {
         ##nagelfar syntax snit::type x cn
-        ##nagelfar syntax snit::type::method x x cl
-        ##nagelfar syntax constructor x cl
+        ##nagelfar syntax snit::method x cv
+        ##nagelfar syntax constructor cv
         ##nagelfar syntax destructor cl
         ##nagelfar syntax option x p*
         ##nagelfar syntax apa x*

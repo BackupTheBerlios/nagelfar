@@ -160,3 +160,14 @@ test proc-3.3 {
     }
     execTestFile
 } -result {%%Line   2: N Non-default arg after default arg}
+
+test proc-3.4 {
+    Procedure, sanity checking args
+} -body {
+    createTestFile {
+        proc apa {hej {}hopp} {
+            return
+        }
+    }
+    execTestFile
+} -result {%%Line   2: E Argument list is not a valid list}

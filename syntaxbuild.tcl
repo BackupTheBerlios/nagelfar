@@ -159,6 +159,7 @@ proc buildDb {ch} {
     # cg Code, checked in global context
     # cn Code, checked in namespace context
     # cl Code, checked in its own local context
+    # cv Code, checked in its own local context, preceded by variable list
     # n, v and l all marks variable names. Those arguments will not be
     #   checked against known variables to detect missing $.
     # n  The variable does not have to exist, and is set by the command.

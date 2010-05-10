@@ -1013,9 +1013,9 @@ proc checkForCommentL {words wordstatus indices} {
 
 # A "macro" for checkCommand to print common error message
 # It should not be called from anywhere else.
-proc WA {} {
+proc WA {{debug {}}} {
     upvar "cmd" cmd "index" index "argc" argc "argv" argv "indices" indices
-    errorMsg E "Wrong number of arguments ($argc) to \"$cmd\"" $index
+    errorMsg E "Wrong number of arguments ($argc) to \"$cmd\"$debug" $index
 
     set t 1
     set line [calcLineNo $index]
@@ -1263,6 +1263,60 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                     } else {
                         parseBody $body [lindex $indices $i] knownVars
                     }
+                }
+		incr i
+	    }
+	    cv { # A code block with a variable definition and local context
+                if {[string equal $mod "?"]} {
+		    if {$i >= $argc} {
+			set i $argc
+			break
+		    }
+		} elseif {![string equal $mod ""]} {
+		    echo "Modifier \"$mod\" is not supported for \"$tok\" in\
+                            syntax for $cmd."
+		}
+                if {$i > ($argc - 2)} {
+                    break
+                }
+                array unset dummyVars
+                array set dummyVars {}
+		if {([lindex $wordstatus $i] & 1) != 0} {
+                    # Constant var list, parse it to get all vars
+                    if {[catch {llength [lindex $argv $i]}]} {
+                        errorMsg E "Argument list is not a valid list" [lindex $indices $i]
+                    } else {
+                        foreach var [lindex $argv $i] {
+                            set varName [lindex $var 0]
+                            markVariable $varName 1 "" 1 \
+                                    [lindex $indices $i] dummyVars ""
+                            set dummyVars(local,$varName) 1
+                        }
+                    }
+                } else {
+                    # Non constant var list, what to do? FIXA
+                }
+                incr i
+		if {([lindex $wordstatus $i] & 1) == 0} { # Non constant
+                    # No braces around non constant code.
+                    # Special case: [list ...]
+                    set arg [lindex $argv $i]
+                    if {[string match {\[list*} $arg]} {
+                        # FIXA: Check the code
+                        #echo "(List code)"
+                    } else {
+                        errorMsg W "No braces around code in $cmd\
+                                statement." [lindex $indices $i]
+                    }
+		} else {
+                    set body [lindex $argv $i]
+                    if {$tokCount ne ""} {
+                        append body [string repeat " x" $tokCount]
+                    }
+                    set ::instrumenting([lindex $indices $i]) 1
+
+                    # Check in local context
+                    parseBody $body [lindex $indices $i] dummyVars
                 }
 		incr i
 	    }
@@ -2572,6 +2626,12 @@ proc parseProc {argv indices} {
         set syn $syntax($name)
     } else {
         set syn ""
+    }
+    if {[catch {llength $args}]} {
+        if {!$::Nagelfar(firstpass)} {
+            errorMsg E "Argument list is not a valid list" [lindex $indices 0]
+        }
+        set args {}
     }
     # Do not loop $syn in the foreach command since it can be shorter
     set i -1

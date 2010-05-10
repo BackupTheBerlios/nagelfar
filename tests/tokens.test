@@ -269,6 +269,34 @@ test tokens-7.6 {
 } -result {%%Line   4: E Unknown variable "apa"
 Line   5: E Unknown variable "bepa"}
 
+test tokens-7.7 {
+    Code token, local context+var
+} -body {
+    createTestFile {
+        set apa 1
+        ##nagelfar syntax gurka x cv
+        gurka hej {x y} {
+            list $apa $x $y
+            set bepa 1
+            set cepa 1
+        }
+        set bepa
+    }
+    execTestFile
+} -result {%%Line   5: E Unknown variable "apa"
+Line   9: E Unknown variable "bepa"}
+
+test tokens-7.8 {
+    Code token, local context+var
+} -body {
+    createTestFile {
+        ##nagelfar syntax gurka x cv
+        gurka hej {x {}y} {
+        }
+    }
+    execTestFile
+} -result {%%Line   3: E Argument list is not a valid list}
+
 test tokens-8.1 {
     Subcommand token
 } -body {
