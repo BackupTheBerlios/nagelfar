@@ -23,7 +23,7 @@ if {[info exists gurkmeja]} {
 
 set ::kG [lsort [info globals]]
 set ::kC [info commands]
-foreach pat {{tcl::[a-z]*} {msgcat::[a-z]*}} {
+foreach pat {{tcl::[a-z]*} {msgcat::[a-z]*} {oo::[a-z]*}} {
     foreach p [info commands $pat] {
         if {[string match ::* $p]} {
             set p [string range $p 2 end]
@@ -55,7 +55,7 @@ if 0 { # Not working yet
 
 # Function to get an option or subcommand list from an error message.
 proc getSubCmds {args} {
-    catch {eval $args} err
+    catch {uplevel 1 $args} err
 
     lappend regexps {option .* must be (.*)$}
     lappend regexps {option .* should be one of (.*)$}
@@ -129,11 +129,6 @@ proc buildDb {ch} {
         }
     }
 
-    puts $ch [list lappend ::dbInfo $dbstring]
-    puts $ch [list set ::dbTclVersion $::tcl_version]
-    puts $ch [list set ::knownGlobals $::kG]
-    puts $ch [list set ::knownCommands [lsort $::kC]]
-
     # Below is the hardcoded syntax for many core commands.
     # It is defined using the "language" below.
     # TODO: Add all core commands.
@@ -157,7 +152,7 @@ proc buildDb {ch} {
     # E  Expression that should be in braces
     # c  Code, checked in surrounding context
     # cg Code, checked in global context
-    # cn Code, checked in namespace context
+    # cn Code, checked in virtual namespace
     # cl Code, checked in its own local context
     # cv Code, checked in its own local context, preceded by variable list
     # n, v and l all marks variable names. Those arguments will not be
@@ -435,6 +430,26 @@ proc buildDb {ch} {
         # FIXA: All zlib
         set syntax(tcl::prefix)  "s x*"
         # FIXA: oo
+        set syntax(oo::class)    "s x*"
+        set syntax(oo::class\ create) "x cn"
+        set syntax(oo::class\ create::constructor) cv
+        set syntax(oo::class\ create::method) "x cv"
+        set syntax(oo::class\ create::destructor) c
+        set syntax(info\ object) "s x x*"
+        set syntax(info\ class)  "s x x*"
+        # Should the fact that these are unique within a method matter? FIXA
+        set syntax(my)           "s x*"
+        set subCmd(my) [list variable]
+        set syntax(my\ variable) "n*"
+        set syntax(self)         "s?"
+        lappend ::kC self my
+        oo::class create miffo {
+            constructor {} {
+                upvar 1 subCmd subCmd
+                set subCmd(self) [getSubCmds self gurkmeja]
+            }
+        }
+        [miffo new] destroy
         # New options
         set option(lsort\ -stride) 1
     }
@@ -679,6 +694,10 @@ proc buildDb {ch} {
     }
 
     # Output the data
+    puts $ch [list lappend ::dbInfo $dbstring]
+    puts $ch [list set ::dbTclVersion $::tcl_version]
+    puts $ch [list set ::knownGlobals $::kG]
+    puts $ch [list set ::knownCommands [lsort $::kC]]
 
     foreach a {syntax return subCmd option} {
         foreach i [lsort [array names $a]] {

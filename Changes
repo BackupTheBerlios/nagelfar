@@ -1,3 +1,10 @@
+2010-05-11
+ Restored token cn behaviour to virtual namespace.
+ Include more oo in 8.6 database.
+
+2010-05-10
+ Added info about more 8.6 commands to syntax db.
+
 2010-05-10
  Added syntax token cv for variable list+code combination.
  Added a check for malformed argument list to a proc.

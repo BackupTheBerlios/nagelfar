@@ -247,14 +247,14 @@ test tokens-7.5 {
     Code token, namespace context
 } -body {
     createTestFile {
-        proc ns::meee {x} {
+        proc ns::gurka::meee {x} {
             list a
         }
         ##nagelfar syntax ns::gurka x cn
         ns::gurka hej {meee x y}
     }
     execTestFile
-} -result {%%Line   6: E Wrong number of arguments (2) to "ns::meee"}
+} -result {%%Line   6: E Wrong number of arguments (2) to "ns::gurka::meee"}
 
 test tokens-7.6 {
     Code token, local context

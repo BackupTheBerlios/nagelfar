@@ -17,7 +17,7 @@ E Expression that should be in braces
 
 c  Code, checked in surrounding context
 cg Code, checked in global context
-cn Code, checked in namespace context
+cn Code, checked in a virtual namespace
 cl Code, checked in its own local context
 cv Code, checked in its own local context, preceded by variable list
 

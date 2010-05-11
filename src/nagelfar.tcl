@@ -1227,6 +1227,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                             $cmd eq "bind"} {
                         set body [string range $body 1 end]
                     }
+                    # A virtual namespace should not be instrumented.
                     if {$tok ne "cn"} {
                         set ::instrumenting([lindex $indices $i]) 1
                     }
@@ -1238,18 +1239,8 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                         parseBody $body [lindex $indices $i] dummyVars
                         popNamespace
                     } elseif {$tok eq "cn"} {
-                        # Check in namespace context
-                        set ns [currentNamespace]
-                        if {[string match "::*" $cmd]} {
-                            set ns ""
-                        } elseif {$ns ne "__unknown__" } {
-                            set cmd1 "${ns}::$cmd"
-                            set ns [namespace qualifiers $cmd1]
-                        } else {
-                            set ns [namespace qualifiers $cmd]
-                        }
-                        pushNamespace $ns
-                        #puts "Pushing NS '$ns' for cmd '$cmd' to check '$body'"
+                        # Check in virtual namespace context
+                        pushNamespace $cmd
                         array unset dummyVars
                         array set dummyVars {}
                         parseBody $body [lindex $indices $i] dummyVars
