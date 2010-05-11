@@ -1,10 +1,10 @@
 # Automatically generated syntax database.
-# Generated with syntaxbuild Revision: 449 
+# Generated with syntaxbuild Revision: 451 
 
 lappend ::dbInfo {Tcl 8.6b1.2 unix, Tk 8.6b1.2 x11}
 set ::dbTclVersion 8.6
 set ::knownGlobals {argc argv argv0 auto_index auto_path env errorCode errorInfo tcl_interactive tcl_library tcl_nonwordchars tcl_patchLevel tcl_pkgPath tcl_platform tcl_rcFileName tcl_version tcl_wordchars tk_library tk_patchLevel tk_strictMotif tk_version}
-set ::knownCommands {. EvalAttached after append apply array auto_execok auto_import auto_load auto_load_index auto_mkindex auto_mkindex_old auto_qualify auto_reset bell bgerror binary bind bindtags break button canvas case catch cd chan checkbutton clipboard clock close concat continue coroutine destroy dict encoding entry eof error eval event exec exit expr fblocked fconfigure fcopy file fileevent flush focus font for foreach format frame gets glob global grab grid history if image image1 image2 image3 incr info interp join label labelframe lappend lassign lindex linsert list listbox llength load lower lrange lrepeat lreplace lreverse lsearch lset lsort menu menubutton message msgcat::mc msgcat::mcload msgcat::mclocale msgcat::mcmax msgcat::mcmset msgcat::mcpreferences msgcat::mcset msgcat::mcunknown namespace open option pack package panedwindow parray pid pkg_mkIndex place proc puts pwd radiobutton raise read regexp regsub rename return scale scan scrollbar seek selection send set socket source spinbox split string subst switch tailcall tcl::history tcl::pkgconfig tcl::prefix tclListValidFlags tclLog tclParseConfigSpec tclPkgSetup tclPkgUnknown tcl_endOfWord tcl_findLibrary tcl_startOfNextWord tcl_startOfPreviousWord tcl_wordBreakAfter tcl_wordBreakBefore tell text throw time tk tk_bindForTraversal tk_bisque tk_chooseColor tk_chooseDirectory tk_dialog tk_focusFollowsMouse tk_focusNext tk_focusPrev tk_getFileType tk_getOpenFile tk_getSaveFile tk_menuBar tk_menuSetFocus tk_messageBox tk_optionMenu tk_popup tk_setPalette tk_textCopy tk_textCut tk_textPaste tkwait toplevel trace try unknown unload unset update uplevel upvar variable vwait while winfo wm yield zlib}
+set ::knownCommands {. EvalAttached after append apply array auto_execok auto_import auto_load auto_load_index auto_mkindex auto_mkindex_old auto_qualify auto_reset bell bgerror binary bind bindtags break button canvas case catch cd chan checkbutton clipboard clock close concat continue coroutine destroy dict encoding entry eof error eval event exec exit expr fblocked fconfigure fcopy file fileevent flush focus font for foreach format frame gets glob global grab grid history if image image1 image2 image3 incr info interp join label labelframe lappend lassign lindex linsert list listbox llength load lower lrange lrepeat lreplace lreverse lsearch lset lsort menu menubutton message msgcat::mc msgcat::mcload msgcat::mclocale msgcat::mcmax msgcat::mcmset msgcat::mcpreferences msgcat::mcset msgcat::mcunknown my namespace oo::class oo::copy oo::define oo::objdefine oo::object open option pack package panedwindow parray pid pkg_mkIndex place proc puts pwd radiobutton raise read regexp regsub rename return scale scan scrollbar seek selection self send set socket source spinbox split string subst switch tailcall tcl::history tcl::pkgconfig tcl::prefix tclListValidFlags tclLog tclParseConfigSpec tclPkgSetup tclPkgUnknown tcl_endOfWord tcl_findLibrary tcl_startOfNextWord tcl_startOfPreviousWord tcl_wordBreakAfter tcl_wordBreakBefore tell text throw time tk tk::button tk::canvas tk::checkbutton tk::entry tk::frame tk::label tk::labelframe tk::listbox tk::menubutton tk::message tk::panedwindow tk::radiobutton tk::scale tk::scrollbar tk::spinbox tk::text tk::toplevel tk_bindForTraversal tk_bisque tk_chooseColor tk_chooseDirectory tk_dialog tk_focusFollowsMouse tk_focusNext tk_focusPrev tk_getFileType tk_getOpenFile tk_getSaveFile tk_menuBar tk_menuSetFocus tk_messageBox tk_optionMenu tk_popup tk_setPalette tk_textCopy tk_textCut tk_textPaste tkwait toplevel trace try ttk::button ttk::checkbutton ttk::combobox ttk::entry ttk::frame ttk::label ttk::labelframe ttk::menubutton ttk::notebook ttk::panedwindow ttk::progressbar ttk::radiobutton ttk::scale ttk::scrollbar ttk::separator ttk::setTheme ttk::sizegrip ttk::style ttk::themes ttk::treeview unknown unload unset update uplevel upvar variable vwait while winfo wm yield zlib}
 set ::syntax(.) {s x*}
 set {::syntax(. cget)} o
 set {::syntax(. configure)} {o. x. p*}
@@ -295,9 +295,11 @@ set ::syntax(if) {e c}
 set ::syntax(image) {s x*}
 set ::syntax(incr) {n x?}
 set ::syntax(info) {s x*}
+set {::syntax(info class)} {s x x*}
 set {::syntax(info coroutine)} 0
 set {::syntax(info default)} {x x n}
 set {::syntax(info exists)} l
+set {::syntax(info object)} {s x x*}
 set ::syntax(interp) {s x*}
 set {::syntax(interp cancel)} {o* x? x?}
 set {::syntax(interp invokehidden)} {x o* x x*}
@@ -331,9 +333,16 @@ set ::syntax(msgcat::mcmset) 2
 set ::syntax(msgcat::mcpreferences) 0
 set ::syntax(msgcat::mcset) {r 2 3}
 set ::syntax(msgcat::mcunknown) {r 2}
+set ::syntax(my) {s x*}
+set {::syntax(my variable)} n*
 set ::syntax(namespace) {s x*}
 set {::syntax(namespace import)} {o* x*}
 set {::syntax(namespace which)} {o* x?}
+set ::syntax(oo::class) {s x*}
+set {::syntax(oo::class create)} {x cn}
+set {::syntax(oo::class create::constructor)} cv
+set {::syntax(oo::class create::destructor)} c
+set {::syntax(oo::class create::method)} {x cv}
 set ::syntax(open) {r 1 3}
 set ::syntax(option) {s x*}
 set ::syntax(pack) {x x*}
@@ -357,6 +366,7 @@ set ::syntax(scan) {x x n*}
 set ::syntax(scrollbar) {x p*}
 set ::syntax(seek) {r 2 3}
 set ::syntax(selection) {s x*}
+set ::syntax(self) s?
 set ::syntax(send) {o* x x x*}
 set ::syntax(set) {1: v : n x}
 set ::syntax(socket) {r 2}
@@ -636,11 +646,16 @@ set ::subCmd(font) {actual configure create delete families measure metrics name
 set ::subCmd(history) {add change clear event info keep nextid redo}
 set ::subCmd(image) {create delete height inuse names type types width}
 set ::subCmd(info) {args body class cmdcount commands complete coroutine default errorstack exists frame functions globals hostname level library loaded locals nameofexecutable object patchlevel procs script sharedlibextension tclversion vars}
+set {::subCmd(info class)} {constructor definition destructor filters forward instances methods methodtype mixins subclasses superclasses variables}
+set {::subCmd(info object)} {class definition filters forward isa methods methodtype mixins namespace variables vars}
 set ::subCmd(interp) {alias aliases bgerror cancel create delete eval exists expose hidden hide invokehidden issafe limit marktrusted recursionlimit share slaves target transfer}
+set ::subCmd(my) variable
 set ::subCmd(namespace) {children code current delete ensemble eval exists export forget import inscope origin parent path qualifiers tail unknown upvar which}
+set ::subCmd(oo::class) {create destroy}
 set ::subCmd(option) {add clear get readfile}
 set ::subCmd(package) {forget ifneeded names prefer present provide require unknown vcompare versions vsatisfies}
 set ::subCmd(selection) {clear get handle own}
+set ::subCmd(self) {caller class filter method namespace next object target}
 set ::subCmd(string) {bytelength compare equal first index is last length map match range repeat replace reverse tolower totitle toupper trim trimleft trimright wordend wordstart}
 set {::subCmd(string is)} {alnum alpha ascii boolean control digit double false graph integer list lower print punct space true upper wideinteger wordchar xdigit}
 set ::subCmd(tcl::prefix) {all longest match}
