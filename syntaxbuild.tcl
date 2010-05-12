@@ -437,9 +437,8 @@ proc buildDb {ch} {
         set syntax(oo::class\ create::destructor) c
         set syntax(info\ object) "s x x*"
         set syntax(info\ class)  "s x x*"
-        # Should the fact that these are unique within a method matter? FIXA
+        # Set up basic checking of self/my
         set syntax(my)           "s x*"
-        set subCmd(my) [list variable]
         set syntax(my\ variable) "n*"
         set syntax(self)         "s?"
         lappend ::kC self my

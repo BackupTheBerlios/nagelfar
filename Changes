@@ -1,3 +1,7 @@
+2010-05-12
+ Search down all namespaces for a command.
+ Include all preceeding arguments in a virtual namespace.
+
 2010-05-11
  Restored token cn behaviour to virtual namespace.
  Include more oo in 8.6 database.

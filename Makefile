@@ -28,6 +28,7 @@ TCLSHDB2 = ~/tcl/install/bin/wish8.4
 DB2NAME  = syntaxdb84.tcl
 TCLSHDB3 = ~/tcl/install/bin/wish8.6
 DB3NAME  = syntaxdb86.tcl
+# Path to the interpreter used for running tests
 TCLSH84  = tclsh
 TCLSH85  = ~/tcl/install/bin/tclsh8.5
 

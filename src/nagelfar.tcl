@@ -219,14 +219,15 @@ proc checkPossibleComment {str lineNo} {
 # Copy the syntax from one command to another
 proc CopyCmdInDatabase {from to} {
     foreach arrName {::syntax ::return ::subCmd ::option} {
-        foreach item [array names $arrName] {
+        upvar 0 $arrName arr
+        foreach item [array names arr] {
             if {$item eq $from} {
-                set ${arrName}($to) [set ${arrName}($item)]
+                set arr($to) $arr($item)
             } else {
                 set len [expr {[string length $from] + 1}]
                 if {[string equal -length $len $item "$from "]} {
                     set to2 "$to [string range $item $len end]"
-                    set ${arrName}($to2) [set ${arrName}($item)]
+                    set arr($to2) $arr($item)
                 }
             }
         }
@@ -1240,7 +1241,8 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                         popNamespace
                     } elseif {$tok eq "cn"} {
                         # Check in virtual namespace context
-                        pushNamespace $cmd
+                        set vNs ${cmd}::[join [lrange $argv $firsti [expr {$i-1}]] ::]
+                        pushNamespace $vNs
                         array unset dummyVars
                         array set dummyVars {}
                         parseBody $body [lindex $indices $i] dummyVars
@@ -1355,7 +1357,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
 		    if {[info exists ::syntax($sub)]} {
 			set stype [checkCommand $sub $index $argv $wordstatus \
                                 $wordtype \
-                                $indices [expr {[llength $sub] - 1}]]
+                                $indices [expr {$firsti + 1}]]
                         if {$stype != ""} {
                             set type $stype
                         }
@@ -1573,40 +1575,43 @@ proc markVariable {var ws wordtype check index knownVarsName typeName} {
 # is the resolved name with qualifier.
 proc lookForCommand {cmd ns index} {
     # Get both the namespace and global possibility
+    set cmds {}
     if {[string match "::*" $cmd]} {
-        set cmd1 [string range $cmd 2 end]
-        set cmd2 ""
+        set cmds [list [string range $cmd 2 end]]
     } elseif {$ns ne "__unknown__" } {
-        set cmd1 "${ns}::$cmd"
-        if {[string match "::*" $cmd1]} {
-            set cmd1 [string range $cmd1 2 end]
+        # Look through all levels of namespaces
+        set nsPrefix $ns
+        while {$nsPrefix ne ""} {
+            set cmd1 "${nsPrefix}::$cmd"
+            if {[string match "::*" $cmd1]} {
+                set cmd1 [string range $cmd1 2 end]
+            }
+            lappend cmds $cmd1
+            set nsPrefix [namespace qualifiers $nsPrefix]
         }
-        set cmd2 $cmd
+        lappend cmds $cmd
     } else {
-        set cmd1 $cmd
-        set cmd2 ""
+        set cmds [list $cmd]
     }
 
-    #puts "MOO cmd '$cmd' ns '$ns' '$cmd1' '$cmd2'"
-    if {[info exists ::knownAliases($cmd1)]} {
-        return $::knownAliases($cmd1)
-    }
-    if {[info exists ::knownAliases($cmd2)]} {
-        return $::knownAliases($cmd2)
-    }
-
-    if {[lsearch $::knownCommands $cmd1] >= 0} {
-        return [list $cmd1]
-    }
-    if {$cmd2 != "" && [lsearch $::knownCommands $cmd2] >= 0} {
-        return [list $cmd2]
+    #puts "MOO cmd '$cmd' ns '$ns' '$cmds'"
+    foreach cmdCandidate $cmds {
+        if {[info exists ::knownAliases($cmdCandidate)]} {
+            return $::knownAliases($cmdCandidate)
+        }
+        if {[info exists ::syntax($cmdCandidate)]} {
+            return [list $cmdCandidate]
+        }
+        if {[lsearch $::knownCommands $cmdCandidate] >= 0} {
+            return [list $cmdCandidate]
+        }
     }
     if {[lsearch $::knownCommands $cmd] >= 0} {
         return [list $cmd]
     }
 
     if {$index >= 0} {
-        lappend ::unknownCommands [list $cmd $cmd1 $cmd2 $index]
+        lappend ::unknownCommands [list $cmd $cmds $index]
     }
     return ""
 }
@@ -2960,11 +2965,16 @@ proc parseScript {script} {
     # Check commands that where unknown when encountered
     # FIXA: aliases
     foreach apa $unknownCommands {
-        foreach {cmd cmd1 cmd2 index} $apa break
-        if {![info exists syntax($cmd1)] && \
-                [lsearch $knownCommands $cmd1] == -1 && \
-                ![info exists syntax($cmd2)] && \
-                [lsearch $knownCommands $cmd2] == -1} {
+        foreach {cmd cmds index} $apa break
+        set found 0
+        foreach cmdCandidate $cmds {
+            if {[info exists syntax($cmdCandidate)] || \
+                    [lsearch $knownCommands $cmdCandidate] >= 0} {
+                set found 1
+                break
+            }
+        }
+        if {!$found} {
 	    # Close brace is reported elsewhere
             if {$cmd ne "\}"} {
 		# Different messages depending on name
