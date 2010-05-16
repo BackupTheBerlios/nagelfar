@@ -1,12 +1,18 @@
 # This is an experiment to check oo in 8.6
 
+# Define a standard class command for convenience
+
+##nagelfar syntax _stdclass s x*
+##nagelfar subcmd _stdclass create new
+##nagelfar syntax _stdclass\ create x x?
+##nagelfar return _stdclass\ create _obj,_stdclass
+##nagelfar syntax _stdclass\ new x?
+##nagelfar return _stdclass\ new _obj,_stdclass
+
 # Define the class command
 
-##nagelfar syntax Account s x*
-##nagelfar subcmd Account create new
-##nagelfar syntax Account\ create x x?
+##nagelfar copy _stdclass Account
 ##nagelfar return Account\ create _obj,Account
-##nagelfar syntax Account\ new x?
 ##nagelfar return Account\ new _obj,Account
 
 # Define the object command
@@ -66,4 +72,36 @@ $a dump
 $b dump
 $a transfer 1000000 $b
 $b destroy
+
+
+# Define the class command
+
+##nagelfar copy _stdclass c
+##nagelfar return c\ create _obj,c
+##nagelfar return c\ new _obj,c
+
+# Define the object command
+
+##nagelfar syntax _obj,c s x*
+# o is a c object
+##nagelfar copy _obj,c o
+
+oo::class create c
+c create o
+oo::define c method foo {} {
+    puts "world"
+}
+oo::objdefine o {
+    method bar {} {
+        my Foo "hello "
+        my foo
+    }
+    forward Foo ::puts -nonewline
+    unexport foo
+}
+o bar
+o foo
+o Foo Bar
+oo::objdefine o renamemethod bar lollipop
+o lollipop
 

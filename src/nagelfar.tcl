@@ -1242,6 +1242,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                     } elseif {$tok eq "cn"} {
                         # Check in virtual namespace context
                         set vNs ${cmd}::[join [lrange $argv $firsti [expr {$i-1}]] ::]
+                        #puts "cmd '$cmd' vNs '$vNs'"
                         pushNamespace $vNs
                         array unset dummyVars
                         array set dummyVars {}
@@ -1357,7 +1358,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
 		    if {[info exists ::syntax($sub)]} {
 			set stype [checkCommand $sub $index $argv $wordstatus \
                                 $wordtype \
-                                $indices [expr {$firsti + 1}]]
+                                $indices [expr {$i + 1}]]
                         if {$stype != ""} {
                             set type $stype
                         }

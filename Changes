@@ -1,3 +1,7 @@
+2010-05-16
+ More OO in syntaxbuild.
+ Handle when a token "s" is not first.
+
 2010-05-12
  Search down all namespaces for a command.
  Include all preceeding arguments in a virtual namespace.

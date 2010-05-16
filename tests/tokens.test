@@ -313,6 +313,19 @@ test tokens-8.1 {
 Line   4: N Non static subcommand to "gurka"
 Line   7: W Shortened subcommand for "hopp", qwe -> qwerty}
 
+test tokens-8.2 {
+    Subcommand token, when not first
+} -body {
+    createTestFile {
+        ##nagelfar syntax hopp x s x*
+        ##nagelfar subcmd hopp qwerty hipp happ hopp
+        ##nagelfar syntax hopp\ qwerty x x
+        hopp hej qwerty arg1 arg2
+        hopp hej qwerty arg1 arg2 arg3
+    }
+    execTestFile
+} -result {%%Line   6: E Wrong number of arguments (5) to "hopp qwerty"}
+
 test tokens-9.1 {
     Optional tokens
 } -body {

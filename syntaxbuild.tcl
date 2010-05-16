@@ -431,12 +431,35 @@ proc buildDb {ch} {
         set syntax(tcl::prefix)  "s x*"
         # FIXA: oo
         set syntax(oo::class)    "s x*"
-        set syntax(oo::class\ create) "x cn"
+        set syntax(oo::class\ create) "x cn?"
         set syntax(oo::class\ create::constructor) cv
         set syntax(oo::class\ create::method) "x cv"
         set syntax(oo::class\ create::destructor) c
         set syntax(info\ object) "s x x*"
         set syntax(info\ class)  "s x x*"
+        set syntax(oo::copy)     "x x?"
+
+        # FIXA: all oo::define
+        set syntax(oo::define)   "2: x cn : x s x x*"
+        set syntax(oo::objdefine)   "2: x cn : x s x x*"
+        set syntax(oo::define::method) "x cv"
+        set syntax(oo::objdefine::method) "x cv"
+        set syntax(oo::define\ method) "x cv"
+        set syntax(oo::objdefine\ method) "x cv"
+        set syntax(oo::define::constructor) "cv"
+        set syntax(oo::objdefine::constructor) "cv"
+        set syntax(oo::define\ constructor) "cv"
+        set syntax(oo::objdefine\ constructor) "cv"
+        set syntax(oo::define::denstructor) "cl"
+        set syntax(oo::objdefine::destructor) "cl"
+        set syntax(oo::define\ destructor) "cl"
+        set syntax(oo::objdefine\ destructor) "cl"
+        set syntax(oo::define::forward) "x x x*"
+        set syntax(oo::objdefine::forward) "x x x*"
+        set syntax(oo::define::unexport) "x x*"
+        set syntax(oo::objdefine::unexport) "x x*"
+
+        set syntax(oo::object)   "s x*" ;# FIXA?
         # Set up basic checking of self/my
         set syntax(my)           "s x*"
         set syntax(my\ variable) "n*"
@@ -448,6 +471,7 @@ proc buildDb {ch} {
                 set subCmd(self) [getSubCmds self gurkmeja]
             }
         }
+        # Run constructor to get info about self
         [miffo new] destroy
         # New options
         set option(lsort\ -stride) 1
@@ -589,6 +613,11 @@ proc buildDb {ch} {
         set oi [lsearch -glob $syn "s*"]
         if {$oi >= 0} {
             set syn [lreplace $syn $oi $oi gurkmeja]
+            # If the subcmd is after a :, handle it
+            set ci [lsearch -exact $syn ":"]
+            if {$ci >= 0 && $ci < $oi} {
+                set syn [lrange $syn [expr {$ci + 1}] end]
+            }
             set opts [eval getSubCmds $cmd $syn]
             if {[llength $opts] > 0} {
                 set subCmd($cmd) $opts
@@ -704,6 +733,7 @@ proc buildDb {ch} {
             if {[llength $v] != 0} {
                 set first [lindex [split $i] 0]
                 if {![string match _* $first] && \
+                        ![string match *::* $first] && \
                         [lsearch $::kC $first] == -1} {
                     puts stderr "Skipping ${a}($i) since $i is not known."
                 } else {
