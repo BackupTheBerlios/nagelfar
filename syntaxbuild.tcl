@@ -703,7 +703,7 @@ proc buildDb {ch} {
     if {![info exists option(puts)] || [lsearch $option(puts) "-nonewline"] < 0} {
         set option(puts) [list -nonewline]
         # Also chan puts if present
-        if {![info exists option(chan\ puts)] && [info exists syntax(chan\ puts)]} {
+        if {[info exists syntax(chan\ puts)]} {
             set option(chan\ puts) [list -nonewline]
         }            
     }
