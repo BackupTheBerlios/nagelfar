@@ -297,6 +297,19 @@ test tokens-7.8 {
     execTestFile
 } -result {%%Line   3: E Argument list is not a valid list}
 
+test tokens-7.9 {
+    Code token, global context, optional
+} -body {
+    createTestFile {
+        set apa 1
+        ##nagelfar syntax gurka x cg?
+        gurka hej {list $apa ; set bepa 1}
+        gurka hej [list myCmd $apa]
+        gurka hej
+    }
+    execTestFile
+} -result {%%Line   4: E Unknown variable "apa"}
+
 test tokens-8.1 {
     Subcommand token
 } -body {

@@ -1,5 +1,6 @@
 2010-05-16
  Added more of zlib and tcl::prefix in syntaxbuild.
+ Added more of chan in syntaxbuild.
 
 2010-05-16
  Corrected output in db browser. Fixed GUI test for db browser.

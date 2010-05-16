@@ -382,8 +382,24 @@ proc buildDb {ch} {
         set syntax(lreverse)   "1"
         set syntax(string\ reverse)   "1"
         set syntax(unload)     "o* x x*"
-        # FIXA: chan subcommands
         set syntax(chan)       "s x*"
+        set syntax(chan\ blocked) "x"
+        set syntax(chan\ close) "x"
+        set syntax(chan\ configure) "x o. x. p*"
+        set syntax(chan\ copy) "x x p*"
+        set syntax(chan\ create) "x x"
+        set syntax(chan\ eof) "x"
+        set syntax(chan\ event) "x x cg?"
+        set syntax(chan\ flush) "x"
+        set syntax(chan\ gets) "x n?"
+        set syntax(chan\ names) "x?"
+        set syntax(chan\ pending) "x x"
+        set syntax(chan\ postevent) "x x"
+        set syntax(chan\ puts) "1: x : o? x x?"
+        set syntax(chan\ read) "x x?"
+        set syntax(chan\ seek) $syntax(seek)
+        set syntax(chan\ tell) $syntax(tell)
+        set syntax(chan\ truncate) "x x?"
         set syntax(apply)      "x x*"
         set syntax(source)     "p* x"
         set option(interp\ invokehidden\ -namespace) 1
@@ -686,6 +702,10 @@ proc buildDb {ch} {
     # A fix since puts still gives an unhelpful error
     if {![info exists option(puts)] || [lsearch $option(puts) "-nonewline"] < 0} {
         set option(puts) [list -nonewline]
+        # Also chan puts if present
+        if {![info exists option(chan\ puts)] && [info exists syntax(chan\ puts)]} {
+            set option(chan\ puts) [list -nonewline]
+        }            
     }
 
     # The default for options is not to take a value unless 'p' is
