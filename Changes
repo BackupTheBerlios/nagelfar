@@ -1,4 +1,7 @@
 2010-05-16
+ Corrected output in db browser. Fixed GUI test for db browser.
+
+2010-05-16
  More OO in syntaxbuild.
  Handle when a token "s" is not first.
 

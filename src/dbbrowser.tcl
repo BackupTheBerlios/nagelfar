@@ -48,22 +48,22 @@ proc dbBrowserSearch {} {
     }
 
     foreach item [lsort -dictionary [array names ::syntax $pat]] {
-        $w insert end [list \#\#nagelfar syntax $item]
+        $w insert end "\#\#nagelfar syntax [list $item]"
         $w insert end " "
         $w insert end $::syntax($item)\n
     }
     foreach item [lsort -dictionary [array names ::subCmd $pat]] {
-        $w insert end [list \#\#nagelfar subcmd $item]
+        $w insert end "\#\#nagelfar subcmd [list $item]"
         $w insert end " "
         $w insert end $::subCmd($item)\n
     }
     foreach item [lsort -dictionary [array names ::option $pat]] {
-        $w insert end [list \#\#nagelfar option $item]
+        $w insert end "\#\#nagelfar option [list $item]"
         $w insert end " "
         $w insert end $::option($item)\n
     }
     foreach item [lsort -dictionary [array names ::return $pat]] {
-        $w insert end [list \#\#nagelfar return $item]
+        $w insert end "\#\#nagelfar return [list $item]"
         $w insert end " "
         $w insert end $::return($item)\n
     }

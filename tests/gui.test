@@ -470,6 +470,7 @@ test gui-8.1 {DB Browser} -body {
 test gui-8.2 {DB Browser} -body {
     tktest::waitFocus menu Tools "Browse Database"
     set w [tktest::widget -class Entry]
+    tktest::cmd $w delete 0 end
     tktest::cmd focus $w
     tktest::keys "lsearch"
     tktest::press Search
@@ -477,7 +478,7 @@ test gui-8.2 {DB Browser} -body {
     set top [tktest::cmd winfo toplevel $w]
     tktest::cmd destroy $top
     set info
-} -result {No match!}
+} -match glob -result {*-ascii*-index*}
 
 catch {tktest::menu File Exit}
 catch {send -async Nagelfar exit}
