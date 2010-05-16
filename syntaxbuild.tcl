@@ -424,12 +424,23 @@ proc buildDb {ch} {
         set syntax(coroutine)    "x x x*"
         set syntax(tailcall)     "x x*"
         set syntax(yield)        "x?"
-        set syntax(zlib)         "s x*"
-        set syntax(zlib\ stream) "s x*"
-        set syntax(zlib\ push)   "s x*"
-        # FIXA: All zlib
+        set syntax(zlib)             "s x*"
+        set syntax(zlib\ adler32)    "x x?"
+        set syntax(zlib\ compress)   "x x?"
+        set syntax(zlib\ crc32)      "x x?"
+        set syntax(zlib\ decompress) "x x?"
+        set syntax(zlib\ deflate)    "x x?"
+        set syntax(zlib\ gzip)       "x p*"
+        set syntax(zlib\ gunzip)     "x p*"
+        set syntax(zlib\ inflate)    "x x?"
+        set syntax(zlib\ push)       "s x*"
+        set syntax(zlib\ stream)     "s x*"
         set syntax(tcl::prefix)  "s x*"
-        # FIXA: oo
+        set syntax(tcl::prefix\ all)  "x x"
+        set syntax(tcl::prefix\ longest)  "x x"
+        set syntax(tcl::prefix\ match)  "o* x x"
+        set option(tcl::prefix\ match\ -message) x
+        set option(tcl::prefix\ match\ -error) x
         set syntax(oo::class)    "s x*"
         set syntax(oo::class\ create) "x cn?"
         set syntax(oo::class\ create::constructor) cv
