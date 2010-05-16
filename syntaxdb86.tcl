@@ -1,5 +1,5 @@
 # Automatically generated syntax database.
-# Generated with syntaxbuild Revision: 451 
+# Generated with syntaxbuild Revision: 458 
 
 lappend ::dbInfo {Tcl 8.6b1.2 unix, Tk 8.6b1.2 x11}
 set ::dbTclVersion 8.6
@@ -204,10 +204,26 @@ set ::syntax(case) x*
 set ::syntax(catch) {c n? n?}
 set ::syntax(cd) {r 0 1}
 set ::syntax(chan) {s x*}
+set {::syntax(chan blocked)} x
 set {::syntax(chan close)} {x x?}
+set {::syntax(chan configure)} {x o. x. p*}
+set {::syntax(chan copy)} {x x p*}
+set {::syntax(chan create)} {x x}
+set {::syntax(chan eof)} x
+set {::syntax(chan event)} {x x cg?}
+set {::syntax(chan flush)} x
+set {::syntax(chan gets)} {x n?}
+set {::syntax(chan names)} x?
+set {::syntax(chan pending)} {x x}
 set {::syntax(chan pipe)} 0
 set {::syntax(chan pop)} x
+set {::syntax(chan postevent)} {x x}
 set {::syntax(chan push)} {x c}
+set {::syntax(chan puts)} {1: x : o? x x?}
+set {::syntax(chan read)} {x x?}
+set {::syntax(chan seek)} {r 2 3}
+set {::syntax(chan tell)} 1
+set {::syntax(chan truncate)} {x x?}
 set ::syntax(checkbutton) {x p*}
 set ::syntax(clipboard) {s x*}
 set ::syntax(clock) {s x*}
@@ -339,10 +355,30 @@ set ::syntax(namespace) {s x*}
 set {::syntax(namespace import)} {o* x*}
 set {::syntax(namespace which)} {o* x?}
 set ::syntax(oo::class) {s x*}
-set {::syntax(oo::class create)} {x cn}
+set {::syntax(oo::class create)} {x cn?}
 set {::syntax(oo::class create::constructor)} cv
 set {::syntax(oo::class create::destructor)} c
 set {::syntax(oo::class create::method)} {x cv}
+set ::syntax(oo::copy) {x x?}
+set ::syntax(oo::define) {2: x cn : x s x x*}
+set {::syntax(oo::define constructor)} cv
+set {::syntax(oo::define destructor)} cl
+set {::syntax(oo::define method)} {x cv}
+set ::syntax(oo::define::constructor) cv
+set ::syntax(oo::define::denstructor) cl
+set ::syntax(oo::define::forward) {x x x*}
+set ::syntax(oo::define::method) {x cv}
+set ::syntax(oo::define::unexport) {x x*}
+set ::syntax(oo::objdefine) {2: x cn : x s x x*}
+set {::syntax(oo::objdefine constructor)} cv
+set {::syntax(oo::objdefine destructor)} cl
+set {::syntax(oo::objdefine method)} {x cv}
+set ::syntax(oo::objdefine::constructor) cv
+set ::syntax(oo::objdefine::destructor) cl
+set ::syntax(oo::objdefine::forward) {x x x*}
+set ::syntax(oo::objdefine::method) {x cv}
+set ::syntax(oo::objdefine::unexport) {x x*}
+set ::syntax(oo::object) {s x*}
 set ::syntax(open) {r 1 3}
 set ::syntax(option) {s x*}
 set ::syntax(pack) {x x*}
@@ -399,6 +435,9 @@ set {::syntax(string wordstart)} 2
 set ::syntax(subst) {o* x}
 set ::syntax(tailcall) {x x*}
 set ::syntax(tcl::prefix) {s x*}
+set {::syntax(tcl::prefix all)} {x x}
+set {::syntax(tcl::prefix longest)} {x x}
+set {::syntax(tcl::prefix match)} {o* x x}
 set ::syntax(tclListValidFlags) 1
 set ::syntax(tclLog) 1
 set ::syntax(tclParseConfigSpec) 4
@@ -515,6 +554,14 @@ set ::syntax(winfo) {s x x*}
 set ::syntax(wm) {s x x*}
 set ::syntax(yield) x?
 set ::syntax(zlib) {s x*}
+set {::syntax(zlib adler32)} {x x?}
+set {::syntax(zlib compress)} {x x?}
+set {::syntax(zlib crc32)} {x x?}
+set {::syntax(zlib decompress)} {x x?}
+set {::syntax(zlib deflate)} {x x?}
+set {::syntax(zlib gunzip)} {x p*}
+set {::syntax(zlib gzip)} {x p*}
+set {::syntax(zlib inflate)} {x x?}
 set {::syntax(zlib push)} {s x*}
 set {::syntax(zlib stream)} {s x*}
 
@@ -649,9 +696,9 @@ set ::subCmd(info) {args body class cmdcount commands complete coroutine default
 set {::subCmd(info class)} {constructor definition destructor filters forward instances methods methodtype mixins subclasses superclasses variables}
 set {::subCmd(info object)} {class definition filters forward isa methods methodtype mixins namespace variables vars}
 set ::subCmd(interp) {alias aliases bgerror cancel create delete eval exists expose hidden hide invokehidden issafe limit marktrusted recursionlimit share slaves target transfer}
-set ::subCmd(my) variable
 set ::subCmd(namespace) {children code current delete ensemble eval exists export forget import inscope origin parent path qualifiers tail unknown upvar which}
 set ::subCmd(oo::class) {create destroy}
+set ::subCmd(oo::object) {create destroy new}
 set ::subCmd(option) {add clear get readfile}
 set ::subCmd(package) {forget ifneeded names prefer present provide require unknown vcompare versions vsatisfies}
 set ::subCmd(selection) {clear get handle own}
@@ -825,6 +872,7 @@ set {::option(binary encode uuencode)} {-maxlen -wrapchar}
 set ::option(button) {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -default -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -justify -overrelief -padx -pady -relief -repeatdelay -repeatinterval -state -takefocus -text -textvariable -underline -width -wraplength}
 set {::option(button -textvariable)} n
 set ::option(canvas) {-background -bd -bg -borderwidth -closeenough -confine -cursor -height -highlightbackground -highlightcolor -highlightthickness -insertbackground -insertborderwidth -insertofftime -insertontime -insertwidth -offset -relief -scrollregion -selectbackground -selectborderwidth -selectforeground -state -takefocus -width -xscrollcommand -xscrollincrement -yscrollcommand -yscrollincrement}
+set {::option(chan puts)} -nonewline
 set ::option(checkbutton) {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -indicatoron -justify -offrelief -offvalue -onvalue -overrelief -padx -pady -relief -selectcolor -selectimage -state -takefocus -text -textvariable -tristateimage -tristatevalue -underline -variable -width -wraplength}
 set {::option(checkbutton -textvariable)} n
 set {::option(checkbutton -variable)} n
@@ -896,6 +944,9 @@ set {::option(string map)} -nocase
 set {::option(string match)} -nocase
 set ::option(subst) {-nobackslashes -nocommands -novariables}
 set ::option(switch) {-- -exact -glob -indexvar -matchvar -nocase -regexp}
+set {::option(tcl::prefix match)} {-error -exact -message}
+set {::option(tcl::prefix match -error)} x
+set {::option(tcl::prefix match -message)} x
 set ::option(text) {-autoseparators -background -bd -bg -blockcursor -borderwidth -cursor -endline -exportselection -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -inactiveselectbackground -insertbackground -insertborderwidth -insertofftime -insertontime -insertunfocussed -insertwidth -maxundo -padx -pady -relief -selectbackground -selectborderwidth -selectforeground -setgrid -spacing1 -spacing2 -spacing3 -startline -state -tabs -tabstyle -takefocus -undo -width -wrap -xscrollcommand -yscrollcommand}
 set ::option(tk::button) {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -default -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -justify -overrelief -padx -pady -relief -repeatdelay -repeatinterval -state -takefocus -text -textvariable -underline -width -wraplength}
 set {::option(tk::button -textvariable)} n
@@ -963,4 +1014,6 @@ set {::option(ttk::style theme create)} {-parent -settings}
 set ::option(ttk::treeview) {-takefocus -columns -displaycolumns -show -selectmode -height -padding -xscrollcommand -yscrollcommand -takefocus -cursor -style -class}
 set ::option(unload) {-- -keeplibrary -nocomplain}
 set ::option(unset) {-nocomplain --}
+set {::option(zlib gunzip)} {-buffersize -headerVar}
+set {::option(zlib gzip)} {-header -level}
 

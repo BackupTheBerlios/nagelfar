@@ -180,7 +180,7 @@ test nagelfar-3.5 {
             incr Miffo(gurka)
         }
     }
-    execTestFile
+    execTestFile -flags "-s syntaxdb84.tcl"
 } -result {%%Line   5: E Unknown variable "Miffo(hampa)"}
 
 test nagelfar-3.6 {

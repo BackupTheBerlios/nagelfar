@@ -1,7 +1,7 @@
 # Automatically generated syntax database.
-# Generated with syntaxbuild Revision: 451 
+# Generated with syntaxbuild Revision: 458 
 
-lappend ::dbInfo {Tcl 8.5.6 unix, Tk 8.5.6 x11}
+lappend ::dbInfo {Tcl 8.5.8 unix, Tk 8.5.8 x11}
 set ::dbTclVersion 8.5
 set ::knownGlobals {argc argv argv0 auto_index auto_path env errorCode errorInfo tcl_interactive tcl_library tcl_nonwordchars tcl_patchLevel tcl_pkgPath tcl_platform tcl_rcFileName tcl_version tcl_wordchars tk_library tk_patchLevel tk_strictMotif tk_version}
 set ::knownCommands {. EvalAttached after append apply array auto_execok auto_import auto_load auto_load_index auto_mkindex auto_mkindex_old auto_qualify auto_reset bell bgerror binary bind bindtags break button canvas case catch cd chan checkbutton clipboard clock close concat continue destroy dict encoding entry eof error eval event exec exit expr fblocked fconfigure fcopy file fileevent flush focus font for foreach format frame gets glob global grab grid history if image incr info interp join label labelframe lappend lassign lindex linsert list listbox llength load lower lrange lrepeat lreplace lreverse lsearch lset lsort menu menubutton message msgcat::mc msgcat::mcload msgcat::mclocale msgcat::mcmax msgcat::mcmset msgcat::mcpreferences msgcat::mcset msgcat::mcunknown namespace open option pack package panedwindow parray pid pkg_mkIndex place proc puts pwd radiobutton raise read regexp regsub rename return scale scan scrollbar seek selection send set socket source spinbox split string subst switch tcl::pkgconfig tclListValidFlags tclLog tclParseConfigSpec tclPkgSetup tclPkgUnknown tcl_endOfWord tcl_findLibrary tcl_startOfNextWord tcl_startOfPreviousWord tcl_wordBreakAfter tcl_wordBreakBefore tell text time tk tk::button tk::canvas tk::checkbutton tk::entry tk::frame tk::label tk::labelframe tk::listbox tk::menubutton tk::message tk::panedwindow tk::radiobutton tk::scale tk::scrollbar tk::spinbox tk::text tk::toplevel tk_bindForTraversal tk_bisque tk_chooseColor tk_chooseDirectory tk_dialog tk_focusFollowsMouse tk_focusNext tk_focusPrev tk_getFileType tk_getOpenFile tk_getSaveFile tk_menuBar tk_menuSetFocus tk_messageBox tk_optionMenu tk_popup tk_setPalette tk_textCopy tk_textCut tk_textPaste tkwait toplevel trace ttk::button ttk::checkbutton ttk::combobox ttk::entry ttk::frame ttk::label ttk::labelframe ttk::menubutton ttk::notebook ttk::panedwindow ttk::progressbar ttk::radiobutton ttk::scale ttk::scrollbar ttk::separator ttk::setTheme ttk::sizegrip ttk::style ttk::themes ttk::treeview unknown unload unset update uplevel upvar variable vwait while winfo wm}
@@ -196,6 +196,23 @@ set ::syntax(case) x*
 set ::syntax(catch) {c n?}
 set ::syntax(cd) {r 0 1}
 set ::syntax(chan) {s x*}
+set {::syntax(chan blocked)} x
+set {::syntax(chan close)} x
+set {::syntax(chan configure)} {x o. x. p*}
+set {::syntax(chan copy)} {x x p*}
+set {::syntax(chan create)} {x x}
+set {::syntax(chan eof)} x
+set {::syntax(chan event)} {x x cg?}
+set {::syntax(chan flush)} x
+set {::syntax(chan gets)} {x n?}
+set {::syntax(chan names)} x?
+set {::syntax(chan pending)} {x x}
+set {::syntax(chan postevent)} {x x}
+set {::syntax(chan puts)} {1: x : o? x x?}
+set {::syntax(chan read)} {x x?}
+set {::syntax(chan seek)} {r 2 3}
+set {::syntax(chan tell)} 1
+set {::syntax(chan truncate)} {x x?}
 set ::syntax(checkbutton) {x p*}
 set ::syntax(clipboard) {s x*}
 set ::syntax(clock) {s x*}
@@ -775,6 +792,7 @@ set ::option(bell) {-displayof -nice}
 set ::option(button) {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -default -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -justify -overrelief -padx -pady -relief -repeatdelay -repeatinterval -state -takefocus -text -textvariable -underline -width -wraplength}
 set {::option(button -textvariable)} n
 set ::option(canvas) {-background -bd -bg -borderwidth -closeenough -confine -cursor -height -highlightbackground -highlightcolor -highlightthickness -insertbackground -insertborderwidth -insertofftime -insertontime -insertwidth -offset -relief -scrollregion -selectbackground -selectborderwidth -selectforeground -state -takefocus -width -xscrollcommand -xscrollincrement -yscrollcommand -yscrollincrement}
+set {::option(chan puts)} -nonewline
 set ::option(checkbutton) {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -indicatoron -justify -offrelief -offvalue -onvalue -overrelief -padx -pady -relief -selectcolor -selectimage -state -takefocus -text -textvariable -tristateimage -tristatevalue -underline -variable -width -wraplength}
 set {::option(checkbutton -textvariable)} n
 set {::option(checkbutton -variable)} n

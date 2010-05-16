@@ -4,7 +4,7 @@
 # $Revision$
 #----------------------------------------------------------------------
 
-VERSION = 119
+VERSION = 1110
 
 # Path to the TclKits used for creating StarPacks.
 TCLKIT = /home/peter/tclkit
