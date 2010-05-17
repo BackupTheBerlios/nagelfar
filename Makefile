@@ -72,7 +72,7 @@ CATFILES = src/prologue.tcl src/nagelfar.tcl src/gui.tcl src/dbbrowser.tcl \
 
 
 nagelfar.tcl: $(CATFILES)
-	cat $(CATFILES) > nagelfar.tcl
+	cat $(CATFILES) | sed "s/\\\$$Revision\\\$$/`git show-ref --hash --heads`/" > nagelfar.tcl
 	@chmod 775 nagelfar.tcl
 
 #----------------------------------------------------------------

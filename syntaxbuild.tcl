@@ -4,8 +4,6 @@
 # This file contains hardcoded syntax info for many commands that it
 # adds to the resulting syntax database, plus it tries to extract info
 # from the interpreter about things like subcommands.
-#
-# $Revision$
 
 # Autoload stuff to have them available
 catch {parray} ; catch {tk_dialog} ; catch {package require msgcat}
@@ -116,8 +114,6 @@ proc buildDb {ch} {
     set ver   [package present Tcl]
 
     puts $ch "# Automatically generated syntax database."
-    puts -nonewline $ch "# Generated with syntaxbuild "
-    puts $ch [string trim {$Revision$} \$]
     puts $ch ""
 
     set useTk [expr {![catch {package present Tk}]}]
