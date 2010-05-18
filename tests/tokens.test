@@ -60,7 +60,7 @@ test tokens-2.2 {
         gurka -miffu 1 x
     }
     execTestFile
-} -result {%%Line   9: E Bad option -miffu to gurka}
+} -result {%%Line   9: E Bad option -miffu to "gurka"}
 
 test tokens-2.3 {
     Token p* and --
@@ -76,7 +76,7 @@ test tokens-2.3 {
         gurka -miffu 1
     }
     execTestFile
-} -result {%%Line   9: E Bad option -miffu to gurka}
+} -result {%%Line   9: E Bad option -miffu to "gurka"}
 
 test tokens-2.4 {
     Token p* and --
@@ -93,7 +93,7 @@ test tokens-2.4 {
         string gurka -miffu 1
     }
     execTestFile
-} -result {%%Line  10: E Bad option -miffu to string gurka}
+} -result {%%Line  10: E Bad option -miffu to "string gurka"}
 
 test tokens-3.1 {
     Modifier .
@@ -118,7 +118,7 @@ test tokens-4.1 {
         gurka x
     }
     execTestFile
-} -result {%%Unsupported token y* in syntax for gurka*} -match glob
+} -result {%%Unsupported token "y*" in syntax for "gurka"*} -match glob
 
 test tokens-4.2 {
     Token error

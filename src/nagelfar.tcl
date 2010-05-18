@@ -511,7 +511,7 @@ proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
     }
     set check [info exists option($cmd)]
     if {!$check && $::Nagelfar(dbpicky)} {
-        errorMsg N "DB: Missing options for command $cmd" 0
+        errorMsg N "DB: Missing options for command \"$cmd\"" 0
     }
     set i 0
     set used 0
@@ -549,7 +549,7 @@ proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
                         set match {}
                     }
                     if {[llength $match] == 0} {
-                        errorMsg E "Bad option $arg to $cmd" $index
+                        errorMsg E "Bad option $arg to \"$cmd\"" $index
                         set item ""
                     } elseif {[llength $match] > 1} {
                         errorMsg E "Ambigous option for \"$cmd\",\
@@ -1351,7 +1351,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                             }
 			}
 		    } elseif {$::Nagelfar(dbpicky)} {
-                        errorMsg N "DB: Missing subcommands for $cmd" 0
+                        errorMsg N "DB: Missing subcommands for \"$cmd\"" 0
                     }
 		    # Are there any syntax definition for this subcommand?
 		    set sub "$cmd $arg"
@@ -1451,7 +1451,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                 }
 	    }
 	    default {
-		echo "Unsupported token $token in syntax for $cmd"
+		echo "Unsupported token \"$token\" in syntax for \"$cmd\""
 	    }
 	}
     }
@@ -2299,7 +2299,7 @@ proc parseStatement {statement index knownVarsName} {
                     set type [checkCommand $cmd $index $argv $wordstatus \
                             $wordtype $indices]
                 } elseif {$::Nagelfar(dbpicky)} {
-                    errorMsg N "DB: Missing syntax for command $cmd" 0
+                    errorMsg N "DB: Missing syntax for command \"$cmd\"" 0
                 }
 	    }
 	}

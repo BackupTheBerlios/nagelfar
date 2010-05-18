@@ -12,7 +12,7 @@ test tk-1.1 {
         entry .f -gurkmeja 2
     }
     execTestFile
-} -result {%%Line   3: E Bad option -gurkmeja to entry}
+} -result {%%Line   3: E Bad option -gurkmeja to "entry"}
 
 test tk-2.1 {
     Tk, option types

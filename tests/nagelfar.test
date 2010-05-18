@@ -339,7 +339,7 @@ test nagelfar-4.7 {
         string match -?* gurka burka
     }
     execTestFile
-} -result {%%Line   3: E Bad option -?* to string match}
+} -result {%%Line   3: E Bad option -?* to "string match"}
 
 test nagelfar-4.8 {
     Options checking
@@ -796,7 +796,7 @@ test nagelfar-19.3 {
         lfilter -miffo $apa h*
     }
     execTestFile
-} -result {%%Line   4: E Bad option -miffo to lsearch}
+} -result {%%Line   4: E Bad option -miffo to "lsearch"}
 
 test nagelfar-19.4 {
     interp alias, track
@@ -819,7 +819,7 @@ test nagelfar-19.5 {
         strncmp h* $apa
     }
     execTestFile
-} -result {%%Line   4: E Bad option -nocasd to string match}
+} -result {%%Line   4: E Bad option -nocasd to "string match"}
 
 test nagelfar-20.1 {
     switch
@@ -936,4 +936,4 @@ test nagelfar-25.2 {
         tailcall $w configure -miffo
     }
     execTestFile -flags "-s syntaxdb86.tcl"
-} -result {%%Line   4: E Bad option -miffo to _obj,frame configure}
+} -result {%%Line   4: E Bad option -miffo to "_obj,frame configure"}
