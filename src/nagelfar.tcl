@@ -2252,6 +2252,16 @@ proc parseStatement {statement index knownVarsName} {
                                   $wordtype $indices]
             }
 	}
+	tailcall {
+            if {$argc < 1} {
+                WA
+                return
+            }
+            set newStatement [join $argv]
+            set newIndex [lindex $indices 0]
+            set type [parseStatement $newStatement $newIndex knownVars]
+            set noConstantCheck 1
+	}
 	uplevel { # FIXA
             set noConstantCheck 1
 	}

@@ -434,7 +434,7 @@ proc buildDb {ch} {
         set syntax(try)          "r 0"
         set syntax(throw)        "2"
         set syntax(coroutine)    "x x x*"
-        set syntax(tailcall)     "x x*"
+        set special(tailcall) 1
         set syntax(yield)        "x?"
         set syntax(zlib)             "s x*"
         set syntax(zlib\ adler32)    "x x?"

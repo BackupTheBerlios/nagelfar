@@ -432,7 +432,6 @@ set {::syntax(string trimright)} {r 1 2}
 set {::syntax(string wordend)} 2
 set {::syntax(string wordstart)} 2
 set ::syntax(subst) {o* x}
-set ::syntax(tailcall) {x x*}
 set ::syntax(tcl::prefix) {s x*}
 set {::syntax(tcl::prefix all)} {x x}
 set {::syntax(tcl::prefix longest)} {x x}

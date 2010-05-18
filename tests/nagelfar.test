@@ -909,3 +909,31 @@ test nagelfar-24.2 {
     }
     execTestFile
 } -result {%%Line   3: N Newline in command substitution}
+
+test nagelfar-25.1 {
+    tailcall
+} -body {
+    createTestFile {
+        tailcall
+        tailcall list
+        # Detect wrong number of args
+        tailcall set apa bepa cepa
+        # Correctly parse it
+        tailcall set epa bepa
+        # Variable should be known now
+        list $epa
+    }
+    execTestFile -flags "-s syntaxdb86.tcl"
+} -result {%%Line   2: E Wrong number of arguments (0) to "tailcall"
+Line   5: E Wrong number of arguments (3) to "set"}
+
+test nagelfar-25.2 {
+    tailcall, types
+} -body {
+    createTestFile {
+        # Check that types get through to and from a tailcall
+        set w [tailcall frame .f]
+        tailcall $w configure -miffo
+    }
+    execTestFile -flags "-s syntaxdb86.tcl"
+} -result {%%Line   4: E Bad option -miffo to _obj,frame configure}
