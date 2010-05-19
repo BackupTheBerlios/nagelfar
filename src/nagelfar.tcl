@@ -1310,6 +1310,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                     set ::instrumenting([lindex $indices $i]) 1
 
                     # Check in local context
+                    #puts "Cmd '$cmd' NS '[currentNamespace]'"
                     parseBody $body [lindex $indices $i] dummyVars
                 }
 		incr i
