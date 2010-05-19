@@ -1,0 +1,115 @@
+
+The main problem with checking OO-style code is lines like this:
+
+  $obj dosomething $arg
+
+Since nagelfar does not know the command, it does not know the syntax
+for it, and specially if an argument is a code block, it will not know
+that it should check into it.
+
+Basically what is needed is types.  If the type of $obj is known it
+can be checked.
+By introducing return types of commands and types of variables code
+like this becomes checkable:
+
+  set w [frame .f]
+  $w configure -apa hej
+
+Still a problem:
+  proc x {w} {
+    $w configure -apa hej
+  }
+
+Fixed by inline comment:
+  proc x {w} {
+    ##nagelfar variable w _obj,frame
+    $w configure -apa hej
+  }
+
+Still a problem:
+  frame .f
+  .f configure -apa hej
+
+Another problem:
+  frame $top.f
+  $top.f configure -apa hej
+
+--------------------------------------------------------------------------
+[ Feature Request #2569 ] Snit/OO support
+
+Date: 2007-Apr-03 15:04
+Sender: escargo
+Logged In: YES 
+user_id=34055
+Browser: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.3) Gecko/20070309
+Firefox/2.0.0.3
+
+I just thought I would mention that I am a snit user (and
+have been for a while).  I have not applied Nagelfar to any
+snit code, but I can appreciate how having it supported
+would be useful.
+
+Date: 2006-Dec-18 12:22
+Sender: pspjuth
+Logged In: YES 
+user_id=14104
+Browser: Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; InfoPath.1)
+
+One problem with OO is tracking types.
+If [obj] is defined to return an object, [set a [obj]]
+will currently note a's type so that [$a cmd] can be
+checked.
+But what is a good way for e.g. proc args?
+proc cmd {a} {
+    ##nagelfar object a <type>
+    $a dosomething
+}
+or maybe in syntax descriptions?
+##nagelfar syntax cmd x:type
+
+Date: 2006-Aug-22 14:05
+Sender: pspjuth
+Logged In: YES 
+user_id=14104
+Browser: Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; InfoPath.1)
+
+Some thoughts about how Snit can be better
+supported, and maye some other OO too.
+
+snit::type typename codeblock
+
+The "codeblock" might be checked in a virtual
+namespace where procs like "pragma"
+and "constructor" exists.
+Maybe a syntax code for it. Like "c:snit::_virtual_"
+
+"typename" needs to define a new command,
+similar to "proc".
+A syntax code for it?
+
+A notion of "current command" to allow "method"
+to add to the subcommand list.
+
+
+--------------------------------------------------------------------------
+How to handle implicit variables?
+Retain a list of implicit variables for a proc?
+--------------------------------------------------------------------------
+
+##nagelfar syntax xyz x p*
+##nagelfar option xyz -opt
+##nagelfar return xyz _obj,xyz
+##nagelfar syntax _obj,xyz s p*
+##nagelfar option _obj,xyz -opt
+##nagelfar subcmd _obj,xyz meth1 meth2
+##nagelfar syntax _obj,xyz\ meth1 x x
+##nagelfar syntax _obj,xyz\ meth2 x x*
+
+snit::type xyz {
+    option -opt -default 10
+    variable var
+    constructor {args} {...}
+    destructor {...}
+    method meth1 {x y} {...}
+    method meth2 {x args} {...}
+}
