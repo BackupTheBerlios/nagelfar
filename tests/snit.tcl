@@ -17,6 +17,10 @@
 ##nagelfar syntax _obj,pdf4tcl\ finish 0
 ##nagelfar syntax _obj,pdf4tcl\ configurelist x
 
+##nagelfar syntax pdf4tcl::pdf4tcl x p*
+##nagelfar option pdf4tcl::pdf4tcl -file
+##nagelfar return pdf4tcl::pdf4tcl _obj,pdf4tcl
+
 snit::type pdf4tcl::pdf4tcl {
     variable pdf
     option -file      -default "" -readonly 1
@@ -41,3 +45,6 @@ snit::type pdf4tcl::pdf4tcl {
         }
     }
 }
+
+set x [pdf4tcl::pdf4tcl %AUTO% -file x]
+$x cleanup
