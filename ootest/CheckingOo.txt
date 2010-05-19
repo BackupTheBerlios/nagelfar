@@ -1,3 +1,7 @@
+This file contains notes collected over time about OO checking.
+Some of it has been implemented but maybe not as mentioned here.
+Look in the code examples for up to date handling.
+--------------------------------------------------------------------------
 
 The main problem with checking OO-style code is lines like this:
 

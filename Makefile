@@ -99,6 +99,9 @@ testgui: base
 test84: base
 	@$(TCLSH84) ./tests/all.tcl $(TESTFLAGS)
 
+testoo: base
+	@./nagelfar.tcl -s syntaxdb86.tcl ootest/*.tcl
+
 #----------------------------------------------------------------
 # Coverage
 #----------------------------------------------------------------
