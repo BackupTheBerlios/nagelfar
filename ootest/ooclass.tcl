@@ -105,3 +105,20 @@ o Foo Bar
 oo::objdefine o renamemethod bar lollipop
 o lollipop
 
+# Example with implicit variable:
+##nagelfar copy _stdclass foo
+##nagelfar return foo\ create _obj,foo
+##nagelfar return foo\ new _obj,foo
+oo::class create foo {
+    variable x
+    constructor y {
+        set x $y
+    }
+    method boo z {
+        ##nagelfar variable x
+        list $x $z
+    }
+}
+##nagelfar copy _obj,foo bar
+foo create bar quolf
+bar boo

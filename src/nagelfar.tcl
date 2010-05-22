@@ -41,6 +41,15 @@
 # 4 quoted
 # 8 {*}-expanded
 
+# Interpretation of knownVars:
+# knownVars(known,$var)     : Variable is known to exist.
+# knownVars(local,$var)     : Variable is local in a procedure.
+# knownVars(set,$var)       : A set of this variable has been seen.
+# knownVars(read,$var)      : A read of this variable has been seen.
+# knownVars(type,$var)      : The variable's type if known.
+# knownVars(namespace,$var) : Variable belongs to this namespace.
+# knownVars(upvar,$var)     : Variable is upvared from this variable.
+
 # Moved out message handling to make it more flexible
 proc echo {str {tag {}}} {
     if {[info exists ::Nagelfar(resultWin)]} {
@@ -2275,7 +2284,9 @@ proc parseStatement {statement index knownVarsName} {
 	    } else {
                 # Resolve commands in namespace
                 set rescmd [lookForCommand $cmd $ns $index]
-#                decho "Checking '$cmd' in '$ns' resolved '$rescmd'"
+                if {$ns ne ""} {
+                    #decho "Checking '$cmd' in '$ns' resolved '$rescmd'"
+                }
                 if {[llength $rescmd] > 0 && \
                         [info exists ::syntax([lindex $rescmd 0])]} {
                     set cmd [lindex $rescmd 0]
