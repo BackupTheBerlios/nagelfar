@@ -1,8 +1,103 @@
-This file contains notes collected over time about OO checking.
+--------------------------------------------------------------------------
+A class defintion is resolved in a virtual namespace denoted by the
+"cn" syntax token. The virtual namespace is named after the calling
+command and its arguments.  Examples:
+##nagelfar syntax itcl::class x cn
+itcl::class Test { ... }
+Virtual namespace: itcl::class::Test
+##nagelfar syntax snit::type x cn
+snit::type pdf4tcl::pdf4tcl { ... }
+Virtual namespace: snit::type::pdf4tcl::pdf4tcl
+##nagelfar syntax oo:class\ create x cn
+oo::class create Account { ... }
+Virtual namespace: oo::class\ create::Account
+--------------------------------------------------------------------------
+Since name resolution works up the namespaces, class definition subcommands
+can be defined in the top virtual namespace for the class definition:
+##nagelfar syntax itcl::class::constructor cv
+##nagelfar syntax itcl::class::method x cv
+##nagelfar syntax snit::type::constructor cv
+##nagelfar syntax snit::type::method x cv
+##nagelfar syntax oo::class\ create::constructor cv
+##nagelfar syntax oo::class\ create::method x cv
+--------------------------------------------------------------------------
+The properties of the defined class command varies with the system involved.
+Itcl:
+##nagelfar syntax Test x
+##nagelfar return Test _obj,Test
+Snit:
+##nagelfar syntax pdf4tcl::pdf4tcl x p*
+##nagelfar option pdf4tcl::pdf4tcl -file
+##nagelfar return pdf4tcl::pdf4tcl _obj,pdf4tcl
+TclOO:
+##nagelfar syntax Account s x*
+##nagelfar subcmd Account create new
+##nagelfar syntax Account\ create x x?
+##nagelfar return Account\ create _obj,Account
+##nagelfar syntax Account\ new x?
+##nagelfar return Account\ new _obj,Account
+--------------------------------------------------------------------------
+An instantiated object is handled by a name starting with the magic
+marker "_obj,".  Most systems give an object command similar to this:
+##nagelfar syntax _obj,Account s x*
+##nagelfar subcmd _obj,Account deposit withdraw transfer dump destroy variable
+##nagelfar syntax _obj,Account\ deposit x
+--------------------------------------------------------------------------
+Commands that are available in a class' methods need to be defined
+within its virtual namespace.
+Example: method m2 in class Test, for itcl where methods are directly visible
+##nagelfar syntax itcl::class::Test::m2 0
+Example: method my in TclOO, that is always the same as on object
+##nagelfar copy _obj,Account oo::class\ create::Account::my
+--------------------------------------------------------------------------
+If return types has been set up properly, an object is tracked in code
+like this:
+set a [Account new "John Doe"]
+$a deposit 200
+The critical definitions are:
+##nagelfar return Account\ new _obj,Account
+##nagelfar syntax _obj,Account s x*
+--------------------------------------------------------------------------
+When an explicitely named instance is made, it needs to be defined:
+Test t1
+##nagelfar copy _obj,Test t1
+--------------------------------------------------------------------------
+Sometimes it is necessary to declare a variable as an object:
+proc testingwithproc {ob} {
+    ##nagelfar variable ob _obj,mystuff
+    $ob dostuff
+}
+--------------------------------------------------------------------------
+Implicitely available variables currently needs to be defined in each
+block of code:
+destructor {
+    ##nagelfar variable self _obj,pdf4tcl
+    ##nagelfar variable pdf
+    $self finish
+    close $pdf(ch)
+}
+--------------------------------------------------------------------------
+Needed stuff:
+Declare lists of implicit variables, per method/namespace? E.g. in itcl
+procs and methods get different lists.
+The list needs to be done on things like these:
+itcl::class::Test::method
+itcl::class::Test::proc
+snit::type::pdf4tcl::pdf4tcl
+oo::class\ create::Account
+So current namespace, or current namespace+current command.
+--------------------------------------------------------------------------
+Needed stuff:
+Syntax token for a definition, with a command to copy. Something like:
+##nagelfar syntax Test d=_obj,Test
+Syntax token for a method definition, which adds it as a subcommand
+Syntax token for a method definition, which adds it as proc and a subcommand
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+This rest of this file contains notes collected over time about OO checking.
 Some of it has been implemented but maybe not as mentioned here.
 Look in the code examples for up to date handling.
 --------------------------------------------------------------------------
-
 The main problem with checking OO-style code is lines like this:
 
   $obj dosomething $arg

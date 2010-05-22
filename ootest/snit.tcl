@@ -1,8 +1,5 @@
 # This is an experiment to check snit
 
-# The main thing missing from the engine is to handle the implicit variables.
-# Should this be handled for individual commands or on a per namespace basis?
-
 ##nagelfar syntax snit::type x cn
 ##nagelfar syntax snit::type::method x cv
 ##nagelfar syntax snit::type::constructor cv
