@@ -23,16 +23,16 @@ can be defined in the top virtual namespace for the class definition:
 --------------------------------------------------------------------------
 The properties of the defined class command varies with the system involved.
 Itcl:
-##nagelfar syntax Test x
+##nagelfar syntax Test d=_obj,Test
 ##nagelfar return Test _obj,Test
 Snit:
-##nagelfar syntax pdf4tcl::pdf4tcl x p*
+##nagelfar syntax pdf4tcl::pdf4tcl d=_obj,pdf4tcl p*
 ##nagelfar option pdf4tcl::pdf4tcl -file
 ##nagelfar return pdf4tcl::pdf4tcl _obj,pdf4tcl
 TclOO:
 ##nagelfar syntax Account s x*
 ##nagelfar subcmd Account create new
-##nagelfar syntax Account\ create x x?
+##nagelfar syntax Account\ create d=_obj,Account x?
 ##nagelfar return Account\ create _obj,Account
 ##nagelfar syntax Account\ new x?
 ##nagelfar return Account\ new _obj,Account
@@ -58,8 +58,13 @@ The critical definitions are:
 ##nagelfar return Account\ new _obj,Account
 ##nagelfar syntax _obj,Account s x*
 --------------------------------------------------------------------------
-When an explicitely named instance is made, it needs to be defined:
+If syntax definitions has been set up properly, when an explicitely named
+instance is made, it is defined
 Test t1
+t1 dostuff
+The critical definition is:
+##nagelfar syntax Test d=_obj,Test
+Defining it manually is also possible:
 ##nagelfar copy _obj,Test t1
 --------------------------------------------------------------------------
 Sometimes it is necessary to declare a variable as an object:
@@ -74,9 +79,8 @@ Implicitely available variables needs to be defined in each virtual namespace
 ##nagelfar implicitvar snit::type::pdf4tcl::pdf4tcl self\ _obj,pdf4tcl pdf
 ##nagelfar implicitvar oo::class\ create::foo x
 --------------------------------------------------------------------------
+--------------------------------------------------------------------------
 Needed stuff:
-Syntax token for a definition, with a command to copy. Something like:
-##nagelfar syntax Test d=_obj,Test
 Syntax token for a method definition, which adds it as a subcommand
 Syntax token for a method definition, which adds it as proc and a subcommand
 --------------------------------------------------------------------------

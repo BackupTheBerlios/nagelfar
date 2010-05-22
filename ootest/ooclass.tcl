@@ -4,7 +4,7 @@
 
 ##nagelfar syntax _stdclass s x*
 ##nagelfar subcmd _stdclass create new
-##nagelfar syntax _stdclass\ create x x?
+##nagelfar syntax _stdclass\ create d=_obj,_stdclass x?
 ##nagelfar return _stdclass\ create _obj,_stdclass
 ##nagelfar syntax _stdclass\ new x?
 ##nagelfar return _stdclass\ new _obj,_stdclass
@@ -77,14 +77,13 @@ $b destroy
 # Define the class command
 
 ##nagelfar copy _stdclass c
+##nagelfar syntax c\ create d=_obj,c x?
 ##nagelfar return c\ create _obj,c
 ##nagelfar return c\ new _obj,c
 
 # Define the object command
 
 ##nagelfar syntax _obj,c s x*
-# o is a c object
-##nagelfar copy _obj,c o
 
 oo::class create c
 c create o
@@ -107,6 +106,7 @@ o lollipop
 
 # Example with implicit variable:
 ##nagelfar copy _stdclass foo
+##nagelfar syntax foo\ create d=_obj,foo x?
 ##nagelfar return foo\ create _obj,foo
 ##nagelfar return foo\ new _obj,foo
 ##nagelfar implicitvar oo::class\ create::foo x
@@ -119,6 +119,5 @@ oo::class create foo {
         list $x $z
     }
 }
-##nagelfar copy _obj,foo bar
 foo create bar quolf
 bar boo

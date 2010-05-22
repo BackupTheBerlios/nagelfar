@@ -28,7 +28,7 @@ itcl::class test {
 }
 
 # Define the class command
-##nagelfar syntax Test x
+##nagelfar syntax Test d=_obj,Test
 ##nagelfar return Test _obj,Test
 
 ##nagelfar syntax _obj,Test s x*
@@ -72,7 +72,6 @@ itcl::class Test {
 }
 
 Test t1
-##nagelfar copy _obj,Test t1
 
 # Calling an instance method and a class proc
 t1 m1

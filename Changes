@@ -1,4 +1,7 @@
 2010-05-23
+ Added a syntax token for definitions.
+
+2010-05-23
  Handle implicit variables, to support OO better.
  Handle if some other namespace defines "proc".
 

@@ -144,6 +144,8 @@ proc buildDb {ch} {
     # o  Option, i.e anything starting with -
     # p  Option+Any (p as in option Pair)
     # s  Subcommand
+    # d  Definition. That arg defines a new command
+    #    If followed by =cmd, it copies syntax from cmd.
     # e  Expression
     # E  Expression that should be in braces
     # c  Code, checked in surrounding context

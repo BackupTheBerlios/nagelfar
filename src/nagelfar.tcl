@@ -1046,9 +1046,10 @@ proc SplitToken {token tokName tokCountName modName} {
     set mod ""
     set tokCount ""
     set tok _baad_
-    if {[regexp {^(\w+?)(\d*)(\W*)$} $token -> tok tokCount mod]} return
     # Type in parenthesis
     if {[regexp {^(\w+)\(.*\)$} $token -> tok]} return
+    # Normal format
+    if {[regexp {^(\w+?)(\d*)(\W.*)?$} $token -> tok tokCount mod]} return
     #echo "Unsupported token $token in syntax for $cmd"
     return
 }
@@ -1181,6 +1182,27 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
 		    incr i
 		}
 	    }
+            d { # Definition
+                #decho "$tok $tokCount $mod"
+		if {([lindex $wordstatus $i] & 1) == 0} { # Non constant
+                    errorMsg N "Non constant definition \"[lindex $argv $i]\".\
+                            Skipping." [lindex $indices $i]
+                } else {
+                    set copyFrom [string range $mod 1 end]
+                    set name [lindex $argv $i]
+                    #decho "Defining '$name', from '$copyFrom'"
+                    if {$name eq "%AUTO%"} {
+                        # No defition should be made
+                    } else {
+                        if {$copyFrom ne ""} {
+                            CopyCmdInDatabase $copyFrom $name
+                        } else {
+                            lappend ::knownCommands $name
+                        }
+                    }
+                }
+                incr i
+            }
             E -
 	    e { # An expression
 		if {![string equal $mod ""]} {

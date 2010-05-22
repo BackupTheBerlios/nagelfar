@@ -360,3 +360,17 @@ test tokens-9.1 {
     execTestFile
 } -result {%%}
 
+test tokens-10.1 {
+    Definition token
+} -body {
+    createTestFile {
+        ##nagelfar syntax gurka d
+        gurka hej
+        hej hopp
+        ##nagelfar syntax gurka2 d=lrange
+        gurka2 mylrange
+        mylrange a 0
+        mylrange a 0 1
+    }
+    execTestFile
+} -result {%%Line   7: E Wrong number of arguments (2) to "mylrange"}
