@@ -2,12 +2,15 @@
 
 ##nagelfar syntax itcl::class x cn
 ##nagelfar syntax itcl::class::method x cv
+##nagelfar syntax itcl::class::proc x cv
 ##nagelfar syntax itcl::class::constructor cv
 ##nagelfar syntax itcl::class::destructor cl
 ##nagelfar syntax itcl::class::common n x?
 ##nagelfar syntax itcl::class::private s x*
 ##nagelfar syntax itcl::class::protected s x*
 ##nagelfar syntax itcl::class::public s x*
+
+##nagelfar implicitvar itcl::class::test this v1 v2
 
 itcl::class test {
     common v1 0
@@ -20,9 +23,6 @@ itcl::class test {
         set v2 $v
     }
     method showvalues {} {
-        ##nagelfar variable this
-        ##nagelfar variable v1
-        ##nagelfar variable v2
         puts "$this has commmon values $v1 $v2"
     }
 }
@@ -37,6 +37,10 @@ itcl::class test {
 ##nagelfar syntax _obj,Test\ m2 0
 
 ##nagelfar syntax itcl::class::Test::m2 0
+##nagelfar syntax itcl::class::Test::p 0
+
+##nagelfar implicitvar itcl::class::Test::proc   c1
+##nagelfar implicitvar itcl::class::Test::method x1 x2 x3 c1
 
 itcl::class Test {
     private variable x1 "1"      ; # Visible in all instance methods
@@ -44,10 +48,6 @@ itcl::class Test {
     public variable x3  "3"      ; # Visible in all instance methods
     common c1 "4"                ; # Visible in all instance methods and class procs
     method m1 {} {
-        ##nagelfar variable x1
-        ##nagelfar variable x2
-        ##nagelfar variable x3
-        ##nagelfar variable c1
         # Printing instance vars and common vars
         puts "x1 is $x1"
         puts "x2 is $x2"
@@ -66,7 +66,6 @@ itcl::class Test {
     }
 
     proc p {} {
-        ##nagelfar variable c1
         # puts "x1 is $x1"   <-- This fails, because a class proc doesn't have access to anything but common vars
         puts "c1 is $c1"
     }

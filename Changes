@@ -1,3 +1,7 @@
+2010-05-23
+ Handle implicit variables, to support OO better.
+ Handle if some other namespace defines "proc".
+
 2010-05-18
  Handle tailcall.
  Made messages more consistent.

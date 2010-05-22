@@ -68,24 +68,11 @@ proc testingwithproc {ob} {
     $ob dostuff
 }
 --------------------------------------------------------------------------
-Implicitely available variables currently needs to be defined in each
-block of code:
-destructor {
-    ##nagelfar variable self _obj,pdf4tcl
-    ##nagelfar variable pdf
-    $self finish
-    close $pdf(ch)
-}
---------------------------------------------------------------------------
-Needed stuff:
-Declare lists of implicit variables, per method/namespace? E.g. in itcl
-procs and methods get different lists.
-The list needs to be done on things like these:
-itcl::class::Test::method
-itcl::class::Test::proc
-snit::type::pdf4tcl::pdf4tcl
-oo::class\ create::Account
-So current namespace, or current namespace+current command.
+Implicitely available variables needs to be defined in each virtual namespace
+##nagelfar implicitvar itcl::class::Test::proc   c1
+##nagelfar implicitvar itcl::class::Test::method x1 x2 x3 c1
+##nagelfar implicitvar snit::type::pdf4tcl::pdf4tcl self\ _obj,pdf4tcl pdf
+##nagelfar implicitvar oo::class\ create::foo x
 --------------------------------------------------------------------------
 Needed stuff:
 Syntax token for a definition, with a command to copy. Something like:

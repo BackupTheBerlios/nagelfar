@@ -265,6 +265,9 @@ proc checkComment {str index knownVarsName} {
                 set ::syntax($first) $rest
                 lappend ::knownCommands $first
             }
+            implicitvar {
+                set ::implicitVar($first) $rest
+            }
             return {
                 set ::return($first) $rest
             }
@@ -1262,6 +1265,24 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                         # Check in local context
                         array unset dummyVars
                         array set dummyVars {}
+                        # Look for implicit variables
+                        set cNs  [currentNamespace]
+                        set cNsC ${cNs}::[namespace tail $cmd]
+                        set impVar {}
+                        if {[info exists ::implicitVar($cNsC)]} {
+                            set impVar $::implicitVar($cNsC)
+                        } elseif {[info exists ::implicitVar($cNs)]} {
+                            set impVar $::implicitVar($cNs)
+                        } else {
+                            #decho "Looking for implicit in '$cNsC' '$cNs'"
+                            #parray ::implicitVar
+                        }
+                        foreach var $impVar {
+                            set varName [lindex $var 0]
+                            set type    [lindex $var 1]
+                            markVariable $varName 1 "" 1 \
+                                    [lindex $indices $i] dummyVars type
+                        }
                         parseBody $body [lindex $indices $i] dummyVars
                     } else {
                         parseBody $body [lindex $indices $i] knownVars
@@ -1299,6 +1320,25 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                 } else {
                     # Non constant var list, what to do? FIXA
                 }
+                # Look for implicit variables
+                set cNs  [currentNamespace]
+                set cNsC ${cNs}::[namespace tail $cmd]
+                set impVar {}
+                if {[info exists ::implicitVar($cNsC)]} {
+                    set impVar $::implicitVar($cNsC)
+                } elseif {[info exists ::implicitVar($cNs)]} {
+                    set impVar $::implicitVar($cNs)
+                } else {
+                    #decho "Looking for implicit in '$cNsC' '$cNs'"
+                    #parray ::implicitVar
+                }
+                foreach var $impVar {
+                    set varName [lindex $var 0]
+                    set type    [lindex $var 1]
+                    markVariable $varName 1 "" 1 \
+                            [lindex $indices $i] dummyVars type
+                }
+                # Handle Code part
                 incr i
 		if {([lindex $wordstatus $i] & 1) == 0} { # Non constant
                     # No braces around non constant code.
@@ -1751,6 +1791,8 @@ proc parseStatement {statement index knownVarsName} {
     # Any command that can be checked by checkCommand should
     # be in the syntax database.
 
+    set thisCmdHasBeenHandled 1
+
     switch -glob -- $cmd {
 	proc {
 	    if {$argc != 3} {
@@ -1769,7 +1811,16 @@ proc parseStatement {statement index knownVarsName} {
                 }
 	    }
             if {$::Nagelfar(gui)} {progressUpdate [calcLineNo $index]}
-	    parseProc $argv $indices
+            # Special check for local "proc" in namespace
+            set ns [currentNamespace]
+            # Resolve commands in namespace
+            set rescmd [lookForCommand $cmd $ns $index]
+            if {$rescmd ne "proc"} {
+                # Fall through to generic command handling
+                set thisCmdHasBeenHandled 0
+            } else {
+                parseProc $argv $indices
+            }
             set noConstantCheck 1
 	}
 	.* { # FIXA, check code in any -command.
@@ -2276,45 +2327,50 @@ proc parseStatement {statement index knownVarsName} {
             set noConstantCheck 1
 	}
 	default {
-            set ns [currentNamespace]
-	    if {$ns eq "" && [info exists ::syntax($cmd)]} {
+            set thisCmdHasBeenHandled 0
+        }
+    }
+
+    # Fallthrough
+    if {!$thisCmdHasBeenHandled} {
+        set ns [currentNamespace]
+        if {$ns eq "" && [info exists ::syntax($cmd)]} {
 #                decho "Checking '$cmd' in '$ns' res"
-		set type [checkCommand $cmd $index $argv $wordstatus \
-                        $wordtype $indices]
-	    } else {
-                # Resolve commands in namespace
-                set rescmd [lookForCommand $cmd $ns $index]
-                if {$ns ne ""} {
-                    #decho "Checking '$cmd' in '$ns' resolved '$rescmd'"
-                }
-                if {[llength $rescmd] > 0 && \
-                        [info exists ::syntax([lindex $rescmd 0])]} {
-                    set cmd [lindex $rescmd 0]
-                    # If lookForCommand returns a partial command, fill in
-                    # all lists accordingly.
-                    if {[llength $rescmd] > 1} {
-                        set preargv {}
-                        set prews {}
-                        set prewt {}
-                        set preindices {}
-                        foreach arg [lrange $rescmd 1 end] {
-                            lappend preargv $arg
-                            lappend prews 1
-                            lappend prewt ""
-                            lappend preindices $index
-                        }
-                        set argv [concat $preargv $argv]
-                        set wordstatus [concat $prews $wordstatus]
-                        set wordtype [concat $prewt $wordtype]
-                        set indices [concat $preindices $indices]
+            set type [checkCommand $cmd $index $argv $wordstatus \
+                    $wordtype $indices]
+        } else {
+            # Resolve commands in namespace
+            set rescmd [lookForCommand $cmd $ns $index]
+            if {$ns ne ""} {
+                #decho "Checking '$cmd' in '$ns' resolved '$rescmd'"
+            }
+            if {[llength $rescmd] > 0 && \
+                    [info exists ::syntax([lindex $rescmd 0])]} {
+                set cmd [lindex $rescmd 0]
+                # If lookForCommand returns a partial command, fill in
+                # all lists accordingly.
+                if {[llength $rescmd] > 1} {
+                    set preargv {}
+                    set prews {}
+                    set prewt {}
+                    set preindices {}
+                    foreach arg [lrange $rescmd 1 end] {
+                        lappend preargv $arg
+                        lappend prews 1
+                        lappend prewt ""
+                        lappend preindices $index
                     }
-                    set type [checkCommand $cmd $index $argv $wordstatus \
-                            $wordtype $indices]
-                } elseif {$::Nagelfar(dbpicky)} {
-                    errorMsg N "DB: Missing syntax for command \"$cmd\"" 0
+                    set argv [concat $preargv $argv]
+                    set wordstatus [concat $prews $wordstatus]
+                    set wordtype [concat $prewt $wordtype]
+                    set indices [concat $preindices $indices]
                 }
-	    }
-	}
+                set type [checkCommand $cmd $index $argv $wordstatus \
+                        $wordtype $indices]
+            } elseif {$::Nagelfar(dbpicky)} {
+                errorMsg N "DB: Missing syntax for command \"$cmd\"" 0
+            }
+        }
     }
 
     if {$::Prefs(noVar)} {
@@ -3406,6 +3462,9 @@ proc loadDatabases {} {
                 syntax {
                     _ipset ::syntax($first) $rest
                 }
+                implicitvar {
+                    _ipset ::implictVar($first) $rest
+                }
                 return {
                     _ipset ::return($first) $rest
                 }
@@ -3457,11 +3516,15 @@ proc loadDatabases {} {
     }
 
     catch {unset ::syntax}
+    catch {unset ::implicitVar}
     catch {unset ::return}
     catch {unset ::subCmd}
     catch {unset ::option}
     if {[_iparray exists ::syntax]} {
         array set ::syntax [_iparray get ::syntax]
+    }
+    if {[_iparray exists ::implicitVar]} {
+        array set ::implicitVar [_iparray get ::implicitVar]
     }
     if {[_iparray exists ::return]} {
         array set ::return [_iparray get ::return]
@@ -3524,6 +3587,7 @@ proc doCheck {} {
         set h_oldsubCmd [array names ::subCmd]
         set h_oldoption [array names ::option]
         set h_oldreturn [array names ::return]
+        set h_oldimplicitvar [array names ::implicitVar]
     }
 
     # Do the checking
@@ -3561,9 +3625,11 @@ proc doCheck {} {
     # Generate header
     if {$::Nagelfar(header) ne ""} {
         foreach item $h_oldsyntax { unset ::syntax($item) }
+        # FIXA: With subcmd+, maybe additions need to be detected?
         foreach item $h_oldsubCmd { unset ::subCmd($item) }
         foreach item $h_oldoption { unset ::option($item) }
         foreach item $h_oldreturn { unset ::return($item) }
+        foreach item $h_oldimplicitvar { unset ::implicitVar($item) }
         
         if {[catch {set ch [open $::Nagelfar(header) w]}]} {
             puts stderr "Could not create file \"$::Nagelfar(header)\""
@@ -3580,6 +3646,9 @@ proc doCheck {} {
             }
             foreach item [lsort -dictionary [array names ::return]] {
                 puts $ch "\#\#nagelfar [list return $item] $::return($item)"
+            }
+            foreach item [lsort -dictionary [array names ::implicitVar]] {
+                puts $ch "\#\#nagelfar [list implicitvar $item] $::implicitVar($item)"
             }
             close $ch
         }

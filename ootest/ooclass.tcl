@@ -109,13 +109,13 @@ o lollipop
 ##nagelfar copy _stdclass foo
 ##nagelfar return foo\ create _obj,foo
 ##nagelfar return foo\ new _obj,foo
+##nagelfar implicitvar oo::class\ create::foo x
 oo::class create foo {
     variable x
     constructor y {
         set x $y
     }
     method boo z {
-        ##nagelfar variable x
         list $x $z
     }
 }

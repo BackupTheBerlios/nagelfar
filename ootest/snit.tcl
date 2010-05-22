@@ -18,25 +18,22 @@
 ##nagelfar option pdf4tcl::pdf4tcl -file
 ##nagelfar return pdf4tcl::pdf4tcl _obj,pdf4tcl
 
+##nagelfar implicitvar snit::type::pdf4tcl::pdf4tcl self\ _obj,pdf4tcl pdf
+
 snit::type pdf4tcl::pdf4tcl {
     variable pdf
     option -file      -default "" -readonly 1
     constructor {args} {
-        ##nagelfar variable self _obj,pdf4tcl
         $self configurelist $args
     }
     destructor {
-        ##nagelfar variable self _obj,pdf4tcl
-        ##nagelfar variable pdf
         $self finish
         close $pdf(ch)
     }
     method cleanup {} {
-        ##nagelfar variable self _obj,pdf4tcl
         $self destroy
     }
     method RequireVersion {version} {
-        ##nagelfar variable pdf
         if {$version > $pdf(version)} {
             set pdf(version) $version
         }
