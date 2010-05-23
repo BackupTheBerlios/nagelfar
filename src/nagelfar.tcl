@@ -1287,24 +1287,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                         # Check in local context
                         array unset dummyVars
                         array set dummyVars {}
-                        # Look for implicit variables
-                        set cNs  [currentNamespace]
-                        set cNsC ${cNs}::[namespace tail $cmd]
-                        set impVar {}
-                        if {[info exists ::implicitVar($cNsC)]} {
-                            set impVar $::implicitVar($cNsC)
-                        } elseif {[info exists ::implicitVar($cNs)]} {
-                            set impVar $::implicitVar($cNs)
-                        } else {
-                            #decho "Looking for implicit in '$cNsC' '$cNs'"
-                            #parray ::implicitVar
-                        }
-                        foreach var $impVar {
-                            set varName [lindex $var 0]
-                            set type    [lindex $var 1]
-                            markVariable $varName 1 "" 1 \
-                                    [lindex $indices $i] dummyVars type
-                        }
+                        addImplicitVariables $cmd [lindex $indices $i] dummyVars
                         parseBody $body [lindex $indices $i] dummyVars
                     } else {
                         parseBody $body [lindex $indices $i] knownVars
@@ -1329,37 +1312,12 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                 array set dummyVars {}
 		if {([lindex $wordstatus $i] & 1) != 0} {
                     # Constant var list, parse it to get all vars
-                    if {[catch {llength [lindex $argv $i]}]} {
-                        errorMsg E "Argument list is not a valid list" [lindex $indices $i]
-                    } else {
-                        foreach var [lindex $argv $i] {
-                            set varName [lindex $var 0]
-                            markVariable $varName 1 "" 1 \
-                                    [lindex $indices $i] dummyVars ""
-                            set dummyVars(local,$varName) 1
-                        }
-                    }
+                    parseArgs [lindex $argv $i] [lindex $indices $i] "" \
+                            dummyVars
                 } else {
                     # Non constant var list, what to do? FIXA
                 }
-                # Look for implicit variables
-                set cNs  [currentNamespace]
-                set cNsC ${cNs}::[namespace tail $cmd]
-                set impVar {}
-                if {[info exists ::implicitVar($cNsC)]} {
-                    set impVar $::implicitVar($cNsC)
-                } elseif {[info exists ::implicitVar($cNs)]} {
-                    set impVar $::implicitVar($cNs)
-                } else {
-                    #decho "Looking for implicit in '$cNsC' '$cNs'"
-                    #parray ::implicitVar
-                }
-                foreach var $impVar {
-                    set varName [lindex $var 0]
-                    set type    [lindex $var 1]
-                    markVariable $varName 1 "" 1 \
-                            [lindex $indices $i] dummyVars type
-                }
+                addImplicitVariables $cmd [lindex $indices $i] dummyVars
                 # Handle Code part
                 incr i
 		if {([lindex $wordstatus $i] & 1) == 0} { # Non constant
@@ -2679,6 +2637,191 @@ proc parseBody {body index knownVarsName {warnCommandSubst 0}} {
     return $type
 }
 
+# This is called when a definition command is encountered
+# Add arguments to variable scope
+proc parseArgs {procArgs indexArgs syn knownVarsName} {
+    upvar $knownVarsName knownVars
+
+    if {[catch {llength $procArgs}]} {
+        if {!$::Nagelfar(firstpass)} {
+            errorMsg E "Argument list is not a valid list" $indexArgs
+        }
+        set procArgs {}
+    }
+    # Do not loop $syn in the foreach command since it can be shorter
+    set seenDefault 0
+    set i -1
+    foreach a $procArgs {
+        incr i
+        set var [lindex $a 0]
+        if {[llength $a] > 1} {
+            set seenDefault 1
+        } elseif {$seenDefault && !$::Nagelfar(firstpass) && $var ne "args"} {
+            errorMsg N "Non-default arg after default arg" $indexArgs
+            # Reset to avoid further messages
+            set seenDefault 0
+        }
+        set knownVars(known,$var) 1
+        set knownVars(local,$var) 1
+        set knownVars(set,$var)   1
+        if {[regexp {\((.*)\)} [lindex $syn $i] -> type]} {
+            set knownVars(type,$var)  $type
+        } else {
+            set knownVars(type,$var)  ""
+        }
+    }
+
+    # Sanity check of argument names
+    if {!$::Nagelfar(firstpass)} {
+        # Check for non-last "args"
+        set i [lsearch $procArgs "args"]
+        if {$i >= 0 && $i != [llength $procArgs] - 1} {
+            errorMsg N "Argument 'args' used before last, which can be confusing" \
+                    $indexArgs
+        }
+        # Check for duplicates
+        set l1 [lsort $procArgs]
+        set l2 [lsort -unique $procArgs]
+        if {$l1 ne $l2} {
+            errorMsg N "Duplicate proc arguments" $indexArgs
+        }
+    }
+}
+
+# Create a syntax definition from args list, and given the info
+# about variables in the body.
+proc parseArgsToSyn {name procArgs indexArgs syn knownVarsName} {
+    upvar $knownVarsName knownVars
+
+    if {[catch {llength $procArgs}]} {
+        # This is reported elsewhere
+        set procArgs {}
+    }
+
+    # Build a syntax description for the procedure.
+    # Parse the arguments.
+    set upvar 0
+    set unlim 0
+    set min 0
+    set newsyntax {}
+    foreach a $procArgs {
+        set var [lindex $a 0]
+        set type x
+
+        # Check for any upvar in the proc
+        if {[info exists knownVars(upvar,$var)]} {
+            set other $knownVars(upvar,$var)
+            if {[info exists knownVars(read,$other)]} {
+                set type v
+            } elseif {[info exists knownVars(set,$other)]} {
+                set type n
+            } else {
+                set type l
+            }
+            set upvar 1
+        }
+        if {[string equal $var "args"]} {
+            set unlim 1
+            set type x*
+        } elseif {[llength $a] == 2} {
+            append type .
+        } else {
+            incr min
+        }
+        lappend newsyntax $type
+    }
+
+    if {!$upvar} {
+        if {$unlim} {
+            set newsyntax [list r $min]
+        } elseif {$min == [llength $procArgs]} {
+            set newsyntax $min
+        } else {
+            set newsyntax [list r $min [llength $procArgs]]
+        }
+    }
+
+    if {$syn ne ""} {
+        # Check if it matches previously defined syntax
+        set prevmin 0
+        set prevmax 0
+        set prevunlim 0
+        if {[string is integer $syn]} {
+            set prevmin $syn
+            set prevmax $syn
+        } elseif {[string match "r*" $syn]} {
+            set prevmin [lindex $syn 1]
+            set prevmax [lindex $syn 2]
+            if {$prevmax == ""} {
+                set prevmax $prevmin
+                set prevunlim 1
+            }
+        } else {
+            foreach token $syn {
+                SplitToken $token tok tokCount mod
+                set n [expr {$tok == "p" ? 2 : 1}]
+                if {$mod == ""} {
+                    incr prevmin $n
+                    incr prevmax $n
+                } elseif {$mod == "?"} {
+                        incr prevmax $n
+                } elseif {$mod == "*"} {
+                    set prevunlim 1
+                } elseif {$mod == "."} {
+                    incr prevmax $n
+                }
+            }
+        }
+        if {$prevunlim != $unlim || \
+                ($prevunlim == 0 && $prevmax != [llength $procArgs]) \
+                || $prevmin != $min} {
+            if {!$::Nagelfar(firstpass)} { # Messages in second pass
+                errorMsg W "Procedure \"$name\" does not match previous definition" \
+                        $indexArgs
+                contMsg "Previous '$syn'  New '$newsyntax'"
+            }
+            set newsyntax $syn
+        } else {
+            # It matched.  Does the new one seem better?
+            if {[regexp {^(?:r )?\d+(?: \d+)?$} $syn]} {
+                #if {$syntax($name) != $newsyntax} {
+                #    decho "$name : Prev: '$syntax($name)'  New: '$newsyntax'"
+                #}
+                #                    decho "Syntax for '$name' : '$newsyntax'"
+                #set syntax($name) $newsyntax
+            } else {
+                set newsyntax $syn
+            }
+        }
+    } else {
+        #            decho "Syntax for '$name' : '$newsyntax'"
+        #set syntax($name) $newsyntax
+    }
+    return $newsyntax
+}
+
+# Look for implicit variables
+proc addImplicitVariables {cmd index knownVarsName} {
+    upvar $knownVarsName knownVars
+    set cNs  [currentNamespace]
+    set cNsC ${cNs}::[namespace tail $cmd]
+    set impVar {}
+    if {[info exists ::implicitVar($cNsC)]} {
+        set impVar $::implicitVar($cNsC)
+    } elseif {[info exists ::implicitVar($cNs)]} {
+        set impVar $::implicitVar($cNs)
+    } else {
+        #decho "Looking for implicit in '$cNsC' '$cNs'"
+        #parray ::implicitVar
+    }
+    foreach var $impVar {
+        set varName [lindex $var 0]
+        set type    [lindex $var 1]
+        markVariable $varName 1 "" 1 \
+                $index knownVars type
+    }
+}
+
 # This is called when a proc command is encountered.
 proc parseProc {argv indices} {
     global knownGlobals syntax
@@ -2716,7 +2859,6 @@ proc parseProc {argv indices} {
     # Parse the arguments.
     # Initialise a knownVars array with the arguments.
     array set knownVars {}
-    set seenDefault 0
 
     # Scan the syntax definition in parallel to look for types
     if {[info exists syntax($name)]} {
@@ -2724,52 +2866,11 @@ proc parseProc {argv indices} {
     } else {
         set syn ""
     }
-    if {[catch {llength $args}]} {
-        if {!$::Nagelfar(firstpass)} {
-            errorMsg E "Argument list is not a valid list" [lindex $indices 0]
-        }
-        set args {}
-    }
-    # Do not loop $syn in the foreach command since it can be shorter
-    set i -1
-    foreach a $args {
-        incr i
-        set var [lindex $a 0]
-        if {[llength $a] > 1} {
-            set seenDefault 1
-        } elseif {$seenDefault && !$::Nagelfar(firstpass) && $var ne "args"} {
-            errorMsg N "Non-default arg after default arg" [lindex $indices 0]
-            # Reset to avoid further messages
-            set seenDefault 0
-        }
-        set knownVars(known,$var) 1
-        set knownVars(local,$var) 1
-        set knownVars(set,$var)   1
-        if {[regexp {\((.*)\)} [lindex $syn $i] -> type]} {
-            set knownVars(type,$var)  $type
-        } else {
-            set knownVars(type,$var)  ""
-        }
-    }
+
+    parseArgs $args [lindex $indices 1] $syn knownVars
     
     if {$storeIt} {
         lappend ::knownCommands $name
-    }
-
-    # Sanity check of argument names
-    if {!$::Nagelfar(firstpass)} {
-        # Check for non-last "args"
-        set i [lsearch $args "args"]
-        if {$i >= 0 && $i != [llength $args] - 1} {
-            errorMsg N "Argument 'args' used before last, which can be confusing" \
-                    [lindex $indices 0]
-        }
-        # Check for duplicates
-        set l1 [lsort $args]
-        set l2 [lsort -unique $args]
-        if {$l1 ne $l2} {
-            errorMsg N "Duplicate proc arguments" [lindex $indices 0]
-        }
     }
 
 #    decho "Note: parsing procedure $name"
@@ -2787,103 +2888,8 @@ proc parseProc {argv indices} {
     #}
 
     if {$storeIt} {
-        # Build a syntax description for the procedure.
-        # Parse the arguments.
-        set upvar 0
-        set unlim 0
-        set min 0
-        set newsyntax {}
-        foreach a $args {
-            set var [lindex $a 0]
-            set type x
-
-            # Check for any upvar in the proc
-            if {[info exists knownVars(upvar,$var)]} {
-                set other $knownVars(upvar,$var)
-                if {[info exists knownVars(read,$other)]} {
-                    set type v
-                } elseif {[info exists knownVars(set,$other)]} {
-                    set type n
-                } else {
-                    set type l
-                }
-                set upvar 1
-            }
-            if {[string equal $var "args"]} {
-                set unlim 1
-                set type x*
-            } elseif {[llength $a] == 2} {
-                append type .
-            } else {
-                incr min
-            }
-            lappend newsyntax $type
-        }
-
-        if {!$upvar} {
-            if {$unlim} {
-                set newsyntax [list r $min]
-            } elseif {$min == [llength $args]} {
-                set newsyntax $min
-            } else {
-                set newsyntax [list r $min [llength $args]]
-            }
-        }
-
-        if {[info exists syntax($name)]} {
-            #decho "$name : Prev: '$syntax($name)'  New: '$newsyntax'"
-            # Check if it matches previously defined syntax
-            set prevmin 0
-            set prevmax 0
-            set prevunlim 0
-            if {[string is integer $syntax($name)]} {
-                set prevmin $syntax($name)
-                set prevmax $syntax($name)
-            } elseif {[string match "r*" $syntax($name)]} {
-                set prevmin [lindex $syntax($name) 1]
-                set prevmax [lindex $syntax($name) 2]
-                if {$prevmax == ""} {
-                    set prevmax $prevmin
-                    set prevunlim 1
-                }
-            } else {
-                foreach token $syntax($name) {
-                    SplitToken $token tok tokCount mod
-                    set n [expr {$tok == "p" ? 2 : 1}]
-                    if {$mod == ""} {
-                        incr prevmin $n
-                        incr prevmax $n
-                    } elseif {$mod == "?"} {
-                        incr prevmax $n
-                    } elseif {$mod == "*"} {
-                        set prevunlim 1
-                    } elseif {$mod == "."} {
-                        incr prevmax $n
-                    }
-                }
-            }
-            if {$prevunlim != $unlim || \
-                    ($prevunlim == 0 && $prevmax != [llength $args]) \
-                    || $prevmin != $min} {
-                    if {!$::Nagelfar(firstpass)} { # Messages in second pass
-                        errorMsg W "Procedure \"$name\" does not match previous definition" \
-                                [lindex $indices 0]
-                        contMsg "Previous '$syntax($name)'  New '$newsyntax'"
-                    }
-            } else {
-                # It matched.  Does the new one seem better?
-                if {[regexp {^(?:r )?\d+(?: \d+)?$} $syntax($name)]} {
-                    #if {$syntax($name) != $newsyntax} {
-                    #    decho "$name : Prev: '$syntax($name)'  New: '$newsyntax'"
-                    #}
-#                    decho "Syntax for '$name' : '$newsyntax'"
-                    set syntax($name) $newsyntax
-                }
-            }
-        } else {
-#            decho "Syntax for '$name' : '$newsyntax'"
-            set syntax($name) $newsyntax
-        }
+        set syntax($name) [parseArgsToSyn $name $args [lindex $indices 1] \
+                $syn knownVars]
     }
 
     # Update known globals with those that were set in the proc.
