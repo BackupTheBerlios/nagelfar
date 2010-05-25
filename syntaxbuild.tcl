@@ -456,7 +456,7 @@ proc buildDb {ch} {
         set option(tcl::prefix\ match\ -message) x
         set option(tcl::prefix\ match\ -error) x
         set syntax(oo::class)    "s x*"
-        set syntax(oo::class\ create) "x cn?"
+        set syntax(oo::class\ create) "do=_stdclass cn?"
         set syntax(oo::class\ create::constructor) cv
         set syntax(oo::class\ create::method) "x cv"
         set syntax(oo::class\ create::destructor) c

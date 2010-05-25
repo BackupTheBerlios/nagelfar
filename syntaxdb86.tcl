@@ -354,7 +354,7 @@ set ::syntax(namespace) {s x*}
 set {::syntax(namespace import)} {o* x*}
 set {::syntax(namespace which)} {o* x?}
 set ::syntax(oo::class) {s x*}
-set {::syntax(oo::class create)} {x cn?}
+set {::syntax(oo::class create)} {do=_stdclass cn?}
 set {::syntax(oo::class create::constructor)} cv
 set {::syntax(oo::class create::destructor)} c
 set {::syntax(oo::class create::method)} {x cv}

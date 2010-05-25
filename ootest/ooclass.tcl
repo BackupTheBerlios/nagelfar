@@ -4,7 +4,7 @@
 
 ##nagelfar syntax _stdclass s x*
 ##nagelfar subcmd _stdclass create new
-##nagelfar syntax _stdclass\ create d=_obj,_stdclass x?
+##nagelfar syntax _stdclass\ create dc=_obj,_stdclass x?
 ##nagelfar return _stdclass\ create _obj,_stdclass
 ##nagelfar syntax _stdclass\ new x?
 ##nagelfar return _stdclass\ new _obj,_stdclass
@@ -17,8 +17,8 @@
 
 # Define the object command
 
-##nagelfar syntax _obj,Account s x*
-##nagelfar subcmd _obj,Account deposit withdraw transfer dump destroy variable
+###nagelfar syntax _obj,Account s x*
+##nagelfar subcmd+ _obj,Account deposit withdraw transfer dump destroy variable
 ##nagelfar syntax _obj,Account\ deposit x
 ##nagelfar syntax _obj,Account\ withdraw x
 ##nagelfar syntax _obj,Account\ transfer x x
@@ -26,11 +26,10 @@
 ##nagelfar syntax _obj,Account\ destroy 0
 ##nagelfar syntax _obj,Account\ variable n*
 
-# Define that "my" within the definition is an object
-
-##nagelfar copy _obj,Account oo::class\ create::Account::my
-
 oo::class create Account {
+    # Define that "my" within the definition is an object
+    ##nagelfar copy _obj,Account oo::class\ create::Account::my
+
     constructor {{ownerName undisclosed}} {
         my variable total overdrawLimit owner
         set total 0
@@ -77,13 +76,14 @@ $b destroy
 # Define the class command
 
 ##nagelfar copy _stdclass c
-##nagelfar syntax c\ create d=_obj,c x?
+##nagelfar syntax c\ create dc=_obj,c x?
 ##nagelfar return c\ create _obj,c
 ##nagelfar return c\ new _obj,c
 
 # Define the object command
 
 ##nagelfar syntax _obj,c s x*
+##nagelfar subcmd+ _obj,c bar foo Foo lollipop
 
 oo::class create c
 c create o
@@ -106,10 +106,11 @@ o lollipop
 
 # Example with implicit variable:
 ##nagelfar copy _stdclass foo
-##nagelfar syntax foo\ create d=_obj,foo x?
+##nagelfar syntax foo\ create dc=_obj,foo x?
 ##nagelfar return foo\ create _obj,foo
 ##nagelfar return foo\ new _obj,foo
 ##nagelfar implicitvar oo::class\ create::foo x
+##nagelfar subcmd+ _obj,foo boo
 oo::class create foo {
     variable x
     constructor y {

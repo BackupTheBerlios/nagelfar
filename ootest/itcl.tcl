@@ -1,6 +1,10 @@
 # This is an experiment to check itcl
 
-##nagelfar syntax itcl::class x cn
+##nagelfar syntax _stdclass_itcl s x*
+##nagelfar subcmd _stdclass_itcl destroy
+##nagelfar syntax _stdclass_itcl\ destroy 0
+
+##nagelfar syntax itcl::class do=_stdclass_itcl cn
 ##nagelfar syntax itcl::class::method x cv
 ##nagelfar syntax itcl::class::proc x cv
 ##nagelfar syntax itcl::class::constructor cv
@@ -28,11 +32,11 @@ itcl::class test {
 }
 
 # Define the class command
-##nagelfar syntax Test d=_obj,Test
+##nagelfar syntax Test dc=_obj,Test
 ##nagelfar return Test _obj,Test
 
-##nagelfar syntax _obj,Test s x*
-##nagelfar subcmd _obj,Test m1 m2
+###nagelfar syntax _obj,Test s x*
+##nagelfar subcmd+ _obj,Test m1 m2
 ##nagelfar syntax _obj,Test\ m1 0
 ##nagelfar syntax _obj,Test\ m2 0
 
@@ -75,6 +79,9 @@ Test t1
 
 # Calling an instance method and a class proc
 t1 m1
+
+Test destroy
+t1 destroy
 
 ##nagelfar copy itcl::class::Test::p Test::p
 # Calling a class proc without an instance

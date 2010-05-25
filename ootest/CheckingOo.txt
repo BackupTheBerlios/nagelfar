@@ -81,8 +81,26 @@ Implicitely available variables needs to be defined in each virtual namespace
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Needed stuff:
+Automatically add an _obj,xxx command together with a vitual namespace.
+xxx is the tail of the virtual namespace. Examples:
+itcl::class Test { ... }
+Object command: _obj,Test
+snit::type pdf4tcl::pdf4tcl { ... }
+Object command: _obj,pdf4tcl
+oo::class create Account { ... }
+Object command: _obj,Account
+If it does not exist before, add it with "s x*"
+Also set up a "current object" where method definitions can be added as
+subcommands.
+Example, method "met" is defined when current object is "_obj,y"
+##nagelfar subcmd+ _obj,y met
+##nagelfar syntax _obj,y\ met x*
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Needed stuff:
 Syntax token for a method definition, which adds it as a subcommand
 Syntax token for a method definition, which adds it as proc and a subcommand
+Handle simple string subst in ##nagelfar copy.
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 This rest of this file contains notes collected over time about OO checking.

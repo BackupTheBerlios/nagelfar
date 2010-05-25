@@ -1,20 +1,23 @@
 # This is an experiment to check snit
 
-##nagelfar syntax snit::type x cn
+##nagelfar syntax _stdclass_snit s x*
+##nagelfar subcmd _stdclass_snit destroy configurelist
+##nagelfar syntax _stdclass_snit\ destroy 0
+##nagelfar syntax _stdclass_snit\ configurelist x
+
+##nagelfar syntax snit::type do=_stdclass_snit cn
 ##nagelfar syntax snit::type::method x cv
 ##nagelfar syntax snit::type::constructor cv
 ##nagelfar syntax snit::type::destructor cl
 ##nagelfar syntax snit::type::option x p*
 
-##nagelfar syntax _obj,pdf4tcl s x*
-##nagelfar subcmd _obj,pdf4tcl destroy cleanup finish RequireVersion configurelist
+###nagelfar syntax _obj,pdf4tcl s x*
+##nagelfar subcmd+ _obj,pdf4tcl cleanup finish RequireVersion
 ##nagelfar syntax _obj,pdf4tcl\ RequireVersion x x
-##nagelfar syntax _obj,pdf4tcl\ destroy 0
 ##nagelfar syntax _obj,pdf4tcl\ cleanup 0
 ##nagelfar syntax _obj,pdf4tcl\ finish 0
-##nagelfar syntax _obj,pdf4tcl\ configurelist x
 
-##nagelfar syntax pdf4tcl::pdf4tcl d=_obj,pdf4tcl p*
+##nagelfar syntax pdf4tcl::pdf4tcl dc=_obj,pdf4tcl p*
 ##nagelfar option pdf4tcl::pdf4tcl -file
 ##nagelfar return pdf4tcl::pdf4tcl _obj,pdf4tcl
 

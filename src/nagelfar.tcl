@@ -231,7 +231,17 @@ proc CopyCmdInDatabase {from to} {
         upvar 0 $arrName arr
         foreach item [array names arr] {
             if {$item eq $from} {
-                set arr($to) $arr($item)
+                # Handle overwrite?
+                if {[info exists arr($to)]} {
+                    if {$arrName eq "::subCmd"} {
+                        # Add to a subcommand list
+                        set arr($to) [lsort -unique [concat $arr($to) $arr($item)]]
+                    } else {
+                        # FIXA?
+                    }
+                } else {
+                    set arr($to) $arr($item)
+                }
             } else {
                 set len [expr {[string length $from] + 1}]
                 if {[string equal -length $len $item "$from "]} {
@@ -347,6 +357,15 @@ proc pushProc {p} {
 
 proc popProc {} {
     set ::Nagelfar(procs) [lrange $::Nagelfar(procs) 0 end-1]
+}
+
+# Handle a current object.
+proc currentObject {} {
+    return $::Nagelfar(object)
+}
+
+proc setCurrentObject {p} {
+    set ::Nagelfar(object) $p
 }
 
 # Return the index of the first non whitespace char following index "i".
@@ -1182,7 +1201,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
 		    incr i
 		}
 	    }
-            d { # Definition
+            dc - do { # Definition
                 #decho "$tok $tokCount $mod"
 		if {([lindex $wordstatus $i] & 1) == 0} { # Non constant
                     errorMsg N "Non constant definition \"[lindex $argv $i]\".\
@@ -1194,10 +1213,20 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                     if {$name eq "%AUTO%"} {
                         # No defition should be made
                     } else {
+                        if {$tok eq "do"} { # Define object
+                            set name _obj,[namespace tail $name]
+                            setCurrentObject $name
+                            if {![info exists ::syntax($name)]} {
+                                set ::syntax($name) "s x*"
+                            }
+                        }
                         if {$copyFrom ne ""} {
                             CopyCmdInDatabase $copyFrom $name
                         } else {
                             lappend ::knownCommands $name
+                        }
+                        if {$tok eq "do" && ![info exists ::syntax($name)]} {
+                            set ::syntax($name) "s x*"
                         }
                     }
                 }
@@ -3617,6 +3646,11 @@ proc doCheck {} {
         set h_oldreturn [array names ::return]
         set h_oldimplicitvar [array names ::implicitVar]
     }
+
+    # Initialise variables
+    set ::Nagelfar(namespaces) {}
+    set ::Nagelfar(procs) {}
+    set ::Nagelfar(object) ""
 
     # Do the checking
 
