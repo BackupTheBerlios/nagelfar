@@ -260,3 +260,12 @@ proc testingwithproc {stmt} {
     set result
     set row
 }
+
+##nagelfar syntax testingwithproc2 x(_obj,statement)
+proc testingwithproc2 {stmt} {
+    $stmt foreach row {
+        lappend result $row
+    }
+    set result
+    set row
+}

@@ -90,7 +90,7 @@ nagelfar_h.syntax: nagelfar.tcl nagelfar.syntax $(CATFILES)
 check: nagelfar.tcl nagelfar_h.syntax
 	@./nagelfar.tcl -strictappend nagelfar_h.syntax $(CATFILES)
 
-test: base
+test: clean base
 	@$(TCLSH85) ./tests/all.tcl -notfile gui.test $(TESTFLAGS)
 
 testgui: base

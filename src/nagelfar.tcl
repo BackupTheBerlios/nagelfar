@@ -97,6 +97,7 @@ proc Text2Html {data} {
 # Standard error message.
 # severity : How severe a message is E/W/N for Error/Warning/Note
 proc errorMsg {severity msg i} {
+    #echo "$msg"
     if {$::Prefs(html)} {
         set msg [Text2Html $msg]
         if {$msg == "Expr without braces"} {
@@ -238,8 +239,10 @@ proc CopyCmdInDatabase {from to} {
                         set arr($to) [lsort -unique [concat $arr($to) $arr($item)]]
                     } else {
                         # FIXA?
+                        #echo "$::Nagelfar(firstpass) $from $to $arrName $item"
                     }
                 } else {
+                    #echo "Copy $from $to $arrName $item"
                     set arr($to) $arr($item)
                 }
             } else {
@@ -295,6 +298,7 @@ proc checkComment {str index knownVarsName} {
                 markVariable $first 1 "" 1 $index knownVars type
             }
             copy {
+                #echo "Copy in $::Nagelfar(firstpass) $first [lindex $rest 0]"
                 CopyCmdInDatabase $first [lindex $rest 0]
             }
             nocover {
@@ -1215,6 +1219,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                     } else {
                         if {$tok eq "do"} { # Define object
                             set name _obj,[namespace tail $name]
+                            #echo "Defining object $name"
                             setCurrentObject $name
                             if {![info exists ::syntax($name)]} {
                                 set ::syntax($name) "s x*"
@@ -1231,6 +1236,34 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                     }
                 }
                 incr i
+            }
+            dp -
+            dm -
+            dmp { # Define proc and/or method
+		if {![string equal $mod ""]} {
+		    echo "Modifier \"$mod\" is not supported for \"$tok\" in\
+                            syntax for $cmd."
+		}
+                if {$i > ($argc - 3)} {
+                    break
+                }
+                set iplus2 [expr {$i + 2}]
+                # Skip the proc if any part of it is not constant
+                # FIXA: Maybe accept substitutions as part of namespace?
+                foreach ws [lrange $wordstatus $i $iplus2] {
+                    if {($ws & 1) == 0} {
+                        errorMsg N "Non constant argument to proc \"[lindex $argv $i]\".\
+                                Skipping." $index
+                        return
+                    }
+                }
+                if {$::Nagelfar(gui)} {progressUpdate [calcLineNo $index]}
+                set isProc [expr {$tok eq "dp" || $tok eq "dmp"}]
+                set isMethod [expr {$tok eq "dm" || $tok eq "dmp"}]
+                parseProc [lrange $argv $i $iplus2] \
+                        [lrange $indices $i $iplus2] \
+                        $isProc $isMethod $cmd
+                incr i 3
             }
             E -
 	    e { # An expression
@@ -1515,7 +1548,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
 	}
     }
     # Have we used up all arguments?
-    if {$i != $argc} {
+    if {$i != $argc && !$::Nagelfar(firstpass)} {
 	WA
     }
     return $type
@@ -1670,7 +1703,7 @@ proc lookForCommand {cmd ns index} {
         return [list $cmd]
     }
 
-    if {$index >= 0} {
+    if {$index >= 0 && !$::Nagelfar(firstpass)} {
         lappend ::unknownCommands [list $cmd $cmds $index]
     }
     return ""
@@ -1692,8 +1725,29 @@ proc parseStatement {statement index knownVarsName} {
                 ![regexp {[][$\\]} [lindex $words 2]] && \
                 ![regexp {^[{"]?\s*["}]?$} [lindex $words 3]]} {
             # OK
+        } elseif {[lindex $words 0] eq "oo::class"} {
+            # OK
         } else {
-            return ""
+            set cmd [lindex $words 0]
+            set ns [currentNamespace]
+            set syn ""
+            if {$ns eq "" && [info exists ::syntax($cmd)]} {
+                set syn $::syntax($cmd)
+            } else {
+                set rescmd [lookForCommand $cmd $ns $index]
+                if {[llength $rescmd] > 0 && \
+                    [info exists ::syntax([lindex $rescmd 0])]} {
+                    set cmd [lindex $rescmd 0]
+                    set syn $::syntax($cmd)
+                }
+            }
+            if {[lsearch -glob $syn d*] >= 0} {
+                #echo "Firstpass '[lindex $words 0]'"
+                # OK
+            } else {
+                #echo "Firstpass block1 '[lindex $words 0]'"
+                return ""
+            }
         }
     }
 
@@ -1803,35 +1857,6 @@ proc parseStatement {statement index knownVarsName} {
     set thisCmdHasBeenHandled 1
 
     switch -glob -- $cmd {
-	proc {
-	    if {$argc != 3} {
-                if {!$::Nagelfar(firstpass)} { # Messages in second pass
-                    WA
-                }
-		return
-	    }
-	    # Skip the proc if any part of it is not constant
-            # FIXA: Maybe accept substitutions as part of namespace?
-            foreach ws $wordstatus {
-                if {($ws & 1) == 0} {
-                    errorMsg N "Non constant argument to proc \"[lindex $argv 0]\".\
-                            Skipping." $index
-                    return
-                }
-	    }
-            if {$::Nagelfar(gui)} {progressUpdate [calcLineNo $index]}
-            # Special check for local "proc" in namespace
-            set ns [currentNamespace]
-            # Resolve commands in namespace
-            set rescmd [lookForCommand $cmd $ns $index]
-            if {$rescmd ne "proc"} {
-                # Fall through to generic command handling
-                set thisCmdHasBeenHandled 0
-            } else {
-                parseProc $argv $indices
-            }
-            set noConstantCheck 1
-	}
 	.* { # FIXA, check code in any -command.
              # Even widget commands should be checked.
 	     # Maybe in checkOptions ?
@@ -2843,6 +2868,7 @@ proc addImplicitVariables {cmd index knownVarsName} {
         #decho "Looking for implicit in '$cNsC' '$cNs'"
         #parray ::implicitVar
     }
+    #echo "addImplicitVariables $cmd $impVar"
     foreach var $impVar {
         set varName [lindex $var 0]
         set type    [lindex $var 1]
@@ -2852,21 +2878,31 @@ proc addImplicitVariables {cmd index knownVarsName} {
 }
 
 # This is called when a proc command is encountered.
-proc parseProc {argv indices} {
+# It is assumed that argv and indices has three elements.
+proc parseProc {argv indices isProc isMethod definingCmd} {
     global knownGlobals syntax
 
-    if {[llength $argv] != 3} {
-	errorMsg E "Wrong number of arguments to proc." [lindex $indices 0]
-	return
-    }
+    foreach {name argList body} $argv break
 
-    foreach {name args body} $argv {break}
+    set nameMethod ""
+    if {$isMethod} {
+        set currentObj [currentObject]
+        if {$currentObj eq ""} {
+            errorMsg N "Method definition without a current object" \
+                    [lindex $indices 0]
+            set isMethod 0
+        } else {
+            lappend ::subCmd($currentObj) $name
+            #echo "Adding $::Nagelfar(firstpass) '$name' to '$currentObj' -> '$::subCmd($currentObj)'"
+            set nameMethod "$currentObj $name"
+        }
+    }
 
     # Take care of namespace
     set cns [currentNamespace]
     set ns [namespace qualifiers $name]
     set tail [namespace tail $name]
-    set storeIt 1
+    set storeIt $isProc
     if {![string match "::*" $ns]} {
         if {$cns eq "__unknown__"} {
             set ns $cns
@@ -2890,25 +2926,32 @@ proc parseProc {argv indices} {
     array set knownVars {}
 
     # Scan the syntax definition in parallel to look for types
-    if {[info exists syntax($name)]} {
+    if {$isProc && [info exists syntax($name)]} {
         set syn $syntax($name)
+    } elseif {$isMethod && [info exists syntax($nameMethod)]} {
+        set syn $syntax($nameMethod)
     } else {
         set syn ""
     }
 
-    parseArgs $args [lindex $indices 1] $syn knownVars
+    parseArgs $argList [lindex $indices 1] $syn knownVars
     
     if {$storeIt} {
         lappend ::knownCommands $name
     }
+    addImplicitVariables $definingCmd [lindex $indices 0] knownVars
 
 #    decho "Note: parsing procedure $name"
     if {!$::Nagelfar(firstpass)} {
-        pushNamespace $ns
-        pushProc $name
+        if {$isProc} {
+            pushNamespace $ns
+            pushProc $name
+        }
         parseBody $body [lindex $indices 2] knownVars
-        popProc
-        popNamespace
+        if {$isProc} {
+            popProc
+            popNamespace
+        }
     }
     set ::instrumenting([lindex $indices 2]) 1
 
@@ -2916,9 +2959,18 @@ proc parseProc {argv indices} {
     #    puts "upvar '$item' '$knownVars($item)'"
     #}
 
+    set newSyn [parseArgsToSyn $name $argList [lindex $indices 1] \
+            $syn knownVars]
     if {$storeIt} {
-        set syntax($name) [parseArgsToSyn $name $args [lindex $indices 1] \
-                $syn knownVars]
+        set syntax($name) $newSyn
+    }
+    if {$isMethod} {
+        if {[info exists syntax($nameMethod)]} {
+            #echo "Overwriting $nameMethod from '$syn' with '$newSyn'"
+        } else {
+            #echo "Writing $nameMethod from '$syn' with '$newSyn'"
+        }
+        set syntax($nameMethod) $newSyn
     }
 
     # Update known globals with those that were set in the proc.

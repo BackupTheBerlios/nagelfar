@@ -6,16 +6,10 @@
 ##nagelfar syntax _stdclass_snit\ configurelist x
 
 ##nagelfar syntax snit::type do=_stdclass_snit cn
-##nagelfar syntax snit::type::method x cv
+##nagelfar syntax snit::type::method dm
 ##nagelfar syntax snit::type::constructor cv
 ##nagelfar syntax snit::type::destructor cl
 ##nagelfar syntax snit::type::option x p*
-
-###nagelfar syntax _obj,pdf4tcl s x*
-##nagelfar subcmd+ _obj,pdf4tcl cleanup finish RequireVersion
-##nagelfar syntax _obj,pdf4tcl\ RequireVersion x x
-##nagelfar syntax _obj,pdf4tcl\ cleanup 0
-##nagelfar syntax _obj,pdf4tcl\ finish 0
 
 ##nagelfar syntax pdf4tcl::pdf4tcl dc=_obj,pdf4tcl p*
 ##nagelfar option pdf4tcl::pdf4tcl -file
@@ -36,7 +30,11 @@ snit::type pdf4tcl::pdf4tcl {
     method cleanup {} {
         $self destroy
     }
+    method finish {} {
+        $self RequireVersion a
+    }
     method RequireVersion {version} {
+        $self finish
         if {$version > $pdf(version)} {
             set pdf(version) $version
         }

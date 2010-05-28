@@ -210,6 +210,7 @@ set ::syntax(pid) {r 0 1}
 set ::syntax(pkg_compareExtension) {r 1 2}
 set ::syntax(pkg_mkIndex) {r 0}
 set ::syntax(place) {x x*}
+set ::syntax(proc) dp
 set ::syntax(puts) {1: x : o? x x?}
 set ::syntax(pwd) 0
 set ::syntax(radiobutton) {x p*}

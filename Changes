@@ -1,3 +1,8 @@
+2010-05-28
+ Added syntax tokens for proc and method definitions.
+ Make sure commands with definitions get through the first pass.
+ Command "proc" is now handled through the new token. 
+
 2010-05-25
  Added a syntax token for object definitions.
 

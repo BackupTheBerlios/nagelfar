@@ -357,7 +357,7 @@ set ::syntax(oo::class) {s x*}
 set {::syntax(oo::class create)} {do=_stdclass cn?}
 set {::syntax(oo::class create::constructor)} cv
 set {::syntax(oo::class create::destructor)} c
-set {::syntax(oo::class create::method)} {x cv}
+set {::syntax(oo::class create::method)} dm
 set ::syntax(oo::copy) {x x?}
 set ::syntax(oo::define) {2: x cn : x s x x*}
 set {::syntax(oo::define constructor)} cv
@@ -387,6 +387,7 @@ set ::syntax(parray) {v x?}
 set ::syntax(pid) {r 0 1}
 set ::syntax(pkg_mkIndex) {r 0}
 set ::syntax(place) {x x*}
+set ::syntax(proc) dp
 set ::syntax(puts) {1: x : o? x x?}
 set ::syntax(pwd) 0
 set ::syntax(radiobutton) {x p*}

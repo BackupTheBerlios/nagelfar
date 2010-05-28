@@ -3,11 +3,13 @@
 # Define a standard class command for convenience
 
 ##nagelfar syntax _stdclass s x*
-##nagelfar subcmd _stdclass create new
+##nagelfar subcmd _stdclass create new destroy variable
 ##nagelfar syntax _stdclass\ create dc=_obj,_stdclass x?
 ##nagelfar return _stdclass\ create _obj,_stdclass
 ##nagelfar syntax _stdclass\ new x?
 ##nagelfar return _stdclass\ new _obj,_stdclass
+##nagelfar syntax _stdclass\ destroy 0
+##nagelfar syntax _stdclass\ variable n*
 
 # Define the class command
 
@@ -15,21 +17,7 @@
 ##nagelfar return Account\ create _obj,Account
 ##nagelfar return Account\ new _obj,Account
 
-# Define the object command
-
-###nagelfar syntax _obj,Account s x*
-##nagelfar subcmd+ _obj,Account deposit withdraw transfer dump destroy variable
-##nagelfar syntax _obj,Account\ deposit x
-##nagelfar syntax _obj,Account\ withdraw x
-##nagelfar syntax _obj,Account\ transfer x x
-##nagelfar syntax _obj,Account\ dump 0
-##nagelfar syntax _obj,Account\ destroy 0
-##nagelfar syntax _obj,Account\ variable n*
-
 oo::class create Account {
-    # Define that "my" within the definition is an object
-    ##nagelfar copy _obj,Account oo::class\ create::Account::my
-
     constructor {{ownerName undisclosed}} {
         my variable total overdrawLimit owner
         set total 0
@@ -53,10 +41,16 @@ oo::class create Account {
         $targetAccount deposit $amount
         set total
     }
+    method dump {} {
+    }
     destructor {
         my variable total
         if {$total} {puts "remaining $total will be given to charity"}
     }
+}
+if 1 { # Hack to delay the copying until the first pass has scanned the object
+    # Define that "my" within the definition is an object
+    ##nagelfar copy _obj,Account oo::class\ create::Account::my
 }
 
 set a [Account new "John Doe"]
@@ -121,4 +115,4 @@ oo::class create foo {
     }
 }
 foo create bar quolf
-bar boo
+bar boo x

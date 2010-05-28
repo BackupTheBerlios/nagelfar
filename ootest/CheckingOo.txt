@@ -2,37 +2,37 @@
 A class defintion is resolved in a virtual namespace denoted by the
 "cn" syntax token. The virtual namespace is named after the calling
 command and its arguments.  Examples:
-##nagelfar syntax itcl::class x cn
+##nagelfar syntax itcl::class do cn
 itcl::class Test { ... }
 Virtual namespace: itcl::class::Test
-##nagelfar syntax snit::type x cn
+##nagelfar syntax snit::type do cn
 snit::type pdf4tcl::pdf4tcl { ... }
 Virtual namespace: snit::type::pdf4tcl::pdf4tcl
-##nagelfar syntax oo:class\ create x cn
+##nagelfar syntax oo:class\ create do cn
 oo::class create Account { ... }
 Virtual namespace: oo::class\ create::Account
 --------------------------------------------------------------------------
 Since name resolution works up the namespaces, class definition subcommands
 can be defined in the top virtual namespace for the class definition:
 ##nagelfar syntax itcl::class::constructor cv
-##nagelfar syntax itcl::class::method x cv
+##nagelfar syntax itcl::class::method dm
 ##nagelfar syntax snit::type::constructor cv
-##nagelfar syntax snit::type::method x cv
+##nagelfar syntax snit::type::method dm
 ##nagelfar syntax oo::class\ create::constructor cv
-##nagelfar syntax oo::class\ create::method x cv
+##nagelfar syntax oo::class\ create::method dm
 --------------------------------------------------------------------------
 The properties of the defined class command varies with the system involved.
 Itcl:
-##nagelfar syntax Test d=_obj,Test
+##nagelfar syntax Test dc=_obj,Test
 ##nagelfar return Test _obj,Test
 Snit:
-##nagelfar syntax pdf4tcl::pdf4tcl d=_obj,pdf4tcl p*
+##nagelfar syntax pdf4tcl::pdf4tcl dc=_obj,pdf4tcl p*
 ##nagelfar option pdf4tcl::pdf4tcl -file
 ##nagelfar return pdf4tcl::pdf4tcl _obj,pdf4tcl
 TclOO:
 ##nagelfar syntax Account s x*
 ##nagelfar subcmd Account create new
-##nagelfar syntax Account\ create d=_obj,Account x?
+##nagelfar syntax Account\ create dc=_obj,Account x?
 ##nagelfar return Account\ create _obj,Account
 ##nagelfar syntax Account\ new x?
 ##nagelfar return Account\ new _obj,Account
@@ -63,13 +63,17 @@ instance is made, it is defined
 Test t1
 t1 dostuff
 The critical definition is:
-##nagelfar syntax Test d=_obj,Test
+##nagelfar syntax Test dc=_obj,Test
 Defining it manually is also possible:
 ##nagelfar copy _obj,Test t1
 --------------------------------------------------------------------------
 Sometimes it is necessary to declare a variable as an object:
 proc testingwithproc {ob} {
     ##nagelfar variable ob _obj,mystuff
+    $ob dostuff
+}
+##nagelfar syntax testingwithproc2 x(_obj,mystuff)
+proc testingwithproc2 {ob} {
     $ob dostuff
 }
 --------------------------------------------------------------------------
@@ -79,28 +83,29 @@ Implicitely available variables needs to be defined in each virtual namespace
 ##nagelfar implicitvar snit::type::pdf4tcl::pdf4tcl self\ _obj,pdf4tcl pdf
 ##nagelfar implicitvar oo::class\ create::foo x
 --------------------------------------------------------------------------
---------------------------------------------------------------------------
-Needed stuff:
-Automatically add an _obj,xxx command together with a vitual namespace.
-xxx is the tail of the virtual namespace. Examples:
+The syntax token "do" (define object) automatically adds an _obj,xxx command.
+xxx is the tail of the defined name. Examples:
 itcl::class Test { ... }
 Object command: _obj,Test
 snit::type pdf4tcl::pdf4tcl { ... }
 Object command: _obj,pdf4tcl
 oo::class create Account { ... }
 Object command: _obj,Account
-If it does not exist before, add it with "s x*"
-Also set up a "current object" where method definitions can be added as
-subcommands.
-Example, method "met" is defined when current object is "_obj,y"
+If it does not exist before, add it with "s x*" as syntax.
+--------------------------------------------------------------------------
+The syntax token "do" also adds _obj,xxx as "current object".
+Method definitions (syntax token "dm") will be added as subcommands to
+the object.
+Example, if method "met" is defined when current object is "_obj,y",
+it corresponds to this:
 ##nagelfar subcmd+ _obj,y met
 ##nagelfar syntax _obj,y\ met x*
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Needed stuff:
-Syntax token for a method definition, which adds it as a subcommand
-Syntax token for a method definition, which adds it as proc and a subcommand
 Handle simple string subst in ##nagelfar copy.
+Delay copy operation until second pass.
+Or, set up copy as an alias.
 --------------------------------------------------------------------------
 --------------------------------------------------------------------------
 This rest of this file contains notes collected over time about OO checking.

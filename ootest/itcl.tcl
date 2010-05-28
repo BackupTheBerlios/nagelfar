@@ -5,8 +5,8 @@
 ##nagelfar syntax _stdclass_itcl\ destroy 0
 
 ##nagelfar syntax itcl::class do=_stdclass_itcl cn
-##nagelfar syntax itcl::class::method x cv
-##nagelfar syntax itcl::class::proc x cv
+##nagelfar syntax itcl::class::method dmp
+##nagelfar syntax itcl::class::proc dp
 ##nagelfar syntax itcl::class::constructor cv
 ##nagelfar syntax itcl::class::destructor cl
 ##nagelfar syntax itcl::class::common n x?
@@ -34,14 +34,6 @@ itcl::class test {
 # Define the class command
 ##nagelfar syntax Test dc=_obj,Test
 ##nagelfar return Test _obj,Test
-
-###nagelfar syntax _obj,Test s x*
-##nagelfar subcmd+ _obj,Test m1 m2
-##nagelfar syntax _obj,Test\ m1 0
-##nagelfar syntax _obj,Test\ m2 0
-
-##nagelfar syntax itcl::class::Test::m2 0
-##nagelfar syntax itcl::class::Test::p 0
 
 ##nagelfar implicitvar itcl::class::Test::proc   c1
 ##nagelfar implicitvar itcl::class::Test::method x1 x2 x3 c1

@@ -293,7 +293,7 @@ proc buildDb {ch} {
     # "package" is handled specially
     set syntax(package)         "s x*" ;# FIXA: All subcommands
     set syntax(pid)             "r 0 1"
-    set special(proc) 1
+    set syntax(proc)            dp
     set syntax(puts)            "1: x : o? x x?"
     set syntax(pwd)              0
     set syntax(read)            "r 1 2"
@@ -458,7 +458,7 @@ proc buildDb {ch} {
         set syntax(oo::class)    "s x*"
         set syntax(oo::class\ create) "do=_stdclass cn?"
         set syntax(oo::class\ create::constructor) cv
-        set syntax(oo::class\ create::method) "x cv"
+        set syntax(oo::class\ create::method) "dm"
         set syntax(oo::class\ create::destructor) c
         set syntax(info\ object) "s x x*"
         set syntax(info\ class)  "s x x*"
