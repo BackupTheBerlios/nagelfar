@@ -1,5 +1,7 @@
 # This is an experiment to check snit
 
+# This is the generic definitions needed for Snit.
+
 ##nagelfar syntax _stdclass_snit s x*
 ##nagelfar subcmd _stdclass_snit destroy configurelist
 ##nagelfar syntax _stdclass_snit\ destroy 0
@@ -10,6 +12,9 @@
 ##nagelfar syntax snit::type::constructor cv
 ##nagelfar syntax snit::type::destructor cl
 ##nagelfar syntax snit::type::option x p*
+
+
+# This is the annotation needed for this object definition
 
 ##nagelfar syntax pdf4tcl::pdf4tcl dc=_obj,pdf4tcl p*
 ##nagelfar option pdf4tcl::pdf4tcl -file

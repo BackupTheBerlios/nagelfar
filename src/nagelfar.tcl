@@ -227,7 +227,7 @@ proc checkPossibleComment {str lineNo} {
 }
 
 # Copy the syntax from one command to another
-proc CopyCmdInDatabase {from to} {
+proc CopyCmdInDatabase {from to {map {}}} {
     foreach arrName {::syntax ::return ::subCmd ::option} {
         upvar 0 $arrName arr
         foreach item [array names arr] {
@@ -243,13 +243,13 @@ proc CopyCmdInDatabase {from to} {
                     }
                 } else {
                     #echo "Copy $from $to $arrName $item"
-                    set arr($to) $arr($item)
+                    set arr($to) [string map $map $arr($item)]
                 }
             } else {
                 set len [expr {[string length $from] + 1}]
                 if {[string equal -length $len $item "$from "]} {
                     set to2 "$to [string range $item $len end]"
-                    set arr($to2) $arr($item)
+                    set arr($to2) [string map $map $arr($item)]
                 }
             }
         }
@@ -299,7 +299,7 @@ proc checkComment {str index knownVarsName} {
             }
             copy {
                 #echo "Copy in $::Nagelfar(firstpass) $first [lindex $rest 0]"
-                CopyCmdInDatabase $first [lindex $rest 0]
+                CopyCmdInDatabase $first [lindex $rest 0] [lrange $rest 1 end]
             }
             nocover {
                 set ::instrumenting(no,$index) 1

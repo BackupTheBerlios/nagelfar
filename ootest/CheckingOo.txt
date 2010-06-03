@@ -101,9 +101,10 @@ it corresponds to this:
 ##nagelfar subcmd+ _obj,y met
 ##nagelfar syntax _obj,y\ met x*
 --------------------------------------------------------------------------
+Handles simple string subst in ##nagelfar copy.
+--------------------------------------------------------------------------
 --------------------------------------------------------------------------
 Needed stuff:
-Handle simple string subst in ##nagelfar copy.
 Delay copy operation until second pass.
 Or, set up copy as an alias.
 --------------------------------------------------------------------------

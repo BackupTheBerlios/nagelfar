@@ -1,3 +1,6 @@
+2010-06-03
+ Handle simple string substitution in ##nagelfar copy
+
 2010-05-28
  Added syntax tokens for proc and method definitions.
  Make sure commands with definitions get through the first pass.

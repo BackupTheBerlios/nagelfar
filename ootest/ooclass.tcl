@@ -1,21 +1,26 @@
 # This is an experiment to check oo in 8.6
 
+# This is the generic definitions needed for TclOO
+
 # Define a standard class command for convenience
 
 ##nagelfar syntax _stdclass s x*
 ##nagelfar subcmd _stdclass create new destroy variable
 ##nagelfar syntax _stdclass\ create dc=_obj,_stdclass x?
 ##nagelfar return _stdclass\ create _obj,_stdclass
-##nagelfar syntax _stdclass\ new x?
+##nagelfar syntax _stdclass\ new 0
 ##nagelfar return _stdclass\ new _obj,_stdclass
 ##nagelfar syntax _stdclass\ destroy 0
 ##nagelfar syntax _stdclass\ variable n*
 
+
+# This is the annotation needed for this object definition
+
 # Define the class command
 
-##nagelfar copy _stdclass Account
-##nagelfar return Account\ create _obj,Account
-##nagelfar return Account\ new _obj,Account
+##nagelfar copy _stdclass Account _obj,_stdclass _obj,Account 
+# Constructor syntax is "x?"
+##nagelfar syntax Account\ new x?
 
 oo::class create Account {
     constructor {{ownerName undisclosed}} {
@@ -69,14 +74,10 @@ $b destroy
 
 # Define the class command
 
-##nagelfar copy _stdclass c
-##nagelfar syntax c\ create dc=_obj,c x?
-##nagelfar return c\ create _obj,c
-##nagelfar return c\ new _obj,c
+##nagelfar copy _stdclass c _obj,_stdclass _obj,c
 
 # Define the object command
 
-##nagelfar syntax _obj,c s x*
 ##nagelfar subcmd+ _obj,c bar foo Foo lollipop
 
 oo::class create c
@@ -99,12 +100,8 @@ oo::objdefine o renamemethod bar lollipop
 o lollipop
 
 # Example with implicit variable:
-##nagelfar copy _stdclass foo
-##nagelfar syntax foo\ create dc=_obj,foo x?
-##nagelfar return foo\ create _obj,foo
-##nagelfar return foo\ new _obj,foo
+##nagelfar copy _stdclass foo _obj,_stdclass _obj,foo
 ##nagelfar implicitvar oo::class\ create::foo x
-##nagelfar subcmd+ _obj,foo boo
 oo::class create foo {
     variable x
     constructor y {

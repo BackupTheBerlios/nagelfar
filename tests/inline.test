@@ -248,6 +248,17 @@ test inline-9.1 {
     execTestFile
 } -result {%%Line   3: E Wrong number of arguments (3) to "mystring length"}
 
+test inline-9.2 {
+    Copy with mapping
+} -body {
+    createTestFile {
+        ##nagelfar copy string mystring x n
+        mystring equal x y
+        list $x $y
+    }
+    execTestFile
+} -result {%%}
+
 test inline-10.1 {
     implicitvar
 } -body {

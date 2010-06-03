@@ -1,5 +1,7 @@
 # This is an experiment to check itcl
 
+# This is the generic definitions needed for Itcl
+
 ##nagelfar syntax _stdclass_itcl s x*
 ##nagelfar subcmd _stdclass_itcl destroy
 ##nagelfar syntax _stdclass_itcl\ destroy 0
@@ -14,7 +16,12 @@
 ##nagelfar syntax itcl::class::protected s x*
 ##nagelfar syntax itcl::class::public s x*
 
+
+# This is the annotation needed for this object definition
+
 ##nagelfar implicitvar itcl::class::test this v1 v2
+##nagelfar syntax test dc=_obj,test
+##nagelfar return test _obj,test
 
 itcl::class test {
     common v1 0
@@ -30,6 +37,12 @@ itcl::class test {
         puts "$this has commmon values $v1 $v2"
     }
 }
+
+test myobj
+myobj setv1 x
+
+
+# This is the annotation needed for this object definition
 
 # Define the class command
 ##nagelfar syntax Test dc=_obj,Test
