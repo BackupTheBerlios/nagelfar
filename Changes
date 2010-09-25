@@ -1,3 +1,7 @@
+2010-09-25
+ Turn on variable tracking during instrumenting to be able to instrument OO
+ code.
+
 2010-06-03
  Handle simple string substitution in ##nagelfar copy
 

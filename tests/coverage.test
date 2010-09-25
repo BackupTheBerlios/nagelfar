@@ -157,3 +157,32 @@ test coverage-4.1 {
     file delete _testfile__i
     set data
 } -match glob -result {*lappend ::_instrument_::log(_testfile_,3,var) $apa*}
+
+test coverage-5.1 {
+    Code in OO blocks
+} -body {
+    createTestFile {
+        ##nagelfar syntax _obj,x s x*
+        ##nagelfar subcmd _obj,x dostuff
+        ##nagelfar syntax _obj,x\ dostuff c
+
+        ##nagelfar syntax x x(_obj,x) x(_obj,x)
+        proc x {y z} {
+            $y dostuff {
+                set apa [list hej hopp]
+            }
+            $z dostuff {
+                set bepa $apa
+            }
+        }
+    }
+    set res [list [execTestFile -flags -instrument]]
+    set ch [open _testfile__i r]
+    set data [read $ch]
+    close $ch
+    file delete _testfile__i
+    foreach {item lineNo} [regexp -inline -all {_testfile_,(\d+)} $data] {
+        lappend res $lineNo
+    }
+    set res
+} -result [list {%%Writing file _testfile__i} 11 8 7 7 8 11]
