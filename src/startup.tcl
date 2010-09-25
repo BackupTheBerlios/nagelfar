@@ -200,6 +200,7 @@ if {![info exists gurka]} {
                     warnShortSub 0
                     strictAppend 0
                     forceElse 0
+                    noVar 1
                     severity E
                 }
             }

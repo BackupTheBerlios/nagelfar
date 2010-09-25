@@ -814,7 +814,7 @@ proc parseVar {str len index iName knownVarsName} {
     # varindex is the array index
     # varindexconst is 1 if the array index is a constant
 
-    if {$::Prefs(noVar) || $var == ""} {
+    if {$var == ""} {
         return ""
     }
 
@@ -834,7 +834,7 @@ proc parseVar {str len index iName knownVarsName} {
 	return ""
     }
     # FIXA: Use markVariable
-    if {![info exists knownVars(known,$var)]} {
+    if {![info exists knownVars(known,$var)] && !$::Prefs(noVar)} {
         if {[string match "*::*" $var]} {
             set tail [namespace tail $var]
             set ns [namespace qualifiers $var]
@@ -1485,8 +1485,10 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                                 [lindex $wordstatus $i] [lindex $wordtype $i] \
                                 2 [lindex $indices $i]\
                                 knownVars vtype]} {
-			    errorMsg E "Unknown variable \"[lindex $argv $i]\""\
-                                    [lindex $indices $i]
+                            if {!$::Prefs(noVar)} {
+                                errorMsg E "Unknown variable \"[lindex $argv $i]\""\
+                                        [lindex $indices $i]
+                            }
 			}
 		    } elseif {[string equal $tok "n"]} {
 			markVariable [lindex $argv $i] \
@@ -1564,11 +1566,6 @@ proc markVariable {var ws wordtype check index knownVarsName typeName} {
         upvar $typeName type
     } else {
         set type ""
-    }
-
-    if {$::Prefs(noVar)} {
-        set type ""
-        return 0
     }
 
     set varBase $var
@@ -1987,8 +1984,10 @@ proc parseStatement {statement index knownVarsName} {
                 } elseif {[markVariable [lindex $argv 0] \
                         [lindex $wordstatus 0] [lindex $wordtype 0] \
                         2 [lindex $indices 0] knownVars wtype]} {
-                    errorMsg E "Unknown variable \"[lindex $argv 0]\""\
-                            [lindex $indices 0]
+                    if {!$::Prefs(noVar)} {
+                        errorMsg E "Unknown variable \"[lindex $argv 0]\""\
+                                [lindex $indices 0]
+                    }
                 }
             } elseif {$argc == 2} {
                 set wtype [lindex $wordtype 1]
@@ -2408,7 +2407,7 @@ proc parseStatement {statement index knownVarsName} {
     }
 
     if {$::Prefs(noVar)} {
-        return
+        return $type
     }
 
     if {!$noConstantCheck} {
