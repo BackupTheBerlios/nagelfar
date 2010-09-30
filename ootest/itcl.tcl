@@ -88,6 +88,6 @@ t1 m1
 Test destroy
 t1 destroy
 
-##nagelfar copy itcl::class::Test::p Test::p
+##nagelfar alias Test::p itcl::class::Test::p
 # Calling a class proc without an instance
 Test::p

@@ -297,6 +297,9 @@ proc checkComment {str index knownVarsName} {
                 set type [join $rest]
                 markVariable $first 1 "" 1 $index knownVars type
             }
+            alias {
+                set ::knownAliases($first) $rest
+            }
             copy {
                 #echo "Copy in $::Nagelfar(firstpass) $first [lindex $rest 0]"
                 CopyCmdInDatabase $first [lindex $rest 0] [lrange $rest 1 end]
@@ -1217,6 +1220,9 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                     if {$name eq "%AUTO%"} {
                         # No defition should be made
                     } else {
+                        if {[string match "::*" $name]} {
+                            set name [string range $name 2 end]
+                        }
                         if {$tok eq "do"} { # Define object
                             set name _obj,[namespace tail $name]
                             #echo "Defining object $name"

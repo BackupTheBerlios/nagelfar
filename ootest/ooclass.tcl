@@ -21,6 +21,8 @@
 ##nagelfar copy _stdclass Account _obj,_stdclass _obj,Account 
 # Constructor syntax is "x?"
 ##nagelfar syntax Account\ new x?
+# Define that "my" within the definition is an object
+##nagelfar alias oo::class\ create::Account::my _obj,Account 
 
 oo::class create Account {
     constructor {{ownerName undisclosed}} {
@@ -52,10 +54,6 @@ oo::class create Account {
         my variable total
         if {$total} {puts "remaining $total will be given to charity"}
     }
-}
-if 1 { # Hack to delay the copying until the first pass has scanned the object
-    # Define that "my" within the definition is an object
-    ##nagelfar copy _obj,Account oo::class\ create::Account::my
 }
 
 set a [Account new "John Doe"]

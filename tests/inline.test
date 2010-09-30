@@ -301,3 +301,13 @@ test inline-10.2 {
     execTestFile
 } -result {%%Line  11: E Unknown variable "bepa"
 Line  14: E Unknown variable "cepa"}
+
+test inline-11.1 {
+    Alias
+} -body {
+    createTestFile {
+        ##nagelfar alias mystring string
+        mystring length x x
+    }
+    execTestFile
+} -result {%%Line   3: E Wrong number of arguments (3) to "string length"}
