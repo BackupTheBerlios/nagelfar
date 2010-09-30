@@ -323,7 +323,7 @@ set ::syntax(lsort) {o* x}
 set ::syntax(menu) {x p*}
 set ::syntax(menubutton) {x p*}
 set ::syntax(message) {x p*}
-set ::syntax(msgcat::mc) x
+set ::syntax(msgcat::mc) {r 1}
 set ::syntax(msgcat::mcload) 1
 set ::syntax(msgcat::mclocale) {r 0}
 set ::syntax(msgcat::mcmax) {r 0}

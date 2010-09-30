@@ -356,7 +356,6 @@ proc buildDb {ch} {
     set special(variable) 1
     set syntax(vwait)           "n"
     set syntax(while)           "E c"
-    set syntax(msgcat::mc)  "x"
 
     # Things added in 8.5
     if {[info commands dict] ne ""} {

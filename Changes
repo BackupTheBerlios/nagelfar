@@ -1,3 +1,6 @@
+2010-09-30
+ Added inline keyword for alias
+
 2010-09-25
  Changed novar to only suppress errors, not suppress tracking, to better
  support OO, e.g. in instrumenting.
