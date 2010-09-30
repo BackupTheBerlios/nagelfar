@@ -142,7 +142,18 @@ if {![info exists gurka]} {
                     lappend ::Nagelfar(allDb) $arg
                     lappend ::Nagelfar(allDbView) $arg
                 } else {
-                    puts stderr "Cannot read \"$arg\""
+                    # Look through allDb for a match
+                    set found 0
+                    foreach db $::Nagelfar(allDb) {
+                        if {$arg eq $db || $arg eq [file tail $db]} {
+                            lappend ::Nagelfar(db) $db
+                            set found 1
+                            break
+                        }
+                    }
+                    if {!$found} {
+                        puts stderr "Cannot read \"$arg\""
+                    }
                 }
             }
  	    -editor {
