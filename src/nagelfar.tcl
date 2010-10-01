@@ -3588,6 +3588,9 @@ proc loadDatabases {} {
                 option {
                     _ipset ::option($first) $rest
                 }
+                alias {
+                    _ipset ::knownAliases($first) $rest
+                }
                 default {
                     echo "Bad type in ##nagelfar comment in db $f line $commentline"
                     continue
@@ -3634,6 +3637,7 @@ proc loadDatabases {} {
     catch {unset ::return}
     catch {unset ::subCmd}
     catch {unset ::option}
+    catch {unset ::knownAliases}
     if {[_iparray exists ::syntax]} {
         array set ::syntax [_iparray get ::syntax]
     }
@@ -3648,6 +3652,9 @@ proc loadDatabases {} {
     }
     if {[_iparray exists ::option]} {
         array set ::option [_iparray get ::option]
+    }
+    if {[_iparray exists ::knownAliases]} {
+        array set ::knownAliases [_iparray get ::knownAliases]
     }
 
     interp delete loadinterp
@@ -3702,6 +3709,7 @@ proc doCheck {} {
         set h_oldoption [array names ::option]
         set h_oldreturn [array names ::return]
         set h_oldimplicitvar [array names ::implicitVar]
+        set h_oldaliases [array names ::knownAliases]
     }
 
     # Initialise variables
@@ -3749,7 +3757,8 @@ proc doCheck {} {
         foreach item $h_oldoption { unset ::option($item) }
         foreach item $h_oldreturn { unset ::return($item) }
         foreach item $h_oldimplicitvar { unset ::implicitVar($item) }
-        
+        foreach item $h_oldaliases { unset ::knownAliases($item) }
+
         if {[catch {set ch [open $::Nagelfar(header) w]}]} {
             puts stderr "Could not create file \"$::Nagelfar(header)\""
         } else {
@@ -3768,6 +3777,9 @@ proc doCheck {} {
             }
             foreach item [lsort -dictionary [array names ::implicitVar]] {
                 puts $ch "\#\#nagelfar [list implicitvar $item] $::implicitVar($item)"
+            }
+            foreach item [lsort -dictionary [array names ::knownAliases]] {
+                puts $ch "\#\#nagelfar [list alias $item] $::knownAliases($item)"
             }
             close $ch
         }
