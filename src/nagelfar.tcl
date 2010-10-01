@@ -1264,6 +1264,8 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                     }
                 }
                 if {$::Nagelfar(gui)} {progressUpdate [calcLineNo $index]}
+                # Do not check proc/method name against variables
+                lappend constantsDontCheck $i
                 set isProc [expr {$tok eq "dp" || $tok eq "dmp"}]
                 set isMethod [expr {$tok eq "dm" || $tok eq "dmp"}]
                 parseProc [lrange $argv $i $iplus2] \

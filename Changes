@@ -1,3 +1,6 @@
+2010-10-01
+ Do not check proc/method name against variables
+
 2010-09-30
  Make command line -s search in the list of builtin databases
 

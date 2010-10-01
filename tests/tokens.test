@@ -380,6 +380,7 @@ test tokens-11.1 {
 } -body {
     createTestFile {
         ##nagelfar syntax myproc dp
+        set apa x ;# Do not match variables against proc name
         myproc apa {x y} {
             list $x $y
             code here
@@ -387,18 +388,18 @@ test tokens-11.1 {
         apa 2
     }
     execTestFile
-} -result {%%Line   5: W Unknown command "code"
-Line   7: E Wrong number of arguments (1) to "apa"}
+} -result {%%Line   6: W Unknown command "code"
+Line   8: E Wrong number of arguments (1) to "apa"}
 
 test tokens-12.1 {
     Definition of method token
 } -body {
     createTestFile {
-        ##nagelfar syntax myproc dm
         ##nagelfar syntax apa do cn
         ##nagelfar syntax apa::method dm
         ##nagelfar syntax bepa dc=_obj,bepa
         apa bepa {
+            set cepa x ;# Do not match variables against proc name
             method cepa {x y} {
                 gurka
             }
