@@ -1,11 +1,7 @@
 # This is an experiment to get tdbc-style OO checked.
 
-##nagelfar syntax tdbc::sqlite3::connection s x x
-##nagelfar subcmd tdbc::sqlite3::connection create new
-##nagelfar syntax tdbc::sqlite3::connection\ create x x p*
-##nagelfar return tdbc::sqlite3::connection\ create _obj,database
+##nagelfar copy _stdclass_oo tdbc::sqlite3::connection _obj,_stdclass_oo _obj,database
 ##nagelfar syntax tdbc::sqlite3::connection\ new x p*
-##nagelfar return tdbc::sqlite3::connection\ new _obj,database
 
 ##nagelfar syntax _obj,database s x*
 ##nagelfar subcmd _obj,database prepare allrows foreach begintransaction commit rollback transaction tables columns configure resultsets
@@ -56,7 +52,6 @@
 ##nagelfar syntax _obj,result\ nextrow p* n
 ##nagelfar option _obj,result\ nextrow -as --
 
-##nagelfar copy _obj,database db
 tdbc::sqlite3::connection create ::db $::testDBName
 set db2 [tdbc::sqlite3::connection new $::testDBName]
 

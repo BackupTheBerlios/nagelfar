@@ -368,11 +368,15 @@ proc popProc {} {
 
 # Handle a current object.
 proc currentObject {} {
-    return $::Nagelfar(object)
+    return [lindex $::Nagelfar(object) 0]
 }
 
-proc setCurrentObject {p} {
-    set ::Nagelfar(object) $p
+proc currentObjectOrig {} {
+    return [lindex $::Nagelfar(object) 1]
+}
+
+proc setCurrentObject {objname name} {
+    set ::Nagelfar(object) [list $objname $name]
 }
 
 # Return the index of the first non whitespace char following index "i".
@@ -1208,7 +1212,25 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
 		    incr i
 		}
 	    }
-            dc - do { # Definition
+            di { # Define inheritance
+		if {![string equal $mod ""]} {
+		    echo "Modifier \"$mod\" is not supported for \"$tok\" in\
+                            syntax for $cmd."
+		}
+                # Superclass
+                set superclass [lindex $argv $i]
+                set superObjCmd _obj,[namespace tail $superclass]
+                set objcmd [currentObject]
+                set copymap [list $objcmd $superObjCmd]
+                #puts "DI: '$superObjCmd' to '$objcmd' map '$copymap'"
+                CopyCmdInDatabase $superObjCmd $objcmd $copymap
+                incr i
+            }
+            dc - do { # Define with copy / define object
+                # dc defines a command that is a copy. Typically used for an
+                # instance which is a copy of the class's object command.
+                # do defines both a command to instantiate objects and a
+                # corresponding object command
                 #decho "$tok $tokCount $mod"
 		if {([lindex $wordstatus $i] & 1) == 0} { # Non constant
                     errorMsg N "Non constant definition \"[lindex $argv $i]\".\
@@ -1224,17 +1246,25 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                             set name [string range $name 2 end]
                         }
                         if {$tok eq "do"} { # Define object
-                            set name _obj,[namespace tail $name]
+                            set objname _obj,[namespace tail $name]
                             #echo "Defining object $name"
-                            setCurrentObject $name
-                            if {![info exists ::syntax($name)]} {
-                                set ::syntax($name) "s x*"
+                            setCurrentObject $objname $name
+                            if {![info exists ::syntax($objname)]} {
+                                set ::syntax($objname) "s x*"
                             }
-                        }
-                        if {$copyFrom ne ""} {
-                            CopyCmdInDatabase $copyFrom $name
+                            set copymap [list _obj,$copyFrom $objname]
+                            if {$copyFrom ne ""} {
+                                CopyCmdInDatabase $copyFrom $name    $copymap
+                                CopyCmdInDatabase $copyFrom $objname $copymap
+                            } else {
+                                lappend ::knownCommands $objname
+                            }
                         } else {
-                            lappend ::knownCommands $name
+                            if {$copyFrom ne ""} {
+                                CopyCmdInDatabase $copyFrom $name
+                            } else {
+                                lappend ::knownCommands $name
+                            }
                         }
                         if {$tok eq "do" && ![info exists ::syntax($name)]} {
                             set ::syntax($name) "s x*"
@@ -1243,6 +1273,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                 }
                 incr i
             }
+            dk -
             dp -
             dm -
             dmp { # Define proc and/or method
@@ -1250,10 +1281,17 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
 		    echo "Modifier \"$mod\" is not supported for \"$tok\" in\
                             syntax for $cmd."
 		}
-                if {$i > ($argc - 3)} {
-                    break
+                if {$tok eq "dk"} { # Two args
+                    if {$i > ($argc - 2)} {
+                        break
+                    }
+                    set iplus2 [expr {$i + 1}]
+                } else {
+                    if {$i > ($argc - 3)} {
+                        break
+                    }
+                    set iplus2 [expr {$i + 2}]
                 }
-                set iplus2 [expr {$i + 2}]
                 # Skip the proc if any part of it is not constant
                 # FIXA: Maybe accept substitutions as part of namespace?
                 foreach ws [lrange $wordstatus $i $iplus2] {
@@ -1268,10 +1306,25 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                 lappend constantsDontCheck $i
                 set isProc [expr {$tok eq "dp" || $tok eq "dmp"}]
                 set isMethod [expr {$tok eq "dm" || $tok eq "dmp"}]
-                parseProc [lrange $argv $i $iplus2] \
-                        [lrange $indices $i $iplus2] \
-                        $isProc $isMethod $cmd
-                incr i 3
+                if {$tok eq "dk"} { # Two args
+                    set procArgV [lrange $argv $i $iplus2]
+                    set indicesV [lrange $indices $i $iplus2]
+                    set constructorCmd "[currentObjectOrig] new"
+                    # Suppress redefinition warnings
+                    unset -nocomplain ::syntax($constructorCmd)
+                    set procArgV [linsert $procArgV 0 ::$constructorCmd]
+                    set indicesV [linsert $indicesV 0 [lindex $indices $i]]
+                    #puts "DK: $procArgV"
+                    incr i 2
+                    set synConstr [parseProc $procArgV $indicesV 0 0 $cmd]
+                    set ::syntax($constructorCmd) $synConstr
+                } else {
+                    set procArgV [lrange $argv $i $iplus2]
+                    set indicesV [lrange $indices $i $iplus2]
+                    incr i 3
+                    parseProc $procArgV $indicesV \
+                            $isProc $isMethod $cmd
+                }
             }
             E -
 	    e { # An expression
@@ -2993,6 +3046,7 @@ proc parseProc {argv indices isProc isMethod definingCmd} {
 	    }
 	}
     }
+    return $newSyn
 }
 
 # Given an index in the original string, calculate its line number.

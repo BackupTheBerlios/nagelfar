@@ -2,25 +2,8 @@
 
 # This is the generic definitions needed for TclOO
 
-# Define a standard class command for convenience
-
-##nagelfar syntax _stdclass s x*
-##nagelfar subcmd _stdclass create new destroy variable
-##nagelfar syntax _stdclass\ create dc=_obj,_stdclass x?
-##nagelfar return _stdclass\ create _obj,_stdclass
-##nagelfar syntax _stdclass\ new 0
-##nagelfar return _stdclass\ new _obj,_stdclass
-##nagelfar syntax _stdclass\ destroy 0
-##nagelfar syntax _stdclass\ variable n*
-
-
 # This is the annotation needed for this object definition
 
-# Define the class command
-
-##nagelfar copy _stdclass Account _obj,_stdclass _obj,Account 
-# Constructor syntax is "x?"
-##nagelfar syntax Account\ new x?
 # Define that "my" within the definition is an object
 ##nagelfar alias oo::class\ create::Account::my _obj,Account 
 
@@ -70,12 +53,7 @@ $a transfer 1000000 $b
 $b destroy
 
 
-# Define the class command
-
-##nagelfar copy _stdclass c _obj,_stdclass _obj,c
-
-# Define the object command
-
+# Define the object methods
 ##nagelfar subcmd+ _obj,c bar foo Foo lollipop
 
 oo::class create c
@@ -98,7 +76,6 @@ oo::objdefine o renamemethod bar lollipop
 o lollipop
 
 # Example with implicit variable:
-##nagelfar copy _stdclass foo _obj,_stdclass _obj,foo
 ##nagelfar implicitvar oo::class\ create::foo x
 oo::class create foo {
     variable x
@@ -111,3 +88,44 @@ oo::class create foo {
 }
 foo create bar quolf
 bar boo x
+
+
+#############################################################
+# Experimenting with inheritance
+##nagelfar alias oo::class\ create::iddl::Base::my  _obj,Base
+##nagelfar implicitvar oo::class\ create::iddl::Base id attributes
+
+##nagelfar alias oo::class\ create::iddl::Package::my  _obj,Package
+##nagelfar alias oo::class\ create::iddl::Package::next iddl::Base\ new
+##nagelfar implicitvar oo::class\ create::iddl::Package records
+
+oo::class create iddl::Base {
+    variable id
+    constructor {n} {
+        set id $n
+    }
+    method id {} {
+        return $id
+    }
+}
+oo::class create iddl::Package {
+    superclass iddl::Base
+    variable records
+    constructor {n {r {}}} {
+        next $n
+        set records {}
+        if {$r ne ""} {
+            lappend records $r
+        }
+    }
+    method addRecord {obj} {
+        lappend records $obj
+    }
+    method getRecords {} {
+        return $records
+    }
+}
+
+set p [iddl::Package new Hej Hopp]
+$p addRecord x
+$p id

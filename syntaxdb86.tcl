@@ -164,6 +164,11 @@ set {::syntax(_obj,ttk::sizegrip configure)} {o. x. p*}
 set ::syntax(_obj,ttk::treeview) {s x*}
 set {::syntax(_obj,ttk::treeview cget)} o
 set {::syntax(_obj,ttk::treeview configure)} {o. x. p*}
+set ::syntax(_stdclass_oo) {s x*}
+set {::syntax(_stdclass_oo create)} {dc=_obj,_stdclass_oo x?}
+set {::syntax(_stdclass_oo destroy)} 0
+set {::syntax(_stdclass_oo new)} 0
+set {::syntax(_stdclass_oo variable)} n*
 set ::syntax(after) {r 1}
 set ::syntax(append) {n x*}
 set ::syntax(apply) {x x*}
@@ -354,10 +359,11 @@ set ::syntax(namespace) {s x*}
 set {::syntax(namespace import)} {o* x*}
 set {::syntax(namespace which)} {o* x?}
 set ::syntax(oo::class) {s x*}
-set {::syntax(oo::class create)} {do=_stdclass cn?}
-set {::syntax(oo::class create::constructor)} cv
+set {::syntax(oo::class create)} {do=_stdclass_oo cn?}
+set {::syntax(oo::class create::constructor)} dk
 set {::syntax(oo::class create::destructor)} c
 set {::syntax(oo::class create::method)} dm
+set {::syntax(oo::class create::superclass)} di
 set ::syntax(oo::copy) {x x?}
 set ::syntax(oo::define) {2: x cn : x s x x*}
 set {::syntax(oo::define constructor)} cv
@@ -566,6 +572,8 @@ set {::syntax(zlib inflate)} {x x?}
 set {::syntax(zlib push)} {s x*}
 set {::syntax(zlib stream)} {s x*}
 
+set {::return(_stdclass_oo create)} _obj,_stdclass_oo
+set {::return(_stdclass_oo new)} _obj,_stdclass_oo
 set ::return(button) _obj,button
 set ::return(canvas) _obj,canvas
 set ::return(checkbutton) _obj,checkbutton
@@ -679,6 +687,7 @@ set ::subCmd(_obj,ttk::scrollbar) {cget configure delta fraction get identify in
 set ::subCmd(_obj,ttk::separator) {cget configure identify instate state}
 set ::subCmd(_obj,ttk::sizegrip) {cget configure identify instate state}
 set ::subCmd(_obj,ttk::treeview) {bbox cget children column configure delete detach drag exists focus heading identify index insert instate item move next parent prev see selection set state tag xview yview}
+set ::subCmd(_stdclass_oo) {create new destroy variable}
 set ::subCmd(array) {anymore donesearch exists get names nextelement set size startsearch statistics unset}
 set ::subCmd(binary) {decode encode format scan}
 set {::subCmd(binary decode)} {base64 hex uuencode}

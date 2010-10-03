@@ -455,10 +455,19 @@ proc buildDb {ch} {
         set option(tcl::prefix\ match\ -message) x
         set option(tcl::prefix\ match\ -error) x
         set syntax(oo::class)    "s x*"
-        set syntax(oo::class\ create) "do=_stdclass cn?"
-        set syntax(oo::class\ create::constructor) cv
-        set syntax(oo::class\ create::method) "dm"
+        set syntax(oo::class\ create) "do=_stdclass_oo cn?"
+        set syntax(oo::class\ create::constructor) dk ;# Define constructor
+        set syntax(oo::class\ create::superclass)  di ;# Define inheritance
+        set syntax(oo::class\ create::method) "dm"    ;# Define method 
         set syntax(oo::class\ create::destructor) c
+        set syntax(_stdclass_oo) "s x*"
+        set subCmd(_stdclass_oo) "create new destroy variable"
+        set syntax(_stdclass_oo\ create) "dc=_obj,_stdclass_oo x?"
+        set return(_stdclass_oo\ create) _obj,_stdclass_oo
+        set syntax(_stdclass_oo\ new) 0
+        set return(_stdclass_oo\ new) _obj,_stdclass_oo
+        set syntax(_stdclass_oo\ destroy) 0
+        set syntax(_stdclass_oo\ variable) n*
         set syntax(info\ object) "s x x*"
         set syntax(info\ class)  "s x x*"
         set syntax(oo::copy)     "x x?"

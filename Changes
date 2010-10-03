@@ -1,3 +1,7 @@
+2010-10-04
+ Provide _stdclass_oo in syntaxdb.
+ Handle constructor and superclass in oo.
+
 2010-10-01
  Do not check proc/method name against variables
 
