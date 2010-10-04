@@ -1250,6 +1250,13 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                             set objname _obj,[namespace tail $name]
                             #echo "Defining object $name"
                             setCurrentObject $objname $name
+                            
+                            # Special case when defining an object in tcloo
+                            # Add an alias to make "my" an object
+                            if {[string match oo::* $cmd]} {
+                                set ::knownAliases(${cmd}::${name}::my) $objname
+                            }
+
                             if {![info exists ::syntax($objname)]} {
                                 set ::syntax($objname) "s x*"
                             }

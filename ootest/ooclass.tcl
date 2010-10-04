@@ -4,9 +4,6 @@
 
 # This is the annotation needed for this object definition
 
-# Define that "my" within the definition is an object
-##nagelfar alias oo::class\ create::Account::my _obj,Account 
-
 oo::class create Account {
     constructor {{ownerName undisclosed}} {
         my variable total overdrawLimit owner
@@ -92,10 +89,8 @@ bar boo x
 
 #############################################################
 # Experimenting with inheritance
-##nagelfar alias oo::class\ create::iddl::Base::my  _obj,Base
 ##nagelfar implicitvar oo::class\ create::iddl::Base id attributes
 
-##nagelfar alias oo::class\ create::iddl::Package::my  _obj,Package
 ##nagelfar implicitvar oo::class\ create::iddl::Package records
 
 oo::class create iddl::Base {
@@ -107,7 +102,9 @@ oo::class create iddl::Base {
         return $id
     }
     method fnurg {} {
-        return x
+        my id
+        my variable x
+        return $x
     }
 }
 
@@ -125,6 +122,7 @@ oo::class create iddl::Package {
         next
     }
     method addRecord {obj} {
+        my fnurg
         lappend records $obj
     }
     method getRecords {} {

@@ -62,3 +62,24 @@ test oo-2.1 {
     execTestFile -s syntaxdb86.tcl
 } -result {%%Line  16: E Wrong number of arguments (2) to "Base new"
 Line  20: E Wrong number of arguments (1) to "_obj,Base id"}
+
+test oo-3.1 {
+    tcloo, my
+} -constraints runin86 -body {
+    createTestFile {
+        oo::class create Base {
+            constructor {n} {
+                my variable id
+                set id $n
+            }
+            method id {} {
+                my variable id
+                return $id
+            }
+            method xx {} {
+                return [my id x]
+            }
+        }
+    }
+    execTestFile -s syntaxdb86.tcl
+} -result {%%Line  12: E Wrong number of arguments (2) to "_obj,Base id"}
