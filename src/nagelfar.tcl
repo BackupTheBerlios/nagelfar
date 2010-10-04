@@ -1223,6 +1223,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                 set objcmd [currentObject]
                 set copymap [list $objcmd $superObjCmd]
                 #puts "DI: '$superObjCmd' to '$objcmd' map '$copymap'"
+                set ::superclass($objcmd) [list $superclass $superObjCmd]
                 CopyCmdInDatabase $superObjCmd $objcmd $copymap
                 incr i
             }
@@ -2407,6 +2408,28 @@ proc parseStatement {statement index knownVarsName} {
                                   $wordtype $indices]
             }
 	}
+        next {
+            # Figure out the superclass of the caller to be able to check
+            set currObj [currentObject]
+            if {[info exists ::superclass($currObj)]} {
+                foreach {superCmd superObj} $::superclass($currObj) break
+                set methodName [namespace tail [currentProc]]
+                #puts "next: super '$superObj' meth '$methodName'"
+                if {[string match "* new" $methodName]} {
+                    # This is a constructor
+                    set subCmd "$superCmd new"
+                } else {
+                    set subCmd "$superObj $methodName"
+                }
+                if {[info exists ::syntax($subCmd)]} {
+                    #puts "Syntax for '$subCmd' '$::syntax($subCmd)'"
+                    set type [checkCommand $subCmd $index $argv $wordstatus \
+                            $wordtype $indices]
+                }
+            } else {
+                errorMsg N "No superclass found for 'next'" $index
+            }
+        }
 	tailcall {
             if {$argc < 1} {
                 WA
@@ -3005,11 +3028,11 @@ proc parseProc {argv indices isProc isMethod definingCmd} {
     if {!$::Nagelfar(firstpass)} {
         if {$isProc} {
             pushNamespace $ns
-            pushProc $name
         }
+        pushProc $name
         parseBody $body [lindex $indices 2] knownVars
+        popProc
         if {$isProc} {
-            popProc
             popNamespace
         }
     }

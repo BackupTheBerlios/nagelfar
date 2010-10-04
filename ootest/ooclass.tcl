@@ -96,7 +96,6 @@ bar boo x
 ##nagelfar implicitvar oo::class\ create::iddl::Base id attributes
 
 ##nagelfar alias oo::class\ create::iddl::Package::my  _obj,Package
-##nagelfar alias oo::class\ create::iddl::Package::next iddl::Base\ new
 ##nagelfar implicitvar oo::class\ create::iddl::Package records
 
 oo::class create iddl::Base {
@@ -107,7 +106,11 @@ oo::class create iddl::Base {
     method id {} {
         return $id
     }
+    method fnurg {} {
+        return x
+    }
 }
+
 oo::class create iddl::Package {
     superclass iddl::Base
     variable records
@@ -117,6 +120,9 @@ oo::class create iddl::Package {
         if {$r ne ""} {
             lappend records $r
         }
+    }
+    method fnurg {} {
+        next
     }
     method addRecord {obj} {
         lappend records $obj

@@ -32,3 +32,33 @@ test oo-1.1 {
     }
     execTestFile
 } -result {%%} -match glob
+
+test oo-2.1 {
+    tcloo inheritance, checking "next"
+} -constraints runin86 -body {
+    createTestFile {
+        ##nagelfar implicitvar oo::class\ create::Base id
+        oo::class create Base {
+            variable id
+            constructor {n} {
+                set id $n
+            }
+            method id {} {
+                return $id
+            }
+        }
+        oo::class create Package {
+            superclass Base
+            variable records
+            constructor {n {r {}}} {
+                next $n x
+                set records $r
+            }
+            method id {} {
+                next x
+            }
+        }
+    }
+    execTestFile -s syntaxdb86.tcl
+} -result {%%Line  16: E Wrong number of arguments (2) to "Base new"
+Line  20: E Wrong number of arguments (1) to "_obj,Base id"}

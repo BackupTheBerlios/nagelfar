@@ -14,6 +14,7 @@ tcltest::configure -verbose "body error" -singleproc 1
 #tcltest::configure -file oo*
 #tcltest::configure -match gui-6*
 
+testConstraint runin86 [expr {[info commands oo::class] ne ""}]
 testConstraint runin85 [expr {![catch {list {*}{hej}}]}]
 testConstraint runin84 [expr {[catch {list {*}{hej}}]}]
 #testConstraint knownbug 1

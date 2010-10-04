@@ -31,6 +31,7 @@ DB3NAME  = syntaxdb86.tcl
 # Path to the interpreter used for running tests
 TCLSH84  = tclsh
 TCLSH85  = ~/tcl/install/bin/tclsh8.5
+TCLSH86  = ~/tcl/install/bin/tclsh8.6
 
 all: base
 
@@ -95,6 +96,9 @@ test: clean base
 
 testgui: base
 	@$(TCLSH85) ./tests/all.tcl -file gui.test $(TESTFLAGS)
+
+test86: base
+	@$(TCLSH86) ./tests/all.tcl -notfile gui.test $(TESTFLAGS)
 
 test84: base
 	@$(TCLSH84) ./tests/all.tcl $(TESTFLAGS)
