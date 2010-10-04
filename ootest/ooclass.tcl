@@ -73,7 +73,6 @@ oo::objdefine o renamemethod bar lollipop
 o lollipop
 
 # Example with implicit variable:
-##nagelfar implicitvar oo::class\ create::foo x
 oo::class create foo {
     variable x
     constructor y {
@@ -89,12 +88,9 @@ bar boo x
 
 #############################################################
 # Experimenting with inheritance
-##nagelfar implicitvar oo::class\ create::iddl::Base id attributes
-
-##nagelfar implicitvar oo::class\ create::iddl::Package records
 
 oo::class create iddl::Base {
-    variable id
+    variable id attributes
     constructor {n} {
         set id $n
     }
@@ -104,6 +100,7 @@ oo::class create iddl::Base {
     method fnurg {} {
         my id
         my variable x
+        list $attributes
         return $x
     }
 }

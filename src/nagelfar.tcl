@@ -1941,32 +1941,42 @@ proc parseStatement {statement index knownVarsName} {
             set noConstantCheck 1
 	}
 	variable {
-	    set i 0
-	    foreach {var val} $argv {ws1 ws2} $wordstatus {
-                set ns [currentNamespace]
-                if {[regexp {^(.*)::([^:]+)$} $var -> root var]} {
-                    set ns $root
-                    if {[string match "::*" $ns]} {
-                        set ns [string range $ns 2 end]
-                    }
+            set currNs [currentNamespace]
+            # Special case in oo::class create
+            if {[string match "oo::class create*" $currNs]} {
+                #echo "Var: in $currNs"
+                foreach var $argv ws $wordstatus {
+                    lappend ::implicitVar($currNs) $var
                 }
-                if {$ns ne "__unknown__"} {
-                    if {$ws1 & 1} {
-                        set knownVars(namespace,$var) $ns
-                    }
-                    if {($ws1 & 1) || [string is wordchar $var]} {
-                        set knownVars(known,$var) 1
-                        set knownVars(type,$var)  ""
-                        if {$i < $argc - 1} {
-                            set knownVars(set,$var) 1
+            } else {
+                set i 0
+                foreach {var val} $argv {ws1 ws2} $wordstatus {
+                    set ns [currentNamespace]
+                    if {[regexp {^(.*)::([^:]+)$} $var -> root var]} {
+                        set ns $root
+                        if {[string match "::*" $ns]} {
+                            set ns [string range $ns 2 end]
                         }
-                        lappend constantsDontCheck $i
-                    } else {
-                        errorMsg N "Non constant argument to $cmd: $var" $index
                     }
+                    if {$ns ne "__unknown__"} {
+                        if {$ws1 & 1} {
+                            set knownVars(namespace,$var) $ns
+                        }
+                        if {($ws1 & 1) || [string is wordchar $var]} {
+                            set knownVars(known,$var) 1
+                            set knownVars(type,$var)  ""
+                            if {$i < $argc - 1} {
+                                set knownVars(set,$var) 1
+                            }
+                            lappend constantsDontCheck $i
+                        } else {
+                            errorMsg N "Non constant argument to $cmd: $var" \
+                                    $index
+                        }
+                    }
+                    incr i 2
                 }
-		incr i 2
-	    }
+            }
 	}
 	upvar {
             if {$argc < 2} {
