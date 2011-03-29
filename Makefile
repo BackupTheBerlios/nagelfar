@@ -18,7 +18,7 @@ TCLKITSH85_WIN = $(TCLKIT)/v85/tclkitsh-win32.upx.exe
 
 # Path to the libraries used
 GRIFFIN = /home/peter/tclkit/griffin.vfs/lib/griffin
-TKDND   = /home/peter/packages/tkdnd/lib/tkdnd1.0
+TKDND   = /home/peter/src/packages/tkdnd/lib/tkdnd1.0
 #CTEXT   = /home/peter/src/ctext
 TEXTSEARCH = /home/peter/src/textsearch
 
