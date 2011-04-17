@@ -133,7 +133,13 @@ proc errorMsg {severity msg i} {
         W { set color "#FFAA00"; set severityMsg "WARNING" }
         N { set color "#66BB00"; set severityMsg "NOTICE" }
     }
-    set pre "${pre}Line [format %3d $line]: $severity "
+    if {$::Prefs(prefixFile)} {
+        # Use a shorter format when -H flag is used
+        # This format can be parsed be e.g. emacs compile
+        set pre "${pre}$line: $severity "
+    } else {
+        set pre "${pre}Line [format %3d $line]: $severity "
+    }
     if {$::Prefs(html)} {
         set pre "<a href=#$::Prefs(htmlprefix)$line>Line [format %3d $line]</a>: <font color=$color><strong>$severityMsg</strong></font>: "
     }
@@ -3824,7 +3830,8 @@ proc doCheck {} {
     } else {
         foreach f $::Nagelfar(files) {
             if {$::Nagelfar(stop)} break
-            if {$::Nagelfar(gui) || [llength $::Nagelfar(files)] > 1} {
+            if {$::Nagelfar(gui) || [llength $::Nagelfar(files)] > 1 || \
+                    $::Prefs(prefixFile)} {
                 set ::currentFile $f
             }
             set syntaxfile [file rootname $f].syntax

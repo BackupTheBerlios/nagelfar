@@ -1,3 +1,6 @@
+2011-04-17
+ Added -H command line switch.
+
 2010-10-05
  Support for tcloo's implicit variables
  Support for tcloo "my" command.

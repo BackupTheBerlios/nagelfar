@@ -189,3 +189,12 @@ test preferences-6.2 {
     append res [execTestFile -flags "-severity N"]
     append res [execTestFile -flags "-severity W"]
 } -result {Bad severity level 'X', should be E/W/N.%%Line   3: N Close brace*%%} -match glob
+
+test preferences-7.1 {
+    Command line flags, -H
+} -body {
+    createTestFile {
+        info exist apa
+    }
+    set res [execTestFile -flags "-H"]
+} -result {%%_testfile_: 2: W Shortened*} -match glob

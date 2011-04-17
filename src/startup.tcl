@@ -49,6 +49,7 @@ proc usage {} {
  -markup           : Markup source file with code coverage result.
  -quiet            : Suppress non-syntax output.
  -glob <pattern>   : Add matching files to scriptfiles to check.
+ -H                : Prefix each error line with file name.
  -exitcode         : Return status code 2 for any error or 1 for warning.}
     exit
 }
@@ -177,6 +178,9 @@ if {![info exists gurka]} {
                     set enc system
                 }
                 set ::Nagelfar(encoding) $enc
+            }
+            -H {
+                set ::Prefs(prefixFile) 1
             }
             -exitcode {
                 set ::Prefs(exitcode) 1

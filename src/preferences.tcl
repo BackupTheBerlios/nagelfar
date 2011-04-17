@@ -42,6 +42,7 @@ proc getOptions {} {
         warnBraceExpr 2
         warnShortSub 1
         strictAppend 0
+        prefixFile 0
         forceElse 1
         noVar 0
         severity N
