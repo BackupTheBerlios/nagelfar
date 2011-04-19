@@ -1053,7 +1053,7 @@ proc fileRelative {dir file} {
     for {set t 0} {$t < $dl && $t < $fl} {incr t} {
         set f [lindex $filepath $t]
         set d [lindex $dirpath $t]
-        if {![string equal $f $d]} break
+        if {$f ne $d} break
     }
     # Return file if too unequal
     if {$t <= 2 || ($dl - $t) > 3} {

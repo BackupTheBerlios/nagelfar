@@ -25,10 +25,10 @@ proc makeRegistryFrame {w label key newvalue} {
     button $l.delete -text "Delete" -width 10 -command \
             "[list registry delete $key] ; \
              [list $l.delete configure -state disabled]"
-    if {[string equal $newvalue $old]} {
+    if {$newvalue eq $old} {
         $l.change configure -state disabled
     }
-    if {[string equal "" $old]} {
+    if {"" eq $old} {
         $l.delete configure -state disabled
     }
     grid $l.key1 $l.key2 -     -sticky "w" -padx 4 -pady 4
@@ -77,7 +77,7 @@ proc makeRegistryWin {} {
     if {[info exists ::starkit::topdir]} {
         # In a starpack ?
         set exe [file normalize $exe]
-        if {[string equal [file normalize $::starkit::topdir] $exe]} {
+        if {[file normalize $::starkit::topdir] eq $exe} {
             set myexe [list $exe]
         } else {
             set myexe [list $exe $::starkit::topdir]
