@@ -2545,6 +2545,7 @@ proc splitScript {script index statementsName indicesName knownVarsName} {
     set tryline ""
     set newstatement 1
     set firstline ""
+    set alignedBraceIx -1
     string length $tryline
 
     set bracelevel 0
@@ -2568,6 +2569,15 @@ proc splitScript {script index statementsName indicesName knownVarsName} {
                     if {$bracelevel <= 0} break
                 }
             }
+            # Remember a close brace that is aligned with start of line.
+            if {[string equal "\}" [string trim $line]] && $alignedBraceIx == -1} {
+                set closeBraceIx [expr {[string length $tryline] + $index}]
+                set closeBrace [wasIndented $closeBraceIx]
+                set startIndent [wasIndented $index]
+                if {$startIndent == $closeBrace} {
+                    set alignedBraceIx $closeBraceIx
+                }
+            }
             if {$bracelevel > 0} {
                 # We are still in a braced block so go on to the next line
 		append tryline $line\n
@@ -2580,6 +2590,7 @@ proc splitScript {script index statementsName indicesName knownVarsName} {
         # any backslash-newline has been removed.
         if {[string is space $line]} {
             if {$tryline eq ""} {
+                # We have not started a statement yet, move index to next line.
                 incr index [string length $line]
                 incr index
             } else {
@@ -2602,6 +2613,10 @@ proc splitScript {script index statementsName indicesName knownVarsName} {
                     reportCommentBrace 0 $closeBraceIx
                 }
                 set closeBrace [wasIndented $closeBraceIx]
+                set startIndent [wasIndented $index]
+                if {$startIndent == $closeBrace && $alignedBraceIx == -1} {
+                    set alignedBraceIx $closeBraceIx
+                }
             }
 
 	    # Move everything up to the next semicolon, newline or eof
@@ -2655,6 +2670,7 @@ proc splitScript {script index statementsName indicesName knownVarsName} {
                     incr index [string length $tryline]
                     set tryline ""
                     set newstatement 1
+                    set alignedBraceIx -1
                     continue
                 } else {
                     if {$i != 0} {
@@ -2688,6 +2704,7 @@ proc splitScript {script index statementsName indicesName knownVarsName} {
 		incr index [string length $tryline]
 		set tryline ""
                 set newstatement 1
+                set alignedBraceIx -1
 	    } elseif {$closeBrace == 0 && \
                     ![string match "namespace eval*" $tryline] && \
                     ![string match "if *" $tryline] && \
@@ -2717,6 +2734,7 @@ proc splitScript {script index statementsName indicesName knownVarsName} {
         errorMsg E "Could not complete statement." $index
 
         # Experiment a little to give more info.
+        # First, at first line, to give a hint of the nature of what is missing.
         if {[info complete $firstline\}]} {
             contMsg "One close brace would complete the first line"
             reportCommentBrace $index $index
@@ -2731,6 +2749,21 @@ proc splitScript {script index statementsName indicesName knownVarsName} {
             contMsg "One close bracket would complete the first line"
         }
 
+        # Second, at an aligned close brace, which is a likely place.
+        if {$alignedBraceIx != -1} {
+            set cand [string range $tryline 0 [expr {$alignedBraceIx - $index}]]
+            set txt "at end of line [calcLineNo $alignedBraceIx]."
+            if {[info complete $cand\}]} {
+                contMsg "One close brace would complete $txt"
+            } elseif {[info complete $cand\}\}]} {
+                contMsg "Two close braces would complete $txt"
+            }
+            # TODO: Use this information to assume completeness earlier
+            # This would need to recurse back to this function after cutting of the
+            # remainder of tryline.
+        }
+
+        # Third, at end of script
         set endIx [expr {$index + [string length $tryline] - 1}]
         set txt "the script body at line [calcLineNo $endIx]."
         if {[info complete $tryline\}]} {

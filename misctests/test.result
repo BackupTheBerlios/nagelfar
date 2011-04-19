@@ -32,6 +32,7 @@ Line  82: E Unbalanced close brace found
             Unbalanced brace in comment in line 78.
 Line  88: E Could not complete statement.
             One close brace would complete the first line
+            One close brace would complete at end of line 93.
             One close brace would complete the script body at line 94.
             Assuming completeness for further processing.
 Line  90: E Wrong number of arguments (1) to "if"
