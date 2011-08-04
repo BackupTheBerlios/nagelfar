@@ -3598,7 +3598,11 @@ proc instrumentMarkup {filename} {
         }
     }
     set total [expr {$covered + $noncovered}]
-    set coverage [expr {100.0 * $covered / $total}]
+    if {$total == 0} {
+        set coverage 100.0
+    } else {
+        set coverage [expr {100.0 * $covered / $total}]
+    }
     set stats [format "(%d/%d %4.1f%%)" \
             $covered $total $coverage]
     echo "Writing file $mfile $stats" 1
