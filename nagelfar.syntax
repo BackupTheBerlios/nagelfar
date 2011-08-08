@@ -24,7 +24,7 @@
 # Argument 6 and 7 to markVariable is a call-by-name where
 # the variable is set by this call and need not exist before.
 
-##nagelfar syntax markVariable x x x x x n n
+##nagelfar syntax markVariable x x x x x x n n
 
 # This application uses TkDnd but since the standard database usually
 # do not know about 'dnd', it is included here to avoid false warnings.

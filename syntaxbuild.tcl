@@ -177,11 +177,11 @@ proc buildDb {ch} {
     # FIXA: handle after's id/subcommand thing.
     set syntax(append)          "n x*"
     set syntax(array)           "s v x?"
-    set syntax(array\ exists)   "l"
-    set syntax(array\ names)    "v x? x?"
-    set syntax(array\ set)      "n x"
-    set syntax(array\ size)     "v"
-    set syntax(array\ statistics) "v"
+    set syntax(array\ exists)   "l=array"
+    set syntax(array\ names)    "v=array x? x?"
+    set syntax(array\ set)      "n=array x"
+    set syntax(array\ size)     "v=array"
+    set syntax(array\ statistics) "v=array"
     set syntax(array\ unset)    "l x?"
     #set syntax(bgerror)          1
     set syntax(binary)          "s x*"
@@ -303,7 +303,8 @@ proc buildDb {ch} {
     set syntax(return)          "p* x?"
     set syntax(scan)            "x x n*"
     set syntax(seek)            "r 2 3"
-    set syntax(set)             "1: v : n x"
+    # "set" is handled specially
+    set syntax(set)             "1: v=scalar : n=scalar x"
     set syntax(socket)          "r 2"
     set syntax(source)           1
     set syntax(split)           "r 1 2"

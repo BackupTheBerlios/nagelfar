@@ -937,3 +937,76 @@ test nagelfar-25.2 {
     }
     execTestFile -flags "-s syntaxdb86.tcl"
 } -result {%%Line   4: E Bad option -miffo to "_obj,frame configure"}
+
+test nagelfar-26.1 {
+    array/scalar checks
+} -body {
+    createTestFile {
+        # Very obvious error
+        set arr(3) a
+        set arr 2
+    }
+    execTestFile
+} -result {%%Line   4: E Is scalar, was array}
+
+test nagelfar-26.2 {
+    array/scalar checks
+} -body {
+    createTestFile {
+        # Very obvious error
+        set arr a
+        set arr(3) 2
+    }
+    execTestFile
+} -result {%%Line   4: E Is array, was scalar}
+
+test nagelfar-26.3 {
+    array/scalar checks
+} -body {
+    createTestFile {
+        # Very obvious error
+        set arr(3) a
+        list $arr
+    }
+    execTestFile
+} -result {%%Line   4: E Is scalar, was array}
+
+test nagelfar-26.4 {
+    array/scalar checks
+} -body {
+    createTestFile {
+        # Very obvious error
+        set arr a
+        list $arr(3)
+    }
+    execTestFile
+} -result {%%Line   4: E Is array, was scalar}
+
+test nagelfar-26.5 {
+    array/scalar checks
+} -body {
+    createTestFile {
+        # Recognise array set as array
+        array set arr {a b c d}
+        set arr 2
+    }
+    execTestFile
+} -result {%%Line   4: E Is scalar, was array}
+
+test nagelfar-26.6 {
+    array/scalar checks
+} -body {
+    createTestFile {
+        # Old markup must be seen as unknown
+        ##nagelfar syntax apa n
+        ##nagelfar syntax bepa v
+        apa var
+        set var 2
+        bepa var
+        apa var2
+        set var2(x) x
+        bepa var2
+        bepa var2(x)
+    }
+    execTestFile
+} -result {%%}

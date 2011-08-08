@@ -65,11 +65,11 @@ set {::syntax(_obj,toplevel configure)} {o. x. p*}
 set ::syntax(after) {r 1}
 set ::syntax(append) {n x*}
 set ::syntax(array) {s v x?}
-set {::syntax(array exists)} l
-set {::syntax(array names)} {v x? x?}
-set {::syntax(array set)} {n x}
-set {::syntax(array size)} v
-set {::syntax(array statistics)} v
+set {::syntax(array exists)} l=array
+set {::syntax(array names)} {v=array x? x?}
+set {::syntax(array set)} {n=array x}
+set {::syntax(array size)} v=array
+set {::syntax(array statistics)} v=array
 set {::syntax(array unset)} {l x?}
 set ::syntax(auto_execok) 1
 set ::syntax(auto_import) 1
@@ -226,7 +226,7 @@ set ::syntax(scrollbar) {x p*}
 set ::syntax(seek) {r 2 3}
 set ::syntax(selection) {s x*}
 set ::syntax(send) {o* x x x*}
-set ::syntax(set) {1: v : n x}
+set ::syntax(set) {1: v=scalar : n=scalar x}
 set ::syntax(socket) {r 2}
 set ::syntax(source) 1
 set ::syntax(spinbox) {x p*}
