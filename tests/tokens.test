@@ -450,3 +450,20 @@ Line  18: E Wrong number of arguments (2) to "obj cepa"
 Line  19: E Unknown subcommand "moo" to "obj"
 Line  20: W Shortened subcommand for "obj", ce -> cepa
 Line  21: W Unknown command "cepa"}
+
+test tokens-14.1 {
+    Token o*
+} -body {
+    createTestFile {
+        ##nagelfar syntax gurka o* x x
+        ##nagelfar option gurka -flag -miffo
+        gurka
+        gurka -flag x x
+        gurka -miffo -flag x x
+        # Mandatory options are consumed first.
+        gurka -hurga hejsan
+        # This should error
+        gurka -hurga hejsan hoppsan
+    }
+    execTestFile
+} -result {%%Line  10: E Bad option -hurga to "gurka"}
