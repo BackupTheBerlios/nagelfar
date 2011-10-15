@@ -212,23 +212,29 @@ test tokens-7.3 {
     createTestFile {
         trace add variable ::x write "llength x ;#"
         trace add variable ::x write "lrange"
-        trace add execution _ _ "string index"
+        trace add execution _ enter "string index"
+        trace add execution _ leave "string replace"
         trace add command   _ _ "lrange"
 
-        trace add execution _ _ "lrange"
+        trace add execution _ enter "lrange"
+        trace add execution _ leave "lrange"
         trace add command   _ _ "string index"
         trace add variable  ::x _ "string index"
     }
     execTestFile
     # Known bug: Prefix errors give bad extra info
-} -result {%%Line   7: E Wrong number of arguments (2) to "lrange"
-            Argument 2 at line 8
-Line   8: E Wrong number of arguments (4) to "string index"
-            Argument 3 at line 9
-            Argument 4 at line 9
-Line   9: E Wrong number of arguments (4) to "string index"
+} -result {%%Line   8: E Wrong number of arguments (2) to "lrange"
+            Argument 2 at line 9
+Line   9: E Wrong number of arguments (4) to "lrange"
+            Argument 2 at line 10
+            Argument 3 at line 10
+            Argument 4 at line 10
+Line  10: E Wrong number of arguments (4) to "string index"
             Argument 3 at line 11
-            Argument 4 at line 10}
+            Argument 4 at line 11
+Line  11: E Wrong number of arguments (4) to "string index"
+            Argument 3 at line 13
+            Argument 4 at line 12}
 
 test tokens-7.4 {
     Code token, global context

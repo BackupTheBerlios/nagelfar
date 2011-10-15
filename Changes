@@ -1,3 +1,6 @@
+2011-10-15
+ Corrected some trace sub commands in syntax database.
+
 2011-08-09
  Added checks for array/scalar mixup.
 

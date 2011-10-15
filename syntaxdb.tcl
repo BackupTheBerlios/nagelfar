@@ -446,7 +446,9 @@ set ::syntax(toplevel) {x p*}
 set ::syntax(trace) {s x x*}
 set {::syntax(trace add)} {s x x x}
 set {::syntax(trace add command)} {x x c3}
-set {::syntax(trace add execution)} {x x c2}
+set {::syntax(trace add execution)} {x s c2}
+set {::syntax(trace add execution leave)} c4
+set {::syntax(trace add execution leavestep)} c4
 set {::syntax(trace add variable)} {v x c3}
 set {::syntax(trace info)} {s x x x}
 set {::syntax(trace info command)} x
@@ -638,6 +640,7 @@ set ::subCmd(tk) {appname caret inactive scaling useinputmethods windowingsystem
 set ::subCmd(tkwait) {variable visibility window}
 set ::subCmd(trace) {add info remove variable vdelete vinfo}
 set {::subCmd(trace add)} {command execution variable}
+set {::subCmd(trace add execution)} {enter enterstep leave leavestep}
 set {::subCmd(trace info)} {command execution variable}
 set {::subCmd(trace remove)} {command execution variable}
 set ::subCmd(ttk::style) {configure element layout lookup map theme}
