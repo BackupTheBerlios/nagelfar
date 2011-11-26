@@ -1,8 +1,6 @@
 #----------------------------------------------------------------------
 # registry.tcl, Support for Windows Registry
 #----------------------------------------------------------------------
-# $Revision$
-#----------------------------------------------------------------------
 
 # Make a labelframe for one registry item
 proc makeRegistryFrame {w label key newvalue} {
