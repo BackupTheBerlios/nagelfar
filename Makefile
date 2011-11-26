@@ -184,6 +184,10 @@ db: syntaxdb.tcl $(DB2NAME) $(DB3NAME)
 # Packaging/Releasing
 #----------------------------------------------------------------
 
+force: base
+	make -B nagelfar.tcl
+.phony: force
+
 wrap: base
 	sdx wrap nagelfar.kit
 
@@ -207,7 +211,7 @@ distrib: base
 		nagelfar$(VERSION)/doc
 	@\rm nagelfar$(VERSION)
 
-release: base distrib wrap wrapexe
+release: force distrib wrap wrapexe
 	@cp nagelfar.tar.gz nagelfar`date +%Y%m%d`.tar.gz
 	@mv nagelfar.tar.gz nagelfar$(VERSION).tar.gz
 	@gzip nagelfar.linux

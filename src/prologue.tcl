@@ -1,4 +1,7 @@
 #!/bin/sh
+# the next line restarts using tclsh \
+exec tclsh "$0" "$@"
+
 #----------------------------------------------------------------------
 #  Nagelfar, a syntax checker for Tcl.
 #  Copyright (c) 1999-2010, Peter Spjuth
@@ -23,8 +26,6 @@
 #----------------------------------------------------------------------
 # $Revision$
 #----------------------------------------------------------------------
-# the next line restarts using tclsh \
-exec tclsh "$0" "$@"
 
 set debug 0
 package require Tcl 8.4
