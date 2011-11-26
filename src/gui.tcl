@@ -1031,12 +1031,12 @@ proc makeDocWin {fileName} {
     # Set up tags
     $t tag configure ul -underline 1
 
-    if {![file exists $::thisDir/doc/$fileName]} {
+    if {![file exists $::docDir/$fileName]} {
         $t insert end "ERROR: Could not find doc file "
         $t insert end \"$fileName\"
         return
     }
-    insertTaggedText $t $::thisDir/doc/$fileName
+    insertTaggedText $t $::docDir/$fileName
 
     #focus $t
     $t configure -state disabled
