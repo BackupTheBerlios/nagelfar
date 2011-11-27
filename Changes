@@ -1,3 +1,8 @@
+Version 1.1.12
+
+2011-11-27
+ Recognise common construct ${ns}::var as non-suspicious.
+
 2011-11-26
  Made it possible to customize how Nagelfar is installed.
 
