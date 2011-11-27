@@ -1697,7 +1697,12 @@ proc markVariable {var ws wordtype check index isArray knownVarsName typeName} {
             }
         }
         if {$wordtype ne "varName"} {
-            errorMsg N "Suspicious variable name \"$var\"" $index
+            # A common namespace idiom is ${x}::y
+            if {[regexp {^\${\w+}(::\w+)+} $var]} {
+                # Do anything?
+            } else {
+                errorMsg N "Suspicious variable name \"$var\"" $index
+            }
         }
 	return 0
     }

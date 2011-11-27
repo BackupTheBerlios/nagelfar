@@ -199,6 +199,8 @@ test namespace-5.1 {
             variable ${ns}::hopp
             set x $hej
             set y $hopp
+            # This is a common idiom for namespaces
+            set ${ns}::hopp xx
         }
     }
     execTestFile
