@@ -202,13 +202,19 @@ wrapexe: base
 distrib: base
 	@\rm -f nagelfar.tar.gz
 	@ln -s . nagelfar$(VERSION)
-	@tar --exclude .svn -zcvf nagelfar.tar.gz nagelfar$(VERSION)/COPYING \
+	@mkdir -p lib
+	@ln -sf $(TEXTSEARCH) lib/textsearch
+	@tar --exclude .svn -cvf nagelfar.tar nagelfar$(VERSION)/COPYING \
 		nagelfar$(VERSION)/README.txt nagelfar$(VERSION)/syntaxbuild.tcl \
 		nagelfar$(VERSION)/syntaxdb.tcl nagelfar$(VERSION)/syntaxdb84.tcl \
 		nagelfar$(VERSION)/syntaxdb86.tcl \
 		nagelfar$(VERSION)/nagelfar.syntax nagelfar$(VERSION)/nagelfar.tcl \
 		nagelfar$(VERSION)/misctests/test.tcl nagelfar$(VERSION)/misctests/test.syntax \
 		nagelfar$(VERSION)/doc
+	@tar --exclude .svn --exclude CVS -rvhf nagelfar.tar \
+		nagelfar$(VERSION)/lib
+	@gzip nagelfar.tar
+	@\rm lib/textsearch
 	@\rm nagelfar$(VERSION)
 
 release: force distrib wrap wrapexe
