@@ -637,13 +637,14 @@ proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
 
 # Make a list of a string. This is easy, just treat it as a list.
 # But we must keep track of indices, so our own parsing is needed too.
-proc splitList {str index iName} {
-    upvar $iName indices
+proc splitList {str index iName wsName} {
+    upvar $iName indices $wsName wordstatuses
 
     # Make a copy to perform list operations on
     set lstr [string range $str 0 end]
 
     set indices {}
+    set wordstatuses {}
     if {[catch {set n [llength $lstr]}]} {
 	errorMsg E "Bad list" $index
 	return {}
@@ -664,15 +665,18 @@ proc splitList {str index iName} {
 		    set level 1
 		    set state brace
                     lappend indices [expr {$index + $i + 1}]
+                    lappend wordstatuses 3
 		} elseif {$c eq "\""} {
 		    set state quote
                     lappend indices [expr {$index + $i + 1}]
+                    lappend wordstatuses 5
 		} else {
 		    if {$c eq "\\"} {
 			set escape 1
 		    }
 		    set state word
                     lappend indices [expr {$index + $i}]
+                    lappend wordstatuses 1
 		}
 	    }
 	    word {
@@ -2302,7 +2306,7 @@ proc parseStatement {statement index knownVarsName} {
 		set ix [lindex $indices $i]
 
                 if {($ws & 1) == 1} {
-                    set swargv [splitList $arg $ix swindices]
+                    set swargv [splitList $arg $ix swindices swwordst]
                     if {[llength $swargv] % 2 == 1} {
                         errorMsg E "Odd number of elements in last argument to\
                                 switch." $ix
@@ -2311,10 +2315,6 @@ proc parseStatement {statement index knownVarsName} {
                     if {[llength $swargv] == 0} {
                         errorMsg W "Empty last argument to switch." $ix
                         return
-                    }
-                    set swwordst {}
-                    foreach word $swargv {
-                        lappend swwordst 1
                     }
                 } else {
                     set swwordst {}
@@ -2329,10 +2329,16 @@ proc parseStatement {statement index knownVarsName} {
 		set swwordst [lrange $wordstatus $i end]
 		set swindices [lrange $indices $i end]
 	    }
+            set count [llength $swargv]
 	    foreach {pat body} $swargv {ws1 ws2} $swwordst {i1 i2} $swindices {
-		if {[string index $pat 0] eq "#"} {
-		    errorMsg W "Switch pattern starting with #.\
-			    This could be a bad comment." $i1
+                incr count -2
+                # A stand-alone hash as a pattern is suspicious
+		if {[string index $pat 0] eq "#" && $ws1 == 1} {
+                    # Skip warning if body is braced
+                    if {$ws2 != 3} {
+                        errorMsg W "Switch pattern starting with #.\
+                                This could be a bad comment." $i1
+                    }
 		}
 		if {$body eq "-"} {
 		    continue
@@ -2341,6 +2347,12 @@ proc parseStatement {statement index knownVarsName} {
 		    errorMsg W "No braces around code in switch\
                             statement." $i2
 		}
+                if {$pat eq "others" && $ws1 == 1 && $count == 0} {
+                    # Bareword "others" when last can be a mistake since other
+                    # languages use it as the "default" keyword.
+                    errorMsg N "Switch pattern \"others\" could be a mistaken\
+                            \"default\"" $i1
+                }
                 set ::instrumenting($i2) 1
 		parseBody $body $i2 knownVars
 	    }

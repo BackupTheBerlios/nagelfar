@@ -1,8 +1,6 @@
 #------------------------------------------------------------*- tcl -*-
 # Generic tests for Nagelfar
 #----------------------------------------------------------------------
-# $Revision$
-#----------------------------------------------------------------------
 
 test nagelfar-1.1 {
     Command line checks
@@ -841,6 +839,24 @@ test nagelfar-20.2 {
     }
     execTestFile
 } -result {%%Line   3: N String argument to switch is constant}
+
+test nagelfar-20.3 {
+    switch
+} -body {
+    createTestFile {
+        set y {1 5}
+        switch $y {
+            # { # Recognise this comment style }
+            "#" { # Really get hash for pattern
+            }
+            x {
+            }
+            others { # Possibly mistaken "others" for "default"
+            }
+        }
+    }
+    execTestFile
+} -result {%%Line   9: N Switch pattern "others" could be a mistaken "default"}
 
 test nagelfar-21.1 {
     Embedded

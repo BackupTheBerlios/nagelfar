@@ -30,7 +30,8 @@ proc doSplitScript {body} {
 proc doSplitList {body} {
     slave eval [list set ::body $body]
     slave eval {set ::body [buildLineDb $::body]}
-    slave eval {splitList $::body 0 ::indices}
+    slave eval {splitList $::body 0 ::indices ::wordstatuses}
+    set ws [slave eval set ::wordstatuses] ;# Do anyting with this?
     return [slave eval set ::indices]
 }
 
