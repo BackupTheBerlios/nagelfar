@@ -15,7 +15,6 @@ TCLKIT85_WIN   = $(TCLKIT)/v85/tclkit-win32.upx.exe
 TCLKITSH85_WIN = $(TCLKIT)/v85/tclkitsh-win32.upx.exe
 
 # Path to the libraries used
-GRIFFIN = /home/peter/tclkit/griffin.vfs/lib/griffin
 TKDND   = /home/peter/src/packages/tkdnd/lib/tkdnd1.0
 #CTEXT   = /home/peter/src/ctext
 TEXTSEARCH = /home/peter/src/textsearch
@@ -47,8 +46,6 @@ base: nagelfar.tcl setup misctest db
 #	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../syntaxdb84.tcl
 #nagelfar.vfs/lib/app-nagelfar/doc:
 #	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../doc
-nagelfar.vfs/lib/griffin:
-	cd nagelfar.vfs/lib ; ln -s $(GRIFFIN) griffin
 nagelfar.vfs/lib/tkdnd:
 	cd nagelfar.vfs/lib ; ln -s $(TKDND) tkdnd
 #nagelfar.vfs/lib/ctext:
@@ -56,8 +53,7 @@ nagelfar.vfs/lib/tkdnd:
 nagelfar.vfs/lib/textsearch:
 	cd nagelfar.vfs/lib ; ln -s $(TEXTSEARCH) textsearch
 
-links: nagelfar.vfs/lib/griffin \
-	nagelfar.vfs/lib/tkdnd \
+links: nagelfar.vfs/lib/tkdnd \
 	nagelfar.vfs/lib/textsearch
 
 setup: links

@@ -1,6 +1,6 @@
 # Automatically generated syntax database.
 
-lappend ::dbInfo {Tcl 8.5.10 unix, Tk 8.5.10 x11}
+lappend ::dbInfo {Tcl 8.5.11 unix, Tk 8.5.11 x11}
 set ::dbTclVersion 8.5
 set ::knownGlobals {argc argv argv0 auto_index auto_path env errorCode errorInfo tcl_interactive tcl_library tcl_nonwordchars tcl_patchLevel tcl_pkgPath tcl_platform tcl_rcFileName tcl_version tcl_wordchars tk_library tk_patchLevel tk_strictMotif tk_version}
 set ::knownCommands {. EvalAttached after append apply array auto_execok auto_import auto_load auto_load_index auto_mkindex auto_mkindex_old auto_qualify auto_reset bell bgerror binary bind bindtags break button canvas case catch cd chan checkbutton clipboard clock close concat continue destroy dict encoding entry eof error eval event exec exit expr fblocked fconfigure fcopy file fileevent flush focus font for foreach format frame gets glob global grab grid history if image incr info interp join label labelframe lappend lassign lindex linsert list listbox llength load lower lrange lrepeat lreplace lreverse lsearch lset lsort menu menubutton message msgcat::mc msgcat::mcload msgcat::mclocale msgcat::mcmax msgcat::mcmset msgcat::mcpreferences msgcat::mcset msgcat::mcunknown namespace open option pack package panedwindow parray pid pkg_mkIndex place proc puts pwd radiobutton raise read regexp regsub rename return scale scan scrollbar seek selection send set socket source spinbox split string subst switch tcl::pkgconfig tclListValidFlags tclLog tclParseConfigSpec tclPkgSetup tclPkgUnknown tcl_endOfWord tcl_findLibrary tcl_startOfNextWord tcl_startOfPreviousWord tcl_wordBreakAfter tcl_wordBreakBefore tell text time tk tk::button tk::canvas tk::checkbutton tk::entry tk::frame tk::label tk::labelframe tk::listbox tk::menubutton tk::message tk::panedwindow tk::radiobutton tk::scale tk::scrollbar tk::spinbox tk::text tk::toplevel tk_bindForTraversal tk_bisque tk_chooseColor tk_chooseDirectory tk_dialog tk_focusFollowsMouse tk_focusNext tk_focusPrev tk_getFileType tk_getOpenFile tk_getSaveFile tk_menuBar tk_menuSetFocus tk_messageBox tk_optionMenu tk_popup tk_setPalette tk_textCopy tk_textCut tk_textPaste tkwait toplevel trace ttk::button ttk::checkbutton ttk::combobox ttk::entry ttk::frame ttk::label ttk::labelframe ttk::menubutton ttk::notebook ttk::panedwindow ttk::progressbar ttk::radiobutton ttk::scale ttk::scrollbar ttk::separator ttk::setTheme ttk::sizegrip ttk::style ttk::themes ttk::treeview unknown unload unset update uplevel upvar variable vwait while winfo wm}
@@ -746,42 +746,42 @@ set {::option(_obj,tk::toplevel cget)} {-bd -borderwidth -class -menu -relief -s
 set {::option(_obj,tk::toplevel configure)} {-bd -borderwidth -class -menu -relief -screen -use -background -bg -colormap -container -cursor -height -highlightbackground -highlightcolor -highlightthickness -padx -pady -takefocus -visual -width}
 set {::option(_obj,toplevel cget)} {-bd -borderwidth -class -menu -relief -screen -use -background -bg -colormap -container -cursor -height -highlightbackground -highlightcolor -highlightthickness -padx -pady -takefocus -visual -width}
 set {::option(_obj,toplevel configure)} {-bd -borderwidth -class -menu -relief -screen -use -background -bg -colormap -container -cursor -height -highlightbackground -highlightcolor -highlightthickness -padx -pady -takefocus -visual -width}
-set {::option(_obj,ttk::button cget)} {-takefocus -command -default -text -textvariable -underline -width -image -compound -padding -state -takefocus -cursor -style -class}
-set {::option(_obj,ttk::button configure)} {-takefocus -command -default -text -textvariable -underline -width -image -compound -padding -state -takefocus -cursor -style -class}
+set {::option(_obj,ttk::button cget)} {-command -default -takefocus -text -textvariable -underline -width -image -compound -padding -state -cursor -style -class}
+set {::option(_obj,ttk::button configure)} {-command -default -takefocus -text -textvariable -underline -width -image -compound -padding -state -cursor -style -class}
 set {::option(_obj,ttk::button configure -textvariable)} n
-set {::option(_obj,ttk::checkbutton cget)} {-takefocus -variable -onvalue -offvalue -command -text -textvariable -underline -width -image -compound -padding -state -takefocus -cursor -style -class}
-set {::option(_obj,ttk::checkbutton configure)} {-takefocus -variable -onvalue -offvalue -command -text -textvariable -underline -width -image -compound -padding -state -takefocus -cursor -style -class}
+set {::option(_obj,ttk::checkbutton cget)} {-variable -onvalue -offvalue -command -takefocus -text -textvariable -underline -width -image -compound -padding -state -cursor -style -class}
+set {::option(_obj,ttk::checkbutton configure)} {-variable -onvalue -offvalue -command -takefocus -text -textvariable -underline -width -image -compound -padding -state -cursor -style -class}
 set {::option(_obj,ttk::checkbutton configure -textvariable)} n
 set {::option(_obj,ttk::checkbutton configure -variable)} n
-set {::option(_obj,ttk::combobox cget)} {-height -postcommand -values -takefocus -exportselection -font -invalidcommand -justify -show -state -textvariable -validate -validatecommand -width -xscrollcommand -foreground -background -takefocus -cursor -style -class}
-set {::option(_obj,ttk::combobox configure)} {-height -postcommand -values -takefocus -exportselection -font -invalidcommand -justify -show -state -textvariable -validate -validatecommand -width -xscrollcommand -foreground -background -takefocus -cursor -style -class}
+set {::option(_obj,ttk::combobox cget)} {-height -postcommand -values -exportselection -font -invalidcommand -justify -show -state -textvariable -validate -validatecommand -width -xscrollcommand -foreground -background -takefocus -cursor -style -class}
+set {::option(_obj,ttk::combobox configure)} {-height -postcommand -values -exportselection -font -invalidcommand -justify -show -state -textvariable -validate -validatecommand -width -xscrollcommand -foreground -background -takefocus -cursor -style -class}
 set {::option(_obj,ttk::combobox configure -textvariable)} n
-set {::option(_obj,ttk::entry cget)} {-takefocus -exportselection -font -invalidcommand -justify -show -state -textvariable -validate -validatecommand -width -xscrollcommand -foreground -background -takefocus -cursor -style -class}
-set {::option(_obj,ttk::entry configure)} {-takefocus -exportselection -font -invalidcommand -justify -show -state -textvariable -validate -validatecommand -width -xscrollcommand -foreground -background -takefocus -cursor -style -class}
+set {::option(_obj,ttk::entry cget)} {-exportselection -font -invalidcommand -justify -show -state -textvariable -validate -validatecommand -width -xscrollcommand -foreground -background -takefocus -cursor -style -class}
+set {::option(_obj,ttk::entry configure)} {-exportselection -font -invalidcommand -justify -show -state -textvariable -validate -validatecommand -width -xscrollcommand -foreground -background -takefocus -cursor -style -class}
 set {::option(_obj,ttk::entry configure -textvariable)} n
 set {::option(_obj,ttk::frame cget)} {-borderwidth -padding -relief -width -height -takefocus -cursor -style -class}
 set {::option(_obj,ttk::frame configure)} {-borderwidth -padding -relief -width -height -takefocus -cursor -style -class}
-set {::option(_obj,ttk::label cget)} {-background -foreground -font -borderwidth -relief -anchor -justify -wraplength -text -textvariable -underline -width -image -compound -padding -state -takefocus -cursor -style -class}
-set {::option(_obj,ttk::label configure)} {-background -foreground -font -borderwidth -relief -anchor -justify -wraplength -text -textvariable -underline -width -image -compound -padding -state -takefocus -cursor -style -class}
+set {::option(_obj,ttk::label cget)} {-background -foreground -font -borderwidth -relief -anchor -justify -wraplength -takefocus -text -textvariable -underline -width -image -compound -padding -state -cursor -style -class}
+set {::option(_obj,ttk::label configure)} {-background -foreground -font -borderwidth -relief -anchor -justify -wraplength -takefocus -text -textvariable -underline -width -image -compound -padding -state -cursor -style -class}
 set {::option(_obj,ttk::label configure -textvariable)} n
 set {::option(_obj,ttk::labelframe cget)} {-labelanchor -text -underline -labelwidget -borderwidth -padding -relief -width -height -takefocus -cursor -style -class}
 set {::option(_obj,ttk::labelframe configure)} {-labelanchor -text -underline -labelwidget -borderwidth -padding -relief -width -height -takefocus -cursor -style -class}
-set {::option(_obj,ttk::menubutton cget)} {-takefocus -menu -direction -text -textvariable -underline -width -image -compound -padding -state -takefocus -cursor -style -class}
-set {::option(_obj,ttk::menubutton configure)} {-takefocus -menu -direction -text -textvariable -underline -width -image -compound -padding -state -takefocus -cursor -style -class}
+set {::option(_obj,ttk::menubutton cget)} {-menu -direction -takefocus -text -textvariable -underline -width -image -compound -padding -state -cursor -style -class}
+set {::option(_obj,ttk::menubutton configure)} {-menu -direction -takefocus -text -textvariable -underline -width -image -compound -padding -state -cursor -style -class}
 set {::option(_obj,ttk::menubutton configure -textvariable)} n
-set {::option(_obj,ttk::notebook cget)} {-takefocus -width -height -padding -takefocus -cursor -style -class}
-set {::option(_obj,ttk::notebook configure)} {-takefocus -width -height -padding -takefocus -cursor -style -class}
+set {::option(_obj,ttk::notebook cget)} {-width -height -padding -takefocus -cursor -style -class}
+set {::option(_obj,ttk::notebook configure)} {-width -height -padding -takefocus -cursor -style -class}
 set {::option(_obj,ttk::panedwindow cget)} {-orient -width -height -takefocus -cursor -style -class}
 set {::option(_obj,ttk::panedwindow configure)} {-orient -width -height -takefocus -cursor -style -class}
 set {::option(_obj,ttk::progressbar cget)} {-orient -length -mode -maximum -variable -value -phase -takefocus -cursor -style -class}
 set {::option(_obj,ttk::progressbar configure)} {-orient -length -mode -maximum -variable -value -phase -takefocus -cursor -style -class}
 set {::option(_obj,ttk::progressbar configure -variable)} n
-set {::option(_obj,ttk::radiobutton cget)} {-takefocus -variable -value -command -text -textvariable -underline -width -image -compound -padding -state -takefocus -cursor -style -class}
-set {::option(_obj,ttk::radiobutton configure)} {-takefocus -variable -value -command -text -textvariable -underline -width -image -compound -padding -state -takefocus -cursor -style -class}
+set {::option(_obj,ttk::radiobutton cget)} {-variable -value -command -takefocus -text -textvariable -underline -width -image -compound -padding -state -cursor -style -class}
+set {::option(_obj,ttk::radiobutton configure)} {-variable -value -command -takefocus -text -textvariable -underline -width -image -compound -padding -state -cursor -style -class}
 set {::option(_obj,ttk::radiobutton configure -textvariable)} n
 set {::option(_obj,ttk::radiobutton configure -variable)} n
-set {::option(_obj,ttk::scale cget)} {-takefocus -command -variable -orient -from -to -value -length -takefocus -cursor -style -class}
-set {::option(_obj,ttk::scale configure)} {-takefocus -command -variable -orient -from -to -value -length -takefocus -cursor -style -class}
+set {::option(_obj,ttk::scale cget)} {-command -variable -orient -from -to -value -length -takefocus -cursor -style -class}
+set {::option(_obj,ttk::scale configure)} {-command -variable -orient -from -to -value -length -takefocus -cursor -style -class}
 set {::option(_obj,ttk::scale configure -variable)} n
 set {::option(_obj,ttk::scrollbar cget)} {-command -orient -takefocus -cursor -style -class}
 set {::option(_obj,ttk::scrollbar configure)} {-command -orient -takefocus -cursor -style -class}
@@ -789,8 +789,8 @@ set {::option(_obj,ttk::separator cget)} {-orient -takefocus -cursor -style -cla
 set {::option(_obj,ttk::separator configure)} {-orient -takefocus -cursor -style -class}
 set {::option(_obj,ttk::sizegrip cget)} {-takefocus -cursor -style -class}
 set {::option(_obj,ttk::sizegrip configure)} {-takefocus -cursor -style -class}
-set {::option(_obj,ttk::treeview cget)} {-takefocus -columns -displaycolumns -show -selectmode -height -padding -xscrollcommand -yscrollcommand -takefocus -cursor -style -class}
-set {::option(_obj,ttk::treeview configure)} {-takefocus -columns -displaycolumns -show -selectmode -height -padding -xscrollcommand -yscrollcommand -takefocus -cursor -style -class}
+set {::option(_obj,ttk::treeview cget)} {-columns -displaycolumns -show -selectmode -height -padding -xscrollcommand -yscrollcommand -takefocus -cursor -style -class}
+set {::option(_obj,ttk::treeview configure)} {-columns -displaycolumns -show -selectmode -height -padding -xscrollcommand -yscrollcommand -takefocus -cursor -style -class}
 set ::option(bell) {-displayof -nice}
 set ::option(button) {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -default -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -justify -overrelief -padx -pady -relief -repeatdelay -repeatinterval -state -takefocus -text -textvariable -underline -width -wraplength}
 set {::option(button -textvariable)} n
@@ -898,38 +898,38 @@ set ::option(tk::toplevel) {-bd -borderwidth -class -menu -relief -screen -use -
 set ::option(tk_chooseColor) {-initialcolor -parent -title}
 set ::option(tk_chooseDirectory) {-initialdir -mustexist -parent -title}
 set ::option(tk_getOpenFile) {-defaultextension -filetypes -initialdir -initialfile -multiple -parent -title -typevariable}
-set ::option(tk_getSaveFile) {-defaultextension -filetypes -initialdir -initialfile -parent -title -typevariable}
+set ::option(tk_getSaveFile) {-confirmoverwrite -defaultextension -filetypes -initialdir -initialfile -parent -title -typevariable}
 set ::option(tk_messageBox) {-default -detail -icon -message -parent -title -type}
 set ::option(toplevel) {-bd -borderwidth -class -menu -relief -screen -use -background -bg -colormap -container -cursor -height -highlightbackground -highlightcolor -highlightthickness -padx -pady -takefocus -visual -width}
-set ::option(ttk::button) {-takefocus -command -default -text -textvariable -underline -width -image -compound -padding -state -takefocus -cursor -style -class}
+set ::option(ttk::button) {-command -default -takefocus -text -textvariable -underline -width -image -compound -padding -state -cursor -style -class}
 set {::option(ttk::button -textvariable)} n
-set ::option(ttk::checkbutton) {-takefocus -variable -onvalue -offvalue -command -text -textvariable -underline -width -image -compound -padding -state -takefocus -cursor -style -class}
+set ::option(ttk::checkbutton) {-variable -onvalue -offvalue -command -takefocus -text -textvariable -underline -width -image -compound -padding -state -cursor -style -class}
 set {::option(ttk::checkbutton -textvariable)} n
 set {::option(ttk::checkbutton -variable)} n
-set ::option(ttk::combobox) {-height -postcommand -values -takefocus -exportselection -font -invalidcommand -justify -show -state -textvariable -validate -validatecommand -width -xscrollcommand -foreground -background -takefocus -cursor -style -class}
+set ::option(ttk::combobox) {-height -postcommand -values -exportselection -font -invalidcommand -justify -show -state -textvariable -validate -validatecommand -width -xscrollcommand -foreground -background -takefocus -cursor -style -class}
 set {::option(ttk::combobox -textvariable)} n
-set ::option(ttk::entry) {-takefocus -exportselection -font -invalidcommand -justify -show -state -textvariable -validate -validatecommand -width -xscrollcommand -foreground -background -takefocus -cursor -style -class}
+set ::option(ttk::entry) {-exportselection -font -invalidcommand -justify -show -state -textvariable -validate -validatecommand -width -xscrollcommand -foreground -background -takefocus -cursor -style -class}
 set {::option(ttk::entry -textvariable)} n
 set ::option(ttk::frame) {-borderwidth -padding -relief -width -height -takefocus -cursor -style -class}
-set ::option(ttk::label) {-background -foreground -font -borderwidth -relief -anchor -justify -wraplength -text -textvariable -underline -width -image -compound -padding -state -takefocus -cursor -style -class}
+set ::option(ttk::label) {-background -foreground -font -borderwidth -relief -anchor -justify -wraplength -takefocus -text -textvariable -underline -width -image -compound -padding -state -cursor -style -class}
 set {::option(ttk::label -textvariable)} n
 set ::option(ttk::labelframe) {-labelanchor -text -underline -labelwidget -borderwidth -padding -relief -width -height -takefocus -cursor -style -class}
-set ::option(ttk::menubutton) {-takefocus -menu -direction -text -textvariable -underline -width -image -compound -padding -state -takefocus -cursor -style -class}
+set ::option(ttk::menubutton) {-menu -direction -takefocus -text -textvariable -underline -width -image -compound -padding -state -cursor -style -class}
 set {::option(ttk::menubutton -textvariable)} n
-set ::option(ttk::notebook) {-takefocus -width -height -padding -takefocus -cursor -style -class}
+set ::option(ttk::notebook) {-width -height -padding -takefocus -cursor -style -class}
 set ::option(ttk::panedwindow) {-orient -width -height -takefocus -cursor -style -class}
 set ::option(ttk::progressbar) {-orient -length -mode -maximum -variable -value -phase -takefocus -cursor -style -class}
 set {::option(ttk::progressbar -variable)} n
-set ::option(ttk::radiobutton) {-takefocus -variable -value -command -text -textvariable -underline -width -image -compound -padding -state -takefocus -cursor -style -class}
+set ::option(ttk::radiobutton) {-variable -value -command -takefocus -text -textvariable -underline -width -image -compound -padding -state -cursor -style -class}
 set {::option(ttk::radiobutton -textvariable)} n
 set {::option(ttk::radiobutton -variable)} n
-set ::option(ttk::scale) {-takefocus -command -variable -orient -from -to -value -length -takefocus -cursor -style -class}
+set ::option(ttk::scale) {-command -variable -orient -from -to -value -length -takefocus -cursor -style -class}
 set {::option(ttk::scale -variable)} n
 set ::option(ttk::scrollbar) {-command -orient -takefocus -cursor -style -class}
 set ::option(ttk::separator) {-orient -takefocus -cursor -style -class}
 set ::option(ttk::sizegrip) {-takefocus -cursor -style -class}
 set {::option(ttk::style theme create)} {-parent -settings}
-set ::option(ttk::treeview) {-takefocus -columns -displaycolumns -show -selectmode -height -padding -xscrollcommand -yscrollcommand -takefocus -cursor -style -class}
+set ::option(ttk::treeview) {-columns -displaycolumns -show -selectmode -height -padding -xscrollcommand -yscrollcommand -takefocus -cursor -style -class}
 set ::option(unload) {-- -keeplibrary -nocomplain}
 set ::option(unset) {-nocomplain --}
 
