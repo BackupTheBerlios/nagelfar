@@ -44,8 +44,8 @@ base: nagelfar.tcl setup misctest db
 #	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../syntaxdb.tcl
 #nagelfar.vfs/lib/app-nagelfar/syntaxdb84.tcl:
 #	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../syntaxdb84.tcl
-#nagelfar.vfs/lib/app-nagelfar/doc:
-#	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../doc
+#nagelfar.vfs/lib/app-nagelfar/packagedb:
+#	cd nagelfar.vfs/lib/app-nagelfar ; ln -s ../../../packagedb
 nagelfar.vfs/lib/tkdnd:
 	cd nagelfar.vfs/lib ; ln -s $(TKDND) tkdnd
 #nagelfar.vfs/lib/ctext:
@@ -98,7 +98,7 @@ test84: base
 	@$(TCLSH84) ./tests/all.tcl $(TESTFLAGS)
 
 testoo: base
-	@./nagelfar.tcl -s syntaxdb86.tcl ootest/*.tcl
+	@./nagelfar.tcl -s syntaxdb86.tcl -s snitdb.tcl ootest/*.tcl
 
 #----------------------------------------------------------------
 # Coverage
@@ -206,7 +206,7 @@ distrib: base
 		nagelfar$(VERSION)/syntaxdb86.tcl \
 		nagelfar$(VERSION)/nagelfar.syntax nagelfar$(VERSION)/nagelfar.tcl \
 		nagelfar$(VERSION)/misctests/test.tcl nagelfar$(VERSION)/misctests/test.syntax \
-		nagelfar$(VERSION)/doc
+		nagelfar$(VERSION)/doc nagelfar$(VERSION)/packagedb
 	@tar --exclude .svn --exclude CVS -rvhf nagelfar.tar \
 		nagelfar$(VERSION)/lib
 	@gzip nagelfar.tar

@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------
 #  Nagelfar, a syntax checker for Tcl.
-#  Copyright (c) 1999-2005, Peter Spjuth
+#  Copyright (c) 1999-2012, Peter Spjuth
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@ proc usage {} {
  -help             : Show usage.
  -gui              : Start with GUI even when files are specified.
  -s <dbfile>       : Include a database file. (More than one is allowed.)
+                   : If <dbfile> is "_", it adds the default database.
  -encoding <enc>   : Read script with this encoding.
  -filter <p>       : Any message that matches the glob pattern is suppressed.
  -severity <level> : Set severity level filter to N/W/E (default N).
@@ -112,6 +113,7 @@ if {![info exists gurka]} {
 
     lappend apa [file join $::dbDir syntaxdb.tcl]
     eval lappend apa [glob -nocomplain [file join $::dbDir syntaxdb*.tcl]]
+    eval lappend apa [glob -nocomplain [file join $::dbDir packagedb *db*.tcl]]
 
     foreach file $apa {
         if {[file isfile $file] && [file readable $file] && \
@@ -136,7 +138,10 @@ if {![info exists gurka]} {
             -s {
                 incr i
                 set arg [lindex $argv $i]
-                if {[file isfile $arg] && [file readable $arg]} {
+                if {$arg eq "_"} {
+                    # Add the first, or none if allDb is empty
+                    lappend ::Nagelfar(db) {*}[lrange $::Nagelfar(allDb) 0 0]
+                } elseif {[file isfile $arg] && [file readable $arg]} {
                     lappend ::Nagelfar(db) $arg
                     lappend ::Nagelfar(allDb) $arg
                     lappend ::Nagelfar(allDbView) $arg

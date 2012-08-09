@@ -103,3 +103,34 @@ test oo-4.1 {
     }
     execTestFile -s syntaxdb86.tcl
 } -result {%%Line  12: E Unknown variable "depa"}
+
+test oo-5.1 {
+    Test with included snit package definition
+} -body {
+    createTestFile {
+        ##nagelfar syntax apa dc=_obj,apa p*
+        ##nagelfar return apa _obj,apa
+        ##nagelfar option apa -x
+        ##nagelfar option _obj,apa\ configure -x
+
+        ##nagelfar implicitvar snit::type::apa self\ _obj,apa pdf
+
+        snit::type apa {
+            option -x -default 10
+            variable pdf
+            constructor {c d} {
+                puts $c
+            }
+            destructor {
+                list hej $pdf
+            }
+            method gugg {a b} {
+                puts $a
+            }
+        }
+        set x [apa %AUTO% -x 5]
+        $x gugg 5 7
+        $x destroy
+    }
+    execTestFile -flags "-s _ -s snitdb.tcl"
+} -result {%%} -match glob

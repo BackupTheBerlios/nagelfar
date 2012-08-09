@@ -1,24 +1,18 @@
 # This is an experiment to check snit
 
-# This is the generic definitions needed for Snit.
+##############################################################################
+# The generic definitions needed for Snit are now handled centrally
+##############################################################################
 
-##nagelfar syntax _stdclass_snit s x*
-##nagelfar subcmd _stdclass_snit destroy configurelist
-##nagelfar syntax _stdclass_snit\ destroy 0
-##nagelfar syntax _stdclass_snit\ configurelist x
-
-##nagelfar syntax snit::type do=_stdclass_snit cn
-##nagelfar syntax snit::type::method dm
-##nagelfar syntax snit::type::constructor cv
-##nagelfar syntax snit::type::destructor cl
-##nagelfar syntax snit::type::option x p*
-
-
-# This is the annotation needed for this object definition
+##############################################################################
+# This is the annotation needed for this object definition:
+# pdf4tcl::pdf4tcl
+##############################################################################
 
 ##nagelfar syntax pdf4tcl::pdf4tcl dc=_obj,pdf4tcl p*
-##nagelfar option pdf4tcl::pdf4tcl -file
 ##nagelfar return pdf4tcl::pdf4tcl _obj,pdf4tcl
+##nagelfar option pdf4tcl::pdf4tcl -file
+##nagelfar option _obj,pdf4tcl\ configure -file
 
 ##nagelfar implicitvar snit::type::pdf4tcl::pdf4tcl self\ _obj,pdf4tcl pdf
 
@@ -51,4 +45,6 @@ $x cleanup
 
 pdf4tcl::pdf4tcl myobj -file xx
 myobj cleanup
+myobj configure -file apa
+myobj RequireVersion y
 
