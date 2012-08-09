@@ -1,3 +1,6 @@
+2012-08-09
+ New token "nl" to handle "dict for"'s variable list.
+ 
 2012-01-05
  Recognise "others" in last switch branch as a possible mistake.
 

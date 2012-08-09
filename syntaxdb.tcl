@@ -1,6 +1,6 @@
 # Automatically generated syntax database.
 
-lappend ::dbInfo {Tcl 8.5.11 unix, Tk 8.5.11 x11}
+lappend ::dbInfo {Tcl 8.5.12 unix, Tk 8.5.12 x11}
 set ::dbTclVersion 8.5
 set ::knownGlobals {argc argv argv0 auto_index auto_path env errorCode errorInfo tcl_interactive tcl_library tcl_nonwordchars tcl_patchLevel tcl_pkgPath tcl_platform tcl_rcFileName tcl_version tcl_wordchars tk_library tk_patchLevel tk_strictMotif tk_version}
 set ::knownCommands {. EvalAttached after append apply array auto_execok auto_import auto_load auto_load_index auto_mkindex auto_mkindex_old auto_qualify auto_reset bell bgerror binary bind bindtags break button canvas case catch cd chan checkbutton clipboard clock close concat continue destroy dict encoding entry eof error eval event exec exit expr fblocked fconfigure fcopy file fileevent flush focus font for foreach format frame gets glob global grab grid history if image incr info interp join label labelframe lappend lassign lindex linsert list listbox llength load lower lrange lrepeat lreplace lreverse lsearch lset lsort menu menubutton message msgcat::mc msgcat::mcload msgcat::mclocale msgcat::mcmax msgcat::mcmset msgcat::mcpreferences msgcat::mcset msgcat::mcunknown namespace open option pack package panedwindow parray pid pkg_mkIndex place proc puts pwd radiobutton raise read regexp regsub rename return scale scan scrollbar seek selection send set socket source spinbox split string subst switch tcl::pkgconfig tclListValidFlags tclLog tclParseConfigSpec tclPkgSetup tclPkgUnknown tcl_endOfWord tcl_findLibrary tcl_startOfNextWord tcl_startOfPreviousWord tcl_wordBreakAfter tcl_wordBreakBefore tell text time tk tk::button tk::canvas tk::checkbutton tk::entry tk::frame tk::label tk::labelframe tk::listbox tk::menubutton tk::message tk::panedwindow tk::radiobutton tk::scale tk::scrollbar tk::spinbox tk::text tk::toplevel tk_bindForTraversal tk_bisque tk_chooseColor tk_chooseDirectory tk_dialog tk_focusFollowsMouse tk_focusNext tk_focusPrev tk_getFileType tk_getOpenFile tk_getSaveFile tk_menuBar tk_menuSetFocus tk_messageBox tk_optionMenu tk_popup tk_setPalette tk_textCopy tk_textCut tk_textPaste tkwait toplevel trace ttk::button ttk::checkbutton ttk::combobox ttk::entry ttk::frame ttk::label ttk::labelframe ttk::menubutton ttk::notebook ttk::panedwindow ttk::progressbar ttk::radiobutton ttk::scale ttk::scrollbar ttk::separator ttk::setTheme ttk::sizegrip ttk::style ttk::themes ttk::treeview unknown unload unset update uplevel upvar variable vwait while winfo wm}
@@ -226,7 +226,7 @@ set ::syntax(destroy) x*
 set ::syntax(dict) {s x*}
 set {::syntax(dict append)} {n x x*}
 set {::syntax(dict filter)} {x x x}
-set {::syntax(dict for)} {x x c}
+set {::syntax(dict for)} {nl x c}
 set {::syntax(dict incr)} {n x x*}
 set {::syntax(dict lappend)} {n x x*}
 set {::syntax(dict set)} {n x x*}

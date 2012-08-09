@@ -473,3 +473,45 @@ test tokens-14.1 {
     }
     execTestFile
 } -result {%%Line  10: E Bad option -hurga to "gurka"}
+
+test tokens-15.1 {
+    Variable list token, nl
+} -body {
+    createTestFile {
+        set x {}
+        dict for {apa bepa} $x {
+            list $apa $bepa
+            list apa
+        }
+        list $apa $bepa
+    }
+    execTestFile
+} -result {%%Line   5: W Found constant "apa" which is also a variable.}
+
+test tokens-15.2 {
+    Variable list token, nl
+} -body {
+    createTestFile {
+        set x {apa bepa}
+        dict for $x $x {
+            list $apa
+        }
+    }
+    execTestFile
+} -result {%%Line   3: N Non constant variable list.
+Line   4: E Unknown variable "apa"}
+
+test tokens-15.3 {
+    Variable list token, nl
+} -body {
+    createTestFile {
+        set x {}
+        dict for [list apa bepa] $x {
+            list $apa
+            list apa
+        }
+    }
+    execTestFile
+} -result {%%Line   3: N Non constant variable list.
+Line   4: E Unknown variable "apa"}
+

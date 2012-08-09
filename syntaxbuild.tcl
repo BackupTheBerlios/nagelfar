@@ -146,6 +146,13 @@ proc buildDb {ch} {
     # s  Subcommand
     # d  Definition. That arg defines a new command
     #    If followed by =cmd, it copies syntax from cmd.
+    # di Define inheritance
+    # dc Define with copy
+    # do Define object
+    # dk Define constructor (args+body)
+    # dp Define procedure (name+args+body)
+    # dm Define method (name+args+body)
+    # dmp Define metod/procedure (name+args+body)
     # e  Expression
     # E  Expression that should be in braces
     # c  Code, checked in surrounding context
@@ -158,6 +165,7 @@ proc buildDb {ch} {
     # n  The variable does not have to exist, and is set by the command.
     # v  The variable must exist. It is not marked as set.
     # l  Does not have to exist. It will be marked as known, but not set.
+    # nl Like n, but a list of variable names
 
     # Modifiers that apply to some of the above
     # ? Zero or One
@@ -372,8 +380,7 @@ proc buildDb {ch} {
         # FIXA: handle this style:
         set syntax(dict\ update)  "n x x x* c"
         set syntax(dict\ with)    "n x* c"
-        # FIXA: handle variables in dict for
-        set syntax(dict\ for)     "x x c"
+        set syntax(dict\ for)     "nl x c"
         
         # Initialising incr
         set syntax(incr)       "n x?"

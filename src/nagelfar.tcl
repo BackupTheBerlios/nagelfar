@@ -314,7 +314,7 @@ proc checkComment {str index knownVarsName} {
             }
             cover {
                 if {$first ne "variable"} {
-                    
+
                 } else {
                     set varname [lindex $rest 0]
                     set ::instrumenting($index) [list var $varname]
@@ -526,7 +526,7 @@ proc splitStatement {statement index indicesName} {
 proc checkOptions {cmd argv wordstatus indices {startI 0} {max 0} {pair 0}} {
     global option
     ##nagelfar cover variable max
-    
+
     # Special case: the first option is "--"
     if {[lindex $argv $startI] == "--"} {
         # Allowed?
@@ -1214,6 +1214,9 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
         }
 	switch -- $tok {
 	    x - xComm {
+                # xComm is a special token used internally to handle if 0 as
+                # a comment. xComm will not be investigated for inline comments
+
 		# x* matches anything up to the end.
 		if {$mod eq "*"} {
                     checkForCommentL [lrange $argv $i end] \
@@ -1268,7 +1271,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
                             set objname _obj,[namespace tail $name]
                             #echo "Defining object $name"
                             setCurrentObject $objname $name
-                            
+
                             # Special case when defining an object in tcloo
                             # Add an alias to make "my" an object
                             if {[string match oo::* $cmd]} {
@@ -1549,6 +1552,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
 		}
 		incr i
 	    }
+            nl -
 	    l -
 	    v -
 	    n { # A call by name
@@ -1593,6 +1597,18 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
 			markVariable [lindex $argv $i] \
                                 [lindex $wordstatus $i] [lindex $wordtype $i] 1 \
                                 [lindex $indices $i] $isArray knownVars ""
+		    } elseif {$tok eq "nl"} {
+                        set ws [lindex $wordstatus $i]
+                        if {($ws & 1) == 0} {
+                            errorMsg N "Non constant variable list." \
+                                    [lindex $indices $i]
+                        } else {
+                            foreach varName [lindex $argv $i] {
+                                markVariable $varName \
+                                        $ws [lindex $wordtype $i] 1 \
+                                        [lindex $indices $i] $isArray knownVars ""
+                            }
+                        }
 		    } else {
 			markVariable [lindex $argv $i] \
                                 [lindex $wordstatus $i] [lindex $wordtype $i] 0 \
@@ -2296,7 +2312,7 @@ proc parseStatement {statement index knownVarsName} {
             }
             incr i
 	    set left [expr {$argc - $i}]
-            
+
 	    if {$left == 1} {
 		# One block. Split it into a list.
                 # FIXA. Changing argv messes up the constant check.
@@ -3152,7 +3168,7 @@ proc parseProc {argv indices isProc isMethod definingCmd} {
     }
 
     parseArgs $argList [lindex $indices 1] $syn knownVars
-    
+
     if {$storeIt} {
         lappend ::knownCommands $name
     }
@@ -3432,7 +3448,7 @@ proc parseFile {filename} {
                 [expr {[string length $::instrumenting(script)] - 1}]
     }
     flushMsg
-    
+
     if {$::Nagelfar(instrument) && \
             [file extension $filename] ne ".syntax"} {
         # Experimental instrumenting
@@ -3622,7 +3638,7 @@ proc dumpInstrumenting {filename} {
 
     puts $ch $iscript
     close $ch
-    
+
     # Copy permissions to instrumented file.
     catch {file attributes $ifile -permissions \
             [file attributes $filename -permissions]}

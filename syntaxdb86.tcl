@@ -243,7 +243,7 @@ set ::syntax(destroy) x*
 set ::syntax(dict) {s x*}
 set {::syntax(dict append)} {n x x*}
 set {::syntax(dict filter)} {x x x*}
-set {::syntax(dict for)} {x x c}
+set {::syntax(dict for)} {nl x c}
 set {::syntax(dict incr)} {n x x*}
 set {::syntax(dict lappend)} {n x x*}
 set {::syntax(dict set)} {n x x*}
