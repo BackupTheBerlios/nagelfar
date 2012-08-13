@@ -408,7 +408,7 @@ proc scanWord {str len index i} {
                 set i $ni
                 set si2 $i
             } else {
-                errorMsg N "Standalone {*} can be confusing. I recommend \"*\"." $i
+                errorMsg N "Standalone {*} can be confused with argument expansion. I recommend \"*\"." $index
             }
         }
     }
@@ -2002,7 +2002,7 @@ proc parseStatement {statement index knownVarsName} {
 	     # Maybe in checkOptions ?
 	    return
 	}
-	global {
+	global { # Special check of "global" command
 	    foreach var $argv ws $wordstatus {
 		if {$ws & 1} {
                     set knownVars(known,$var)     1
@@ -2014,7 +2014,7 @@ proc parseStatement {statement index knownVarsName} {
 	    }
             set noConstantCheck 1
 	}
-	variable {
+	variable { # Special check of "variable" command
             set currNs [currentNamespace]
             # Special case in oo::class create
             if {[string match "oo::class create*" $currNs]} {
@@ -2055,7 +2055,7 @@ proc parseStatement {statement index knownVarsName} {
                 }
             }
 	}
-	upvar {
+	upvar { # Special check of "upvar" command
             if {$argc < 2} {
                 WA
                 return
@@ -2129,7 +2129,7 @@ proc parseStatement {statement index knownVarsName} {
 		incr i 2
 	    }
 	}
-	set {
+	set { # Special check of "set" command
 	    # Set gets a different syntax string depending on the
 	    # number of arguments.
 	    if {$argc == 1} {
@@ -2158,7 +2158,7 @@ proc parseStatement {statement index knownVarsName} {
             lappend constantsDontCheck 0
             set type $wtype
 	}
-	foreach {
+	foreach { # Special check of "foreach" command
 	    if {$argc < 3 || ($argc % 2) == 0} {
 		WA
 		return
@@ -2207,11 +2207,12 @@ proc parseStatement {statement index knownVarsName} {
                 catch {unset ::foreachVar($fVar)}
             }
 	}
-	if {
+	if { # Special check of "if" command
 	    if {$argc < 2} {
 		WA
 		return
 	    }
+            set old_ifsyntax $::syntax(if)
 	    # Build a syntax string that fits this if statement
 	    set state expr
 	    set ifsyntax {}
@@ -2291,8 +2292,78 @@ proc parseStatement {statement index knownVarsName} {
 #            decho "if syntax \"$ifsyntax\""
 	    set ::syntax(if) $ifsyntax
 	    checkCommand $cmd $index $argv $wordstatus $wordtype $indices
+            set ::syntax(if) $old_ifsyntax
 	}
-	switch {
+	try { # Special check of "try" command
+            # Check that we are in at least 8.6
+            if { ![info exists ::syntax(try)]} {
+                set thisCmdHasBeenHandled 0
+            } else {
+                if {$argc < 1} {
+                    WA
+                    return
+                }
+                set old_trysyntax $::syntax(try)
+                # Build a syntax string that fits this try statement
+                set state body
+                set trysyntax {}
+                foreach arg $argv ws $wordstatus index $indices {
+                    switch -- $state {
+                        body {
+                            lappend trysyntax c
+                            set state handler
+                            continue
+                        }
+                        finally {
+                            lappend trysyntax c
+                            set state illegal
+                            continue
+                        }
+                        handler {
+                            if {$arg eq "on" || $arg eq "trap"} {
+                                set state code
+                                lappend trysyntax x
+                                continue
+                            }
+                            if {$arg eq "finally"} {
+                                lappend trysyntax x
+                                set state finally
+                                continue
+                            }
+                            errorMsg E "Bad word in try statement, should be on, trap or finally." $index
+                            return
+                        }
+                        code {
+                            lappend trysyntax x
+                            set state varlist
+                            continue
+                        }
+                        varlist {
+                            lappend trysyntax nl
+                            set state body
+                            continue
+                        }
+                        illegal {
+                            errorMsg E "Badly formed try statement" $index
+                            contMsg "Found argument '[trimStr $arg]' after\
+                              supposed last body."
+                            return
+                        }
+                    }
+                }
+                # State should be "handler" or "illegal"
+                if {$state ne "handler" && $state ne "illegal"} {
+                    errorMsg E "Badly formed try statement" $index
+                    #contMsg "Missing one body."
+                    return
+                }
+                #decho "$argc try syntax \"$trysyntax\""
+                set ::syntax(try) $trysyntax
+                checkCommand $cmd $index $argv $wordstatus $wordtype $indices
+                set ::syntax(try) $old_trysyntax
+            }
+	}
+	switch { # Special check of "switch" command
 	    if {$argc < 2} {
 		WA
 		return
@@ -2373,7 +2444,8 @@ proc parseStatement {statement index knownVarsName} {
 		parseBody $body $i2 knownVars
 	    }
 	}
-	expr { # FIXA
+	expr { # Special check of "expr" command
+            # FIXA
             # Take care of the standard case of a brace enclosed expr.
             if {$argc == 1 && ([lindex $wordstatus 0] & 1)} {
                  parseExpr [lindex $argv 0] [lindex $indices 0] knownVars
@@ -2383,10 +2455,11 @@ proc parseStatement {statement index knownVarsName} {
                 }
             }
 	}
-	eval { # FIXA
+	eval { # Special check of "eval" command
+            # FIXA
             set noConstantCheck 1
 	}
-	interp {
+	interp { # Special check of "interp" command
             if {$argc < 1} {
                 WA
                 return
@@ -2419,11 +2492,12 @@ proc parseStatement {statement index knownVarsName} {
                     $wordtype $indices]
             set noConstantCheck 1
 	}
-        package { # FIXA, take care of require
+        package { # Special check of "package" command
+            # FIXA, take care of require
             set type [checkCommand $cmd $index $argv $wordstatus $wordtype \
                               $indices]
         }
-	namespace {
+	namespace { # Special check of "namespace" command
             if {$argc < 1} {
                 WA
                 return
@@ -2509,7 +2583,7 @@ proc parseStatement {statement index knownVarsName} {
                                   $wordtype $indices]
             }
 	}
-        next {
+        next { # Special check of "next" command
             # Figure out the superclass of the caller to be able to check
             set currObj [currentObject]
             if {[info exists ::superclass($currObj)]} {
@@ -2531,7 +2605,7 @@ proc parseStatement {statement index knownVarsName} {
                 errorMsg N "No superclass found for 'next'" $index
             }
         }
-	tailcall {
+	tailcall { # Special check of "tailcall" command
             if {$argc < 1} {
                 WA
                 return
@@ -2541,7 +2615,8 @@ proc parseStatement {statement index knownVarsName} {
             set type [parseStatement $newStatement $newIndex knownVars]
             set noConstantCheck 1
 	}
-	uplevel { # FIXA
+	uplevel { # Special check of "uplevel" command
+            # FIXA
             set noConstantCheck 1
 	}
 	default {

@@ -442,7 +442,9 @@ proc buildDb {ch} {
         set syntax(info\ coroutine)          0
         set syntax(interp\ cancel)           "o* x? x?"
         # New commands
-        set syntax(try)          "r 0"
+        # "try" is handled specially, but is added here to not disturb header gen.
+        set syntax(try)          "c x*"
+        set special(try) 1
         set syntax(throw)        "2"
         set syntax(coroutine)    "x x x*"
         set special(tailcall) 1

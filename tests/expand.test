@@ -62,4 +62,4 @@ test expand-3.1 {
         set bepa [list {*} $apa]
     }
     execTestFile
-} -result {%%Line   2: N Standalone {*} can be confusing. I recommend "*".}
+} -result {%%Line   3: N Standalone {*} can be confused with argument expansion. I recommend "*".}

@@ -1026,3 +1026,47 @@ test nagelfar-26.6 {
     }
     execTestFile
 } -result {%%}
+
+test nagelfar-27.1 {
+    try statement, base formats
+} -body {
+    createTestFile {
+        try
+        try { list }
+        try { list } finally { list }
+        try { list } on error {x y} { list $x $y }
+        try { list } on error {x y} { list $x $y } finally { list }
+        try { list } trap APA {a b} { list $a $b }
+        try { list } trap APA {a b} { list $a $b } finally { list }
+        try { list } on error {x y} { list $x $y } trap APA {a b} { list $a $b }
+        try { list } on error {x y} { list $x $y } trap APA {a b} { list $a $b } finally { list }
+        try { list } on error {x y} { list $x $y } trap APA {a b} { list $a $b } finally { list } finally again
+    }
+    execTestFile -flags "-s syntaxdb86.tcl"
+} -result {%%Line   2: E Wrong number of arguments (0) to "try"
+Line  11: E Badly formed try statement
+            Found argument 'finally' after supposed last body.}
+
+test nagelfar-27.2 {
+    try statement, keyword check
+} -body {
+    createTestFile {
+        try { list } finaly { list }
+        try { list } om error {x y} { list $x $y }
+        try { list } on error {x y} { list $x $y } finaly { list }
+    }
+    execTestFile -flags "-s syntaxdb86.tcl"
+} -result {%%Line   2: E Bad word in try statement, should be on, trap or finally.
+Line   3: E Bad word in try statement, should be on, trap or finally.
+Line   4: E Bad word in try statement, should be on, trap or finally.}
+
+test nagelfar-27.3 {
+    try statement, variable check
+} -body {
+    createTestFile {
+        try { list } on error {x y} { list $x $z }
+        try { list } on error {x y} { list $x $y } trap APA {a b} { list $a $c } finally { list }
+    }
+    execTestFile -flags "-s syntaxdb86.tcl"
+} -result {%%Line   2: E Unknown variable "z"
+Line   3: E Unknown variable "c"}

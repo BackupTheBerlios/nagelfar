@@ -517,7 +517,7 @@ set {::syntax(trace remove variable)} {v x x}
 set {::syntax(trace variable)} {n x x}
 set {::syntax(trace vdelete)} {v x x}
 set {::syntax(trace vinfo)} l
-set ::syntax(try) {r 0}
+set ::syntax(try) {c x*}
 set ::syntax(ttk::button) {x p*}
 set ::syntax(ttk::checkbutton) {x p*}
 set ::syntax(ttk::combobox) {x p*}

@@ -1,4 +1,8 @@
 2012-08-13
+ Handle "try" command as a special command to cover all variants.
+ Avoid overriding if/try in headers.
+
+2012-08-13
  Detect changes in builtins during header generation.
 
 2012-08-09

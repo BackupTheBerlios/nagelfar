@@ -236,7 +236,7 @@ proc resultPopup {x y X Y} {
         .popup add command -label "Filter this message in all files" \
                 -command [list addFilter "*$post*" 1]
         regsub {".+?"} $post {"*"} post2
-        regsub -all {\d+} $post2 {*} post2
+        regsub -all {\d+} $post2 "*" post2
         if {$post2 ne $post} {
             .popup add command -label "Filter this generic message" \
                     -command [list addFilter "*$post2*" 1]
