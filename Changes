@@ -1,4 +1,7 @@
 2012-08-13
+ Fixed bug where filter pragmas could leak to similar line numbers. [Bug 18486]
+
+2012-08-13
  Handle "try" command as a special command to cover all variants.
  Avoid overriding if/try in headers.
 

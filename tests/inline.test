@@ -181,6 +181,36 @@ test inline-6.3 {
     execTestFile
 } -match glob -result {%%Line   8: E Unknown variable*}
 
+test inline-6.4 {
+    ignore/filter, this tests for a bug where an ignored line affected other lines
+    with similar line numbers
+} -body {
+    createTestFile {
+        ##nagelfar ignore
+        set apa [Miffo a b c]
+        ##nagelfar ignore W
+        set apa [Miffo a b c]
+        ##nagelfar ignore N
+        set apa {*}
+        ##nagelfar ignore E
+        lrange x
+        # line 10
+        # 11
+        # 12
+        Miffo a b c
+        # 14
+        Miffo a b c
+        # 16
+        expr {[expr {1 + 1}]}
+        # 18
+        lrange x
+    }
+    execTestFile
+} -result {%%Line  13: W Unknown command "Miffo"
+Line  15: W Unknown command "Miffo"
+Line  17: N Expr called in expression
+Line  19: E Wrong number of arguments (1) to "lrange"}
+
 test inline-7.1 {
     Inline in syntax file
 } -body {

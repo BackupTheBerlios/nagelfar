@@ -134,7 +134,7 @@ proc errorMsg {severity msg i} {
     }
     if {$::Prefs(prefixFile)} {
         # Use a shorter format when -H flag is used
-        # This format can be parsed be e.g. emacs compile
+        # This format can be parsed by e.g. emacs compile
         set pre "${pre}$line: $severity "
     } else {
         set pre "${pre}Line [format %3d $line]: $severity "
@@ -326,10 +326,10 @@ proc checkComment {str index knownVarsName} {
                 set line [calcLineNo $index]
                 incr line
                 switch -- $first {
-                    N { addFilter "*Line *$line: N *[join $rest]*" }
-                    W { addFilter "*Line *$line: \[NW\] *[join $rest]*" }
-                    E { addFilter "*Line *$line:*[join $rest]*" }
-                    default { addFilter "*Line *$line:*$first [join $rest]*" }
+                    N { addFilter "*Line* $line: N *[join $rest]*" }
+                    W { addFilter "*Line* $line: \[NW\] *[join $rest]*" }
+                    E { addFilter "*Line* $line:*[join $rest]*" }
+                    default { addFilter "*Line* $line:*$first [join $rest]*" }
                 }
             }
             default {
