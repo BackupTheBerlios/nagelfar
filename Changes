@@ -1,3 +1,6 @@
+2012-08-13
+ Detect changes in builtins during header generation.
+
 2012-08-09
  Started on infrastructure for package definitions.
  Include a snit definition file in distribution.

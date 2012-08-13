@@ -3937,12 +3937,12 @@ proc doCheck {} {
 
     # In header generation, store info before reading
     if {$::Nagelfar(header) ne ""} {
-        set h_oldsyntax [array names ::syntax]
-        set h_oldsubCmd [array names ::subCmd]
-        set h_oldoption [array names ::option]
-        set h_oldreturn [array names ::return]
-        set h_oldimplicitvar [array names ::implicitVar]
-        set h_oldaliases [array names ::knownAliases]
+        array set h_oldsyntax [array get ::syntax]
+        array set h_oldsubCmd [array get ::subCmd]
+        array set h_oldoption [array get ::option]
+        array set h_oldreturn [array get ::return]
+        array set h_oldimplicitvar [array get ::implicitVar]
+        array set h_oldaliases [array get ::knownAliases]
     }
 
     # Initialise variables
@@ -3985,13 +3985,37 @@ proc doCheck {} {
     }
     # Generate header
     if {$::Nagelfar(header) ne ""} {
-        foreach item $h_oldsyntax { unset ::syntax($item) }
-        # FIXA: With subcmd+, maybe additions need to be detected?
-        foreach item $h_oldsubCmd { unset ::subCmd($item) }
-        foreach item $h_oldoption { unset ::option($item) }
-        foreach item $h_oldreturn { unset ::return($item) }
-        foreach item $h_oldimplicitvar { unset ::implicitVar($item) }
-        foreach item $h_oldaliases { unset ::knownAliases($item) }
+        # Exclude everything that was there from the syntax database
+        foreach item [array names h_oldsyntax] {
+            if {$h_oldsyntax($item) eq $::syntax($item)} {
+                unset ::syntax($item)
+            }
+        }
+        foreach item [array names h_oldsubCmd] {
+            if {$h_oldsubCmd($item) eq $::subCmd($item)} {
+                unset ::subCmd($item)
+            }
+        }
+        foreach item [array names h_oldoption] {
+            if {$h_oldoption($item) eq $::option($item)} {
+                unset ::option($item)
+            }
+        }
+        foreach item [array names h_oldreturn] {
+            if {$h_oldreturn($item) eq $::return($item)} {
+                unset ::return($item)
+            }
+        }
+        foreach item [array names h_oldimplicitvar] {
+            if {$h_oldimplicitvar($item) eq $::implicitVar($item)} {
+                unset ::implicitVar($item)
+            }
+        }
+        foreach item [array names h_oldaliases] {
+            if {$h_oldaliases($item) eq $::knownAliases($item)} {
+                unset ::knownAliases($item)
+            }
+        }
 
         if {[catch {set ch [open $::Nagelfar(header) w]}]} {
             puts stderr "Could not create file \"$::Nagelfar(header)\""

@@ -78,4 +78,13 @@ test header-2.1 {
     }
 } -result [list "##nagelfar syntax miffo::hopp 2"]
 
-
+test header-3.1 {
+    Override builtins
+} -body {
+    headerTestFile {
+        # Same as builtin
+        ##nagelfar syntax lrange 3
+        # Changed
+        ##nagelfar syntax lsort x x
+    }
+} -result [list "##nagelfar syntax lsort x x"]
