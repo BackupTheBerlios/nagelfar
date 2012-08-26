@@ -157,6 +157,20 @@ test nagelfar-3.3 {
     execTestFile
 } -result {%%Line   2: N Unescaped end bracket*Line   3: N Unescaped end bracket} -match glob
 
+test nagelfar-3.3b {
+    Basic errors
+} -body {
+    createTestFile {
+        # A lone brace that becomes a valid word really is suspiscious
+        puts [list \ { }] 
+        # Also bad
+        puts [list \ { }x]
+        # Also bad but harder to spot  FIXA?
+        puts [list \ { x}x]
+    }
+    execTestFile
+} -result {%%Line   3: N Unescaped close brace*Line   5: N Unescaped close brace} -match glob
+
 test nagelfar-3.4 {
     Basic errors
 } -body {

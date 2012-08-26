@@ -270,7 +270,9 @@ proc checkComment {str index knownVarsName} {
     if {[string match "##nagelfar *" $str]} {
         set rest [string range $str 11 end]
         if {[catch {llength $rest}]} {
-            errorMsg N "Bad list in ##nagelfar comment" $index
+            if {!$::Nagelfar(firstpass)} {
+                errorMsg N "Bad list in ##nagelfar comment" $index
+            }
             return
         }
         if {[llength $rest] == 0} return
@@ -333,7 +335,9 @@ proc checkComment {str index knownVarsName} {
                 }
             }
             default {
-                errorMsg N "Bad type in ##nagelfar comment" $index
+                if {!$::Nagelfar(firstpass)} {
+                    errorMsg N "Bad type in ##nagelfar comment" $index
+                }
                 return
             }
         }
@@ -916,6 +920,7 @@ proc parseSubst {str index typeName knownVarsName} {
     set escape 0
     set notype 0
     set types {}
+    set braces 0
     for {set i 0} {$i < $len} {incr i} {
         set c [string index $str $i]
         if {$c eq "\\"} {
@@ -954,6 +959,16 @@ proc parseSubst {str index typeName knownVarsName} {
                     # Note unescaped quote at end of word since it's
                     # likely to mean it should not be there.
                     errorMsg N "Unescaped quote" [expr {$index + $i}]
+                } elseif {$c eq "\{"} {
+                    incr braces
+                    # Unescaped brace in a word is suspicious
+                    #errorMsg N "Unescaped brace" [expr {$index + $i}]
+                } elseif {$c eq "\}"} {
+                    incr braces -1
+                    # Unescaped brace in a word is suspicious
+                    if {$braces < 0} {
+                        errorMsg N "Unescaped close brace" [expr {$index + $i}]
+                    }
                 }
             }
         } else {
@@ -1896,7 +1911,9 @@ proc parseStatement {statement index knownVarsName} {
     set wordstatus {}
     set wordtype {}
     set indices2 {}
+    set wordCnt -1
     foreach word $words index $indices {
+        incr wordCnt
         set ws 0
         set wtype ""
         if {[string length $word] > 3 && [string match "{\\*}*" $word]} {
@@ -1917,6 +1934,9 @@ proc parseStatement {statement index knownVarsName} {
             if {[parseSubst $word $index wtype knownVars]} {
                 # A constant
                 incr ws 1
+            }
+            if {$wordCnt > 0 && [string index $word 0] eq "\}"} {
+                errorMsg N "Unescaped close brace" $index
             }
         }
         if {($ws & 9) == 9} {
@@ -2844,18 +2864,15 @@ proc splitScript {script index statementsName indicesName knownVarsName} {
                     }
                 }
                 # Take care of the statement
-                if {[string index $tryline 0] eq "#"} {
-		    # Check and discard comments
-		    checkComment $tryline $index knownVars
-		} else {
-		    if {$splitSemi} {
-                        # Remove the semicolon from the statement
-			lappend statements [string range $tryline 0 end-1]
-		    } else {
-			lappend statements $tryline
-		    }
-		    lappend indices $index
-		}
+                # Comments are added to the statement list and checked later
+                if {$splitSemi} {
+                    # Remove the semicolon from the statement
+                    lappend statements [string range $tryline 0 end-1]
+                } else {
+                    lappend statements $tryline
+                }
+                lappend indices $index
+
                 # Extra checking if the last line of the statement was
                 # a close brace.
                 if {$closeBraceIndent != -1} {
@@ -2985,7 +3002,11 @@ proc parseBody {body index knownVarsName {warnCommandSubst 0}} {
 #miffo    puts "Parsing a body with [llength $statements] stmts"
     set type ""
     foreach statement $statements index $indices {
-	set type [parseStatement $statement $index knownVars]
+        if {[string match "#*" $statement]} {
+            checkComment $statement $index knownVars
+        } else {
+            set type [parseStatement $statement $index knownVars]
+        }
     }
     if {$::Nagelfar(firstpass)} {
         set ::Nagelfar(cacheBody) 1

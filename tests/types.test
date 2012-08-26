@@ -42,3 +42,14 @@ test types-3.1 {
     execTestFile
 } -result {%%}
 
+test types-4.1 {
+    Types in inline comments
+} -body {
+    createTestFile {
+        set apa [frame .f -padx 3 -pady 3]
+        $apa configure -gurkmeja 2
+        ##nagelfar variable apa varName
+        set $apa
+    }
+    execTestFile
+} -result {%%Line   3: E Bad option -gurkmeja to "_obj,frame configure"}
