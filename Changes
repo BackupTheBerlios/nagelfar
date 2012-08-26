@@ -1,3 +1,7 @@
+2012-08-26
+ Parse comments in sequence with statements to get the right context for them
+ Notice unescaped close braces.
+
 2012-08-13
  Fixed bug where filter pragmas could leak to similar line numbers. [Bug 18486]
 
