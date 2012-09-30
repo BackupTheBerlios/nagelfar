@@ -752,7 +752,7 @@ proc buildDb {ch} {
         if {[string match "-*" [lindex $item end]]} {
             set opt [lindex $item end]
             set cmd [lrange $item 0 end-1]
-            if {[lsearch -exact $option($cmd) $opt] < 0} {
+            if {![info exists option($cmd)] || [lsearch -exact $option($cmd) $opt] < 0} {
                 #puts "Deleting option($item)"
                 unset option($item)
             }
