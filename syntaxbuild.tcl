@@ -21,7 +21,8 @@ if {[info exists gurkmeja]} {
 
 set ::kG [lsort [info globals]]
 set ::kC [info commands]
-foreach pat {{tcl::[a-z]*} {msgcat::[a-z]*} {oo::[a-z]*}} {
+
+foreach pat {{tcl::[a-z]*}} {
     foreach p [info commands $pat] {
         if {[string match ::* $p]} {
             set p [string range $p 2 end]
@@ -31,14 +32,21 @@ foreach pat {{tcl::[a-z]*} {msgcat::[a-z]*} {oo::[a-z]*}} {
 }
 
 # Collect exported namespace commands
-if 0 { # Not working yet
+if 1 { # Not working yet?
     set todo [namespace children ::]
     while {[llength $todo] > 0} {
         set ns [lindex $todo 0]
         set todo [lrange $todo 1 end]
-        eval lappend todo [namespace children $ns]
+        # Do not recurse in these namespaces
+        if {[lsearch {::oo} $ns] < 0} {
+            eval lappend todo [namespace children $ns]
+        }
 
         set exports [namespace eval $ns {namespace export}]
+        if {[llength $exports] == 0} {
+            # Assume lowercase-convention for public commands
+            set exports [list {[a-z]*}]
+        }
         foreach pat $exports {
             foreach p [info commands ${ns}::$pat] {
                 # Do not include the first :: in the name
