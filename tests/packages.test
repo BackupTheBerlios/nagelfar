@@ -1,0 +1,46 @@
+#------------------------------------------------------------*- tcl -*-
+# Tests for included package definitions
+#----------------------------------------------------------------------
+
+test packages-1.1 {
+    Test with included snit package definition
+} -body {
+    createTestFile {
+        ##nagelfar syntax apa dc=_obj,apa p*
+        ##nagelfar return apa _obj,apa
+        ##nagelfar option apa -x
+        ##nagelfar option _obj,apa\ configure -x
+
+        ##nagelfar implicitvar snit::type::apa self\ _obj,apa pdf
+
+        snit::type apa {
+            option -x -default 10
+            variable pdf
+            constructor {c d} {
+                puts $c
+            }
+            destructor {
+                list hej $pdf
+            }
+            method gugg {a b} {
+                puts $a
+            }
+        }
+        set x [apa %AUTO% -x 5]
+        $x gugg 5 7
+        $x destroy
+    }
+    execTestFile -flags "-s _ -s snitdb.tcl"
+} -result {%%} -match glob
+
+test packages-2.1 {
+    Test with included inifile package definition
+} -body {
+    createTestFile {
+        set f apabepa
+        set fh [ini::open $f]
+        ini::close $fh
+        ini::close $fh miffo
+    }
+    execTestFile -flags "-s _ -s inifiledb.tcl"
+} -result {%%Line   5: E Wrong number of arguments (2) to "ini::close"}

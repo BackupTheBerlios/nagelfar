@@ -2,17 +2,17 @@
 # package require inifile 0.2.3
 # Contributed by Ruediger Haertel
 
-##nagelfar syntax ini::open x x
-##nagelfar syntax ini::close x
-##nagelfar syntax ini::commit x
-##nagelfar syntax ini::revert x
-##nagelfar syntax ini::filename x
-##nagelfar syntax ini::sections x
-##nagelfar syntax ini::keys x x
-##nagelfar syntax ini::get x x
-##nagelfar syntax ini::exists x x x?
-##nagelfar syntax ini::value x x x x?
-##nagelfar syntax ini::set x x x x
-##nagelfar syntax ini::delete x x x?
-##nagelfar syntax ini::comment x x x? x?
-##nagelfar syntax ini::commentchar x?
+set ::syntax(ini::close) 1
+set ::syntax(ini::comment) {r 3}
+set ::syntax(ini::commentchar) {r 0 1}
+set ::syntax(ini::commit) 1
+set ::syntax(ini::delete) {r 2 3}
+set ::syntax(ini::exists) {r 2 3}
+set ::syntax(ini::filename) 1
+set ::syntax(ini::get) 2
+set ::syntax(ini::keys) 2
+set ::syntax(ini::open) {r 1 2}
+set ::syntax(ini::revert) 1
+set ::syntax(ini::sections) 1
+set ::syntax(ini::set) 4
+set ::syntax(ini::value) {r 3 4}
