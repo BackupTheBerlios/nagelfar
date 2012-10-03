@@ -517,7 +517,7 @@ proc makeWin {} {
     button .fs.b -text "Add" -width 10 -command addDbFile
     set lb [Scroll y listbox .fs.lb \
                     -listvariable ::Nagelfar(allDbView) \
-                    -height 4 -width 40 -selectmode single]
+                    -height 4 -width 40 -selectmode extended]
     set ::Nagelfar(dbWin) $lb
 
     bind $lb <Key-Delete> "removeDbFile"

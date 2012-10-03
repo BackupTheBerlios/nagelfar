@@ -1,3 +1,8 @@
+2012-10-03
+ Changed to extended select mode in package list, to allow selecting multiple.
+ Handle package definitions better in GUI.
+ Added definition file for package "inifile"
+
 2012-08-26
  Parse comments in sequence with statements to get the right context for them
  Notice unescaped close braces.
