@@ -56,7 +56,7 @@ proc addDbFile {} {
     lappend ::Nagelfar(db) $apa
     lappend ::Nagelfar(allDb) $apa
     lappend ::Nagelfar(allDbView) $apa
-    updateDbSelection 1
+    updateDbSelection -fromvar
     set ::Nagelfar(lastdbdir) [file dirname $apa]
 }
 
@@ -68,7 +68,7 @@ proc fileDropDb {files} {
         lappend ::Nagelfar(allDb) $file
         lappend ::Nagelfar(allDbView) $file
     }
-    updateDbSelection 1
+    updateDbSelection -fromvar
 }
 
 # Remove a file from the database list
@@ -79,7 +79,7 @@ proc removeDbFile {} {
         set ::Nagelfar(allDbView) [lreplace $::Nagelfar(allDbView) $ix $ix]
     }
     updateDbSelection
-    updateDbSelection 1
+    updateDbSelection -fromvar
 }
 
 # Browse for and add a file to check.
@@ -286,8 +286,8 @@ proc saveResult {} {
 }
 
 # Update the selection in the db listbox to or from the db list.
-proc updateDbSelection {{fromVar 0}} {
-    if {$fromVar} {
+proc updateDbSelection {{fromVar -fromgui}} {
+    if {$fromVar eq "-fromvar"} {
         $::Nagelfar(dbWin) selection clear 0 end
         # Try to keep one selected
         if {[llength $::Nagelfar(db)] == 0} {
@@ -523,7 +523,7 @@ proc makeWin {} {
     bind $lb <Key-Delete> "removeDbFile"
     bind $lb <<ListboxSelect>> updateDbSelection
     bind $lb <Button-1> [list focus $lb]
-    updateDbSelection 1
+    updateDbSelection -fromvar
 
     grid .fs.l  .fs.bd .fs.b -sticky w -padx 2 -pady 2
     grid .fs.lb -      -     -sticky news
