@@ -55,4 +55,4 @@ test packages-2.2 {
         }
     }
     execTestFile -flags "-s _ -s inifiledb.tcl"
-} -result {%%Line   5: E Wrong number of arguments (2) to "ini::commentchar"}
+} -result {%%Line   4: E Wrong number of arguments (2) to "ini::commentchar"}
