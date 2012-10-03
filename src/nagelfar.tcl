@@ -298,7 +298,15 @@ proc checkComment {str index knownVarsName} {
                 eval [list lappend ::subCmd($first)] $rest
             }
             package {
-                lappend ::knownPackages $first
+                if {$first eq "known"} {
+                    eval lappend ::knownPackages $rest
+                } elseif {$first eq "require"} {
+                    lookForPackageDb $rest $index
+                } else {
+                    if {!$::Nagelfar(firstpass)} {
+                        errorMsg N "Bad type in ##nagelfar comment" $index
+                    }
+                }
             }
             option {
                 set ::option($first) $rest
@@ -3944,7 +3952,14 @@ proc loadDatabases {{addDb {}}} {
                     eval [list _iplappend ::subCmd($first)] $rest
                 }
                 package {
-                    _iplappend ::knownPackages $first
+                    if {$first eq "known"} {
+                        eval _iplappend ::knownPackages $rest
+                    } else {
+                        # Note: require not allowed here yet...
+                        if {!$::Nagelfar(firstpass)} {
+                            echo "Bad type in ##nagelfar comment in db $f line $commentline"
+                        }
+                    }
                 }
                 option {
                     _ipset ::option($first) $rest
@@ -4112,6 +4127,7 @@ proc doCheck {} {
         array set h_oldreturn [array get ::return]
         array set h_oldimplicitvar [array get ::implicitVar]
         array set h_oldaliases [array get ::knownAliases]
+        set h_oldknownpackages $::knownPackages
     }
 
     # Initialise variables
@@ -4190,6 +4206,13 @@ proc doCheck {} {
             puts stderr "Could not create file \"$::Nagelfar(header)\""
         } else {
             echo "Writing \"$::Nagelfar(header)\"" 1
+            foreach item $::knownPackages {
+                if {[lsearch -exact $h_oldknownpackages $item] < 0} {
+                    # TODO: Exclude autoloaded package info from header
+                    # file and emit package require instead.
+                    puts $ch "\#\#nagelfar [list package known $item]"
+                }
+            }
             foreach item [lsort -dictionary [array names ::syntax]] {
                 puts $ch "\#\#nagelfar [list syntax $item] $::syntax($item)"
             }

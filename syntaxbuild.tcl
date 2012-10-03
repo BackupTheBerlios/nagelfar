@@ -21,7 +21,7 @@ if {[info exists gurkmeja]} {
 
 set ::kG [lsort [info globals]]
 set ::kC [info commands]
-set ::kP [list msgcat]
+set ::kP [list msgcat Tcl]
 
 foreach pat {{tcl::[a-z]*}} {
     foreach p [info commands $pat] {
@@ -624,6 +624,7 @@ proc buildDb {ch} {
             set syntax(ttk::themes) x?
             set syntax(ttk::setTheme) x
             markCmdAsKnown ttk::style ttk::themes  ttk::setTheme
+            lappend ::kP Ttk tile
         }
         foreach class $classCmds {
             destroy .w

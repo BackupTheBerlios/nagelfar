@@ -1,5 +1,5 @@
 2012-10-04
- Added inline syntax to make package known.
+ Added inline syntax to make package known or required.
  Added -pkgpicky command line for package debug.
 
 2012-10-03
