@@ -3872,6 +3872,7 @@ proc loadDatabases {} {
     interp alias {} _ipsource loadinterp source
     interp alias {} _ipexists loadinterp info exists
     interp alias {} _ipset    loadinterp set
+    interp alias {} _iplappend loadinterp lappend
     interp alias {} _iparray  loadinterp array
 
     foreach f $::Nagelfar(db) {
@@ -3904,6 +3905,7 @@ proc loadDatabases {} {
             switch -- $cmd {
                 syntax {
                     _ipset ::syntax($first) $rest
+                    _iplappend ::knownCommands $first
                 }
                 implicitvar {
                     _ipset ::implictVar($first) $rest
@@ -3913,6 +3915,9 @@ proc loadDatabases {} {
                 }
                 subcmd {
                     _ipset ::subCmd($first) $rest
+                }
+                subcmd+ {
+                    eval [list _iplappend ::subCmd($first)] $rest
                 }
                 option {
                     _ipset ::option($first) $rest

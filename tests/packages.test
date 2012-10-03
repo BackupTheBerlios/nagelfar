@@ -44,3 +44,15 @@ test packages-2.1 {
     }
     execTestFile -flags "-s _ -s inifiledb.tcl"
 } -result {%%Line   5: E Wrong number of arguments (2) to "ini::close"}
+
+test packages-2.2 {
+    Test with included inifile package definition
+} -body {
+    createTestFile {
+        namespace eval ini {
+            set f apabepa
+            commentchar $f $f
+        }
+    }
+    execTestFile -flags "-s _ -s inifiledb.tcl"
+} -result {%%Line   5: E Wrong number of arguments (2) to "ini::commentchar"}
