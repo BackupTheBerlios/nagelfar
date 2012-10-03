@@ -113,13 +113,16 @@ if {![info exists gurka]} {
 
     lappend apa [file join $::dbDir syntaxdb.tcl]
     eval lappend apa [glob -nocomplain [file join $::dbDir syntaxdb*.tcl]]
-    eval lappend apa [glob -nocomplain [file join $::dbDir packagedb *db*.tcl]]
+    set pdbDir [file join $::dbDir packagedb]
+    eval lappend apa [glob -nocomplain [file join $pdbDir *db*.tcl]]
 
     foreach file $apa {
         if {[file isfile $file] && [file readable $file] && \
                 [lsearch $::Nagelfar(allDb) $file] == -1} {
             lappend ::Nagelfar(allDb) $file
             if {[file dirname $file] == $::dbDir} {
+                lappend ::Nagelfar(allDbView) "[file tail $file] (app)"
+            } elseif {[file dirname $file] == $pdbDir} {
                 lappend ::Nagelfar(allDbView) "[file tail $file] (app)"
             } else {
                 lappend ::Nagelfar(allDbView) [fileRelative [pwd] $file]
