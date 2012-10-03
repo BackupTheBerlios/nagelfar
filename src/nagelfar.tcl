@@ -3859,11 +3859,12 @@ proc resetFilters {} {
 ##nagelfar syntax _ipsource x
 ##nagelfar syntax _ipexists l
 ##nagelfar syntax _ipset    1: v : n x
+##nagelfar syntax _iplappend n x*
 ##nagelfar syntax _iparray  s v
 ##nagelfar subcmd _iparray  exists get
 
 # Load syntax database using safe interpreter
-proc loadDatabases {} {
+proc loadDatabases {{addDb {}}} {
     if {[interp exists loadinterp]} {
         interp delete loadinterp
     }
@@ -3874,8 +3875,13 @@ proc loadDatabases {} {
     interp alias {} _ipset    loadinterp set
     interp alias {} _iplappend loadinterp lappend
     interp alias {} _iparray  loadinterp array
+    if {$addDb ne ""} {
+        set dbs [list $addDb]
+    } else {
+        set dbs $::Nagelfar(db)
+    }
 
-    foreach f $::Nagelfar(db) {
+    foreach f $dbs {
         # FIXA: catch?
         _ipsource $f
 
@@ -3932,16 +3938,21 @@ proc loadDatabases {} {
             }
         }
     }
+    if {$addDb eq ""} {
+        # Clean up if we are loading all databases
+        set ::knownGlobals {}
+        set ::knownCommands {}
+        set ::knownPackages {}
+    }
 
     if {[_ipexists ::knownGlobals]} {
-        set ::knownGlobals [_ipset ::knownGlobals]
-    } else {
-        set ::knownGlobals {}
+        eval lappend ::knownGlobals [_ipset ::knownGlobals]
     }
     if {[_ipexists ::knownCommands]} {
-        set ::knownCommands [_ipset ::knownCommands]
-    } else {
-        set ::knownCommands {}
+        eval lappend ::knownCommands [_ipset ::knownCommands]
+    }
+    if {[_ipexists ::knownPackages]} {
+        eval lappend ::knownPackages [_ipset ::knownPackages]
     }
     if {[_ipexists ::dbInfo]} {
         set ::Nagelfar(dbInfo) [join [_ipset ::dbInfo] \n]
@@ -3966,12 +3977,15 @@ proc loadDatabases {} {
         }
     }
 
-    catch {unset ::syntax}
-    catch {unset ::implicitVar}
-    catch {unset ::return}
-    catch {unset ::subCmd}
-    catch {unset ::option}
-    catch {unset ::knownAliases}
+    if {$addDb eq ""} {
+        # Clean up if we are loading all databases
+        catch {unset ::syntax}
+        catch {unset ::implicitVar}
+        catch {unset ::return}
+        catch {unset ::subCmd}
+        catch {unset ::option}
+        catch {unset ::knownAliases}
+    }
     if {[_iparray exists ::syntax]} {
         array set ::syntax [_iparray get ::syntax]
     }
