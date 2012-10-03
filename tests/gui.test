@@ -25,7 +25,7 @@ proc XauthSecure {} {
 XauthSecure
 
 proc RestartClient {{mode 0}} {
-    set ::clientfile nagelfar.tcl
+    set ::clientfile ./nagelfar.tcl
     if {[file exists ${::clientfile}_i]} {
         set ::clientfile ${::clientfile}_i
     }
@@ -76,7 +76,7 @@ proc AddFileToTest {file {dialog 0}} {
         if {$dialog != 1} {
             tktest::press Cancel
         } else {
-            set e [tktest::widget -class Entry]
+            set e [tktest::widget -class *Entry -pos 1]
             tktest::cmd $e insert end $file
             tktest::press Open
         }
@@ -349,7 +349,7 @@ test gui-4.2 {Edit window, line counter} -body {
     tktest::menu Tools "Edit Window"
     update
     set w [tktest::widget -class Text]
-    set l [tktest::widget -class Label -pos 0]
+    set l [tktest::widget -class *Label -pos 0]
 
     set res {}
     tktest::cmd focus $w
@@ -371,15 +371,18 @@ test gui-5.1 {Files, add, move delete} -body {
     createTestFile {
         somecmd bepa
     }
-    file rename -force _testfile_ _testfile2_
+    file rename -force _testfile_ _testfile2_.tcl
     createTestFile {
         somecmd bepa
     }
-    AddFileToTest _testfile2_ 2
+    AddFileToTest _testfile2_.tcl 1
 
     # Rearrange files
     set w [tktest::widget -class Listbox -pos 1]
     tktest::cmd focus $w
+    update ; after 100
+    tktest::cmd focus
+    update ; after 100
     tktest::key Down
     tktest::key Up Shift
 
@@ -402,7 +405,7 @@ test gui-5.1 {Files, add, move delete} -body {
     lappend res [string match "*file_*somecmd*" $output]
     lappend res [tktest::cmd $w get 0 end]
 
-    file delete -force _testfile2_
+    file delete -force _testfile2_.tcl
 
     set res
 } -result {1 1 0 1 _testfile_}
@@ -425,7 +428,7 @@ test gui-6.1 {Traverse errors} -body {
     lappend res [lindex [tktest::cmd $w yview] 1]
     tktest::key N Alt
     set res
-} -result {104 0 0 1}
+} -result {104 0.0 0.0 1.0}
 
 test gui-7.1 {Stop Button} -body {
     set body [list "set apa 1"]
@@ -459,7 +462,7 @@ test gui-7.1 {Stop Button} -body {
 
 test gui-8.1 {DB Browser} -body {
     tktest::waitFocus menu Tools "Browse Database"
-    set w [tktest::widget -class Entry]
+    set w [tktest::widget -class *Entry]
     tktest::cmd focus $w
     tktest::keys "gurkmeja"
     tktest::press Search
@@ -490,7 +493,7 @@ test gui-8.2 {DB Browser} -body {
 
 test gui-8.3 {DB Browser} -body {
     tktest::waitFocus menu Tools "Browse Database"
-    set w [tktest::widget -class Entry]
+    set w [tktest::widget -class *Entry]
     tktest::cmd $w delete 0 end
     tktest::cmd focus $w
     # No search term
