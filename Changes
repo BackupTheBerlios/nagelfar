@@ -1,4 +1,5 @@
 2012-10-04
+ Include known package information in header file.       
  Added inline syntax to make package known or required.
  Added -pkgpicky command line for package debug.
 
