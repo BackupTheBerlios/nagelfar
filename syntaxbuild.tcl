@@ -21,6 +21,7 @@ if {[info exists gurkmeja]} {
 
 set ::kG [lsort [info globals]]
 set ::kC [info commands]
+set ::kP [list msgcat]
 
 foreach pat {{tcl::[a-z]*}} {
     foreach p [info commands $pat] {
@@ -131,6 +132,7 @@ proc buildDb {ch} {
         if {![catch {tk windowingsystem}]} {
             append dbstring " [tk windowingsystem]"
         }
+        lappend ::kP Tk
     }
 
     # Below is the hardcoded syntax for many core commands.
@@ -783,8 +785,9 @@ proc buildDb {ch} {
     # Output the data
     puts $ch [list lappend ::dbInfo $dbstring]
     puts $ch [list set ::dbTclVersion $::tcl_version]
-    puts $ch [list set ::knownGlobals $::kG]
+    puts $ch [list set ::knownGlobals [lsort $::kG]]
     puts $ch [list set ::knownCommands [lsort $::kC]]
+    puts $ch [list set ::knownPackages [lsort $::kP]]
 
     foreach a {syntax return subCmd option} {
         foreach i [lsort [array names $a]] {
