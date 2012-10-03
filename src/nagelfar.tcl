@@ -297,6 +297,9 @@ proc checkComment {str index knownVarsName} {
             subcmd+ {
                 eval [list lappend ::subCmd($first)] $rest
             }
+            package {
+                lappend ::knownPackages $first
+            }
             option {
                 set ::option($first) $rest
             }
@@ -3940,6 +3943,9 @@ proc loadDatabases {{addDb {}}} {
                 subcmd+ {
                     eval [list _iplappend ::subCmd($first)] $rest
                 }
+                package {
+                    _iplappend ::knownPackages $first
+                }
                 option {
                     _ipset ::option($first) $rest
                 }
@@ -4031,7 +4037,7 @@ proc loadDatabases {{addDb {}}} {
 # Look for a database file for a package and load it if found.
 # This is called when a package require is detected
 proc lookForPackageDb {pName i} {
-    if {[lsearch -exact ::knownPackages $pName] >= 0} {
+    if {[lsearch -exact $::knownPackages $pName] >= 0} {
         #errorMsg N "Seeing known package $pName" $i
         return
     }
@@ -4040,15 +4046,23 @@ proc lookForPackageDb {pName i} {
     foreach db $::Nagelfar(allDb) {
         if {$fileName eq $db || $fileName eq [file tail $db]} {
             loadDatabases $db
+            #errorMsg N "Loaded db for package $pName" $i
             set found 1
             break
         }
     }
     if {$found} {
         # Double check if it is marked as known
-        if {[lsearch -exact ::knownPackages $pName] < 0} {
+        if {[lsearch -exact $::knownPackages $pName] < 0} {
             lappend ::knownPackages $pName
-            #errorMsg N "Now package $pName is known" $i
+            if {$::Nagelfar(pkgpicky)} {
+                errorMsg N "Package database for '$pName' not marked as known" \
+                        $i
+            }
+        }
+    } else {
+        if {$::Nagelfar(pkgpicky)} {
+            errorMsg N "No info on package '$pName' found" $i
         }
     }
 }

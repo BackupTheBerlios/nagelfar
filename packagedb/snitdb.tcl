@@ -44,4 +44,4 @@
 ##nagelfar syntax snit::widget::install s x*
 ##nagelfar syntax snit::widget::option x p*
 
-lappend ::knownPackages snit
+##nagelfar package snit

@@ -63,6 +63,7 @@ proc StartUp {} {
     set ::Nagelfar(2pass) 1
     set ::Nagelfar(encoding) system
     set ::Nagelfar(dbpicky) 0
+    set ::Nagelfar(pkgpicky) 0
     set ::Nagelfar(withCtext) 0
     set ::Nagelfar(instrument) 0
     set ::Nagelfar(header) ""
@@ -238,6 +239,9 @@ if {![info exists gurka]} {
             }
             -dbpicky { # A debug thing to help make a more complete database
                 set ::Nagelfar(dbpicky) 1
+            }
+            -pkgpicky { # A debug thing to help make a more complete database
+                set ::Nagelfar(pkgpicky) 1
             }
             -Wexpr* {
                 set ::Prefs(warnBraceExpr) [string range $arg 6 end]

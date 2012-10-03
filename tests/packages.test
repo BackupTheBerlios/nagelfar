@@ -62,7 +62,7 @@ test packages-1.2 {
         $x gugg 5 7
         $x destroy
     }
-    execTestFile
+    execTestFile -flags -pkgpicky
 } -result {%%}
 
 test packages-2.1 {
@@ -99,5 +99,5 @@ test packages-2.3 {
         ini::close $fh
         ini::close $fh miffo
     }
-    execTestFile
+    execTestFile -flags -pkgpicky
 } -result {%%Line   6: E Wrong number of arguments (2) to "ini::close"}

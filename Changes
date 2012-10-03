@@ -1,3 +1,7 @@
+2012-10-04
+ Added inline syntax to make package known.
+ Added -pkgpicky command line for package debug.
+
 2012-10-03
  Autoload package definition on package require
 
