@@ -43,3 +43,5 @@
 ##nagelfar syntax snit::widget::component x
 ##nagelfar syntax snit::widget::install s x*
 ##nagelfar syntax snit::widget::option x p*
+
+lappend ::knownPackages snit

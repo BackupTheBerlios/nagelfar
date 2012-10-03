@@ -1208,6 +1208,10 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
         set syn [lrange $syn 1 end]
 
         SplitToken $token tok tokCount mod
+        # Is it optional and there can't be any optional?
+        if {$mod ne "" && !$anyOptional} {
+            continue
+        }
 	# Basic checks for modifiers
 	switch -- $mod {
 	    "" { # No modifier, and out of arguments, is an error
@@ -1223,10 +1227,6 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
 		}
 	    }
 	}
-        # Is it optional and there can't be any optional?
-        if {$mod ne "" && !$anyOptional} {
-            continue
-        }
 	switch -- $tok {
 	    x - xComm {
                 # xComm is a special token used internally to handle if 0 as
@@ -2513,7 +2513,22 @@ proc parseStatement {statement index knownVarsName} {
             set noConstantCheck 1
 	}
         package { # Special check of "package" command
-            # FIXA, take care of require
+            # Take care of require to autoload package definition
+            if {$argc >= 2 && [lindex $argv 0] eq "require"} {
+                set nameI 1
+                if {[string match "-*" [lindex $argv $nameI]]} {
+                    incr nameI
+                }
+                if {$nameI < $argc} {
+                    if {[lindex $wordstatus $nameI] & 1} {
+                        set pName [lindex $argv $nameI]
+                        lookForPackageDb $pName [lindex $indices $nameI]
+                    } else {
+                        errorMsg N "Non constant package require" \
+                                [lindex $indices $nameI]
+                    }
+                }
+            }
             set type [checkCommand $cmd $index $argv $wordstatus $wordtype \
                               $indices]
         }
@@ -4010,6 +4025,31 @@ proc loadDatabases {{addDb {}}} {
     if {$::Prefs(strictAppend)} {
         set ::syntax(lappend) [string map {n v} $::syntax(lappend)]
         set ::syntax(append) [string map {n v} $::syntax(append)]
+    }
+}
+
+# Look for a database file for a package and load it if found.
+# This is called when a package require is detected
+proc lookForPackageDb {pName i} {
+    if {[lsearch -exact ::knownPackages $pName] >= 0} {
+        #errorMsg N "Seeing known package $pName" $i
+        return
+    }
+    set fileName [string tolower $pName]db.tcl
+    set found 0
+    foreach db $::Nagelfar(allDb) {
+        if {$fileName eq $db || $fileName eq [file tail $db]} {
+            loadDatabases $db
+            set found 1
+            break
+        }
+    }
+    if {$found} {
+        # Double check if it is marked as known
+        if {[lsearch -exact ::knownPackages $pName] < 0} {
+            lappend ::knownPackages $pName
+            #errorMsg N "Now package $pName is known" $i
+        }
     }
 }
 

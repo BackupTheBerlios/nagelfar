@@ -310,6 +310,8 @@ proc buildDb {ch} {
     set syntax(open)            "r 1 3"
     # "package" is handled specially
     set syntax(package)         "s x*" ;# FIXA: All subcommands
+    set syntax(package\ require) "o* x x*"
+    set option(package\ require) "-exact"
     set syntax(pid)             "r 0 1"
     set syntax(proc)            dp
     set syntax(puts)            "1: x : o? x x?"

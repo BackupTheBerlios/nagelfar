@@ -16,3 +16,4 @@ set ::syntax(ini::revert) 1
 set ::syntax(ini::sections) 1
 set ::syntax(ini::set) 4
 set ::syntax(ini::value) {r 3 4}
+lappend ::knownPackages inifile

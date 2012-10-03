@@ -347,6 +347,7 @@ set ::syntax(open) {r 1 3}
 set ::syntax(option) {s x*}
 set ::syntax(pack) {x x*}
 set ::syntax(package) {s x*}
+set {::syntax(package require)} {o* x x*}
 set ::syntax(panedwindow) {x p*}
 set ::syntax(parray) {v x?}
 set ::syntax(pid) {r 0 1}
@@ -917,6 +918,7 @@ set ::option(message) {-anchor -aspect -background -bd -bg -borderwidth -cursor 
 set {::option(message -textvariable)} n
 set {::option(namespace which)} {-variable -command}
 set {::option(namespace which -variable)} v
+set {::option(package require)} -exact
 set ::option(panedwindow) {-background -bd -bg -borderwidth -cursor -handlepad -handlesize -height -opaqueresize -orient -relief -sashcursor -sashpad -sashrelief -sashwidth -showhandle -width}
 set ::option(puts) -nonewline
 set ::option(radiobutton) {-activebackground -activeforeground -anchor -background -bd -bg -bitmap -borderwidth -command -compound -cursor -disabledforeground -fg -font -foreground -height -highlightbackground -highlightcolor -highlightthickness -image -indicatoron -justify -offrelief -overrelief -padx -pady -relief -selectcolor -selectimage -state -takefocus -text -textvariable -tristateimage -tristatevalue -underline -value -variable -width -wraplength}

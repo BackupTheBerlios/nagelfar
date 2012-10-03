@@ -1,4 +1,7 @@
 2012-10-03
+ Autoload package definition on package require
+
+2012-10-03
  Changed to extended select mode in package list, to allow selecting multiple.
  Handle package definitions better in GUI.
  Added definition file for package "inifile"

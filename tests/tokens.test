@@ -472,7 +472,8 @@ test tokens-14.1 {
         gurka -hurga hejsan hoppsan
     }
     execTestFile
-} -result {%%Line  10: E Bad option -hurga to "gurka"}
+} -result {%%Line   4: E Wrong number of arguments (0) to "gurka"
+Line  10: E Bad option -hurga to "gurka"}
 
 test tokens-15.1 {
     Variable list token, nl

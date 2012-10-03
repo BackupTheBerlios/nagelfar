@@ -31,7 +31,39 @@ test packages-1.1 {
         $x destroy
     }
     execTestFile -flags "-s _ -s snitdb.tcl"
-} -result {%%} -match glob
+} -result {%%}
+
+test packages-1.2 {
+    Test with included snit package definition, auto-detect
+} -body {
+    createTestFile {
+        package require snit
+        ##nagelfar syntax apa dc=_obj,apa p*
+        ##nagelfar return apa _obj,apa
+        ##nagelfar option apa -x
+        ##nagelfar option _obj,apa\ configure -x
+
+        ##nagelfar implicitvar snit::type::apa self\ _obj,apa pdf
+
+        snit::type apa {
+            option -x -default 10
+            variable pdf
+            constructor {c d} {
+                puts $c
+            }
+            destructor {
+                list hej $pdf
+            }
+            method gugg {a b} {
+                puts $a
+            }
+        }
+        set x [apa %AUTO% -x 5]
+        $x gugg 5 7
+        $x destroy
+    }
+    execTestFile
+} -result {%%}
 
 test packages-2.1 {
     Test with included inifile package definition
@@ -56,3 +88,16 @@ test packages-2.2 {
     }
     execTestFile -flags "-s _ -s inifiledb.tcl"
 } -result {%%Line   4: E Wrong number of arguments (2) to "ini::commentchar"}
+
+test packages-2.3 {
+    Test with included inifile package definition, through autodetect
+} -body {
+    createTestFile {
+        package require inifile
+        set f apabepa
+        set fh [ini::open $f]
+        ini::close $fh
+        ini::close $fh miffo
+    }
+    execTestFile
+} -result {%%Line   6: E Wrong number of arguments (2) to "ini::close"}
