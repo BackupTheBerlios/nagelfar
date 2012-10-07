@@ -166,6 +166,8 @@ proc buildDb {ch} {
     # e  Expression
     # E  Expression that should be in braces
     # c  Code, checked in surrounding context
+    #    If an integer is added to it, that number of argumenst are added to the
+    #    code to emulate a command prefix. (cg has this too)
     # cg Code, checked in global context
     # cn Code, checked in virtual namespace
     # cl Code, checked in its own local context
@@ -357,6 +359,8 @@ proc buildDb {ch} {
     set syntax(trace)           "s x x*"
     set syntax(trace\ add)      "s x x x"
     set syntax(trace\ add\ command)   "x x c3"
+    # FIXA: The second arg to trace add execution is not a sub command really,
+    # since it allows a list of operations. How to handle this?
     set syntax(trace\ add\ execution) "x s c2"
     set syntax(trace\ add\ execution\ leave) "c4"
     set syntax(trace\ add\ execution\ leavestep) "c4"
@@ -474,6 +478,7 @@ proc buildDb {ch} {
         set syntax(zlib\ inflate)    "x x?"
         set syntax(zlib\ push)       "s x*"
         set syntax(zlib\ stream)     "s x*"
+        lappend ::kP zlib
         set syntax(tcl::prefix)  "s x*"
         set syntax(tcl::prefix\ all)  "x x"
         set syntax(tcl::prefix\ longest)  "x x"
@@ -497,6 +502,7 @@ proc buildDb {ch} {
         set syntax(info\ object) "s x x*"
         set syntax(info\ class)  "s x x*"
         set syntax(oo::copy)     "x x?"
+        lappend ::kP TclOO
 
         # FIXA: all oo::define
         set syntax(oo::define)   "2: x cn : x s x x*"
