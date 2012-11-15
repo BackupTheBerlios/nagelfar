@@ -72,6 +72,7 @@ proc StartUp {} {
     set ::Nagelfar(tabMap) [list \t $::Nagelfar(tabSub)]
     set ::Nagelfar(procs) {}
     set ::Nagelfar(stop) 0
+    set ::Nagelfar(trace) ""
     if {![info exists ::Nagelfar(embedded)]} {
         set ::Nagelfar(embedded) 0
     }
@@ -93,6 +94,50 @@ proc synCheck {fpath dbPath} {
     return $::Nagelfar(chkResult)
 }
 
+# Helper for debug tracer
+# Make a compact string for a command to give a decent output in trace
+proc traceCompactCmd {cmd} {
+    if {[info exists ::memoize_traceCompactCmd($cmd)]} {
+        return $::memoize_traceCompactCmd($cmd)
+    }
+    set res {}
+    foreach elem $cmd {
+        set cut 0
+        set i [string first \n $elem]
+        if {$i >= 0} {
+            set elem [string range $elem 0 [expr {$i - 1}]]\\n
+            set cut 1
+        }
+        if {[string length $elem] > 40} {
+            set elem [string range $elem 0 39]
+            set cut 1
+        }
+        if {$cut} {
+            lappend res $elem...
+        } else {
+            lappend res $elem
+        }
+    }
+    set ::memoize_traceCompactCmd($cmd) $res
+    return $res
+}
+
+# Debug tracer
+proc traceCmd {cmd args} {
+    set cmd [traceCompactCmd $cmd]
+    set what [lindex $args end]
+    set args [lrange $args 0 end-1]
+    set ch [open $::Nagelfar(trace) a]
+    if {$what eq "enter"} {
+        puts $ch "$cmd"
+    } else {
+        foreach {code res} $args break
+        set res [traceCompactCmd [list $res]]
+        puts $ch "$cmd --> $code [lindex $res 0]"
+        #if {[string match splitScript*bin/sh* $cmd]} exit
+    }
+    close $ch
+}
 
 # Global code is only run first time to allow re-sourcing
 if {![info exists gurka]} {
@@ -292,6 +337,11 @@ if {![info exists gurka]} {
                 set files [glob -nocomplain [lindex $argv $i]]
                 set ::Nagelfar(files) [concat $::Nagelfar(files) $files]
             }
+            -trace {
+                # Turn on debug tracer and set its output file name
+                incr i
+                set ::Nagelfar(trace) [lindex $argv $i]
+            }
              -* {
                 puts "Unknown option $arg"
                 usage
@@ -314,6 +364,18 @@ if {![info exists gurka]} {
     if {!$::Nagelfar(gui) && $::tcl_platform(platform) eq "windows" &&
         [package provide Tk] ne ""} {
         set ::Nagelfar(gui) 1
+    }
+
+    if {$::Nagelfar(trace) ne ""} {
+        # Turn on debug tracer and initialise its output file
+        set ch [open $::Nagelfar(trace) w]
+        close $ch
+        foreach cmd [info procs] {
+            # Trace all procedures but those involved in the trace command
+            if {$cmd in {trace proc traceCmd traceCompactCmd set open puts close}} continue
+            trace add execution $cmd enter traceCmd
+            trace add execution $cmd leave traceCmd
+        }
     }
 
     # If there is no file specified, try invoking a GUI
@@ -345,7 +407,7 @@ if {![info exists gurka]} {
     }
 
     doCheck
-
+    
     #_dumplogme
     #if {[array size _stats] > 0} {
     #    array set _apa [array get _stats]
