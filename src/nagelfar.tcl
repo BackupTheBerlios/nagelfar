@@ -2823,10 +2823,11 @@ proc splitScript {script index statementsName indicesName knownVarsName} {
                     reportCommentBrace 0 $closeBraceIx
                 }
                 set closeBraceIndent [wasIndented $closeBraceIx]
-                set startIndent [wasIndented $index]
-                if {$startIndent == $closeBraceIndent && \
-                        $alignedBraceIx == -1} {
-                    set alignedBraceIx $closeBraceIx
+                if {$alignedBraceIx == -1} {
+                    set startIndent [wasIndented $index]
+                    if {$startIndent == $closeBraceIndent} {
+                        set alignedBraceIx $closeBraceIx
+                    }
                 }
             }
 
