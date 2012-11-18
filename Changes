@@ -1,3 +1,6 @@
+2012-11-18
+ Changed inline comment implicitvar to implicitvarns.
+
 2012-10-04
  Include known package information in header file.       
  Added inline syntax to make package known or required.

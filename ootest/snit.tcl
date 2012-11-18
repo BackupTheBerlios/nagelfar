@@ -14,7 +14,7 @@
 ##nagelfar option pdf4tcl::pdf4tcl -file
 ##nagelfar option _obj,pdf4tcl\ configure -file
 
-##nagelfar implicitvar snit::type::pdf4tcl::pdf4tcl self\ _obj,pdf4tcl pdf
+##nagelfar implicitvarns snit::type::pdf4tcl::pdf4tcl self\ _obj,pdf4tcl pdf
 
 snit::type pdf4tcl::pdf4tcl {
     variable pdf

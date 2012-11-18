@@ -290,13 +290,13 @@ test inline-9.2 {
 } -result {%%}
 
 test inline-10.1 {
-    implicitvar
+    implicitvarns
 } -body {
     createTestFile {
         ##nagelfar syntax itcl::class x cn
         ##nagelfar syntax itcl::class::common n x?
         ##nagelfar syntax itcl::class::method x cv
-        ##nagelfar implicitvar itcl::class::test this v1 v2
+        ##nagelfar implicitvarns itcl::class::test this v1 v2
         itcl::class test {
             common v1 0
             common v2 0
@@ -309,15 +309,15 @@ test inline-10.1 {
 } -result {%%Line  10: E Unknown variable "a"}
 
 test inline-10.2 {
-    implicitvar
+    implicitvarns
 } -body {
     createTestFile {
         ##nagelfar syntax itcl::class x cn
         ##nagelfar syntax itcl::class::common n x?
         ##nagelfar syntax itcl::class::method x x cl
         ##nagelfar syntax itcl::class::proc x cv
-        ##nagelfar implicitvar itcl::class::test::proc   apa bepa
-        ##nagelfar implicitvar itcl::class::test::method apa cepa
+        ##nagelfar implicitvarns itcl::class::test::proc   apa bepa
+        ##nagelfar implicitvarns itcl::class::test::method apa cepa
         itcl::class test {
             common apa 0
             method m1 {} {

@@ -113,7 +113,7 @@ test oo-5.1 {
         ##nagelfar option apa -x
         ##nagelfar option _obj,apa\ configure -x
 
-        ##nagelfar implicitvar snit::type::apa self\ _obj,apa pdf
+        ##nagelfar implicitvarns snit::type::apa self\ _obj,apa pdf
 
         snit::type apa {
             option -x -default 10

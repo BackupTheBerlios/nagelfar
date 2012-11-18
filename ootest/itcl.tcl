@@ -19,7 +19,7 @@
 
 # This is the annotation needed for this object definition
 
-##nagelfar implicitvar itcl::class::test this v1 v2
+##nagelfar implicitvarns itcl::class::test this v1 v2
 ##nagelfar syntax test dc=_obj,test
 ##nagelfar return test _obj,test
 
@@ -48,8 +48,8 @@ myobj setv1 x
 ##nagelfar syntax Test dc=_obj,Test
 ##nagelfar return Test _obj,Test
 
-##nagelfar implicitvar itcl::class::Test::proc   c1
-##nagelfar implicitvar itcl::class::Test::method x1 x2 x3 c1
+##nagelfar implicitvarns itcl::class::Test::proc   c1
+##nagelfar implicitvarns itcl::class::Test::method x1 x2 x3 c1
 
 itcl::class Test {
     private variable x1 "1"      ; # Visible in all instance methods
