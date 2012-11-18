@@ -394,8 +394,8 @@ proc buildDb {ch} {
         set syntax(dict\ set)     "n x x*"
         set syntax(dict\ unset)   "n x x*"
         # FIXA: handle this style:
-        set syntax(dict\ update)  "n x x x* c"
-        set syntax(dict\ with)    "n x* c"
+        set syntax(dict\ update)  "l x x x* c"
+        set syntax(dict\ with)    "l x* c"
         set syntax(dict\ for)     "nl x c"
         
         # Initialising incr

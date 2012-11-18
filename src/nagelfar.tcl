@@ -288,6 +288,9 @@ proc checkComment {str index knownVarsName} {
             implicitvarns {
                 set ::implicitVarNs($first) $rest
             }
+            implicitvarcmd {
+                set ::implicitVarCmd($first) $rest
+            }
             return {
                 set ::return($first) $rest
             }
@@ -1882,6 +1885,8 @@ proc parseStatement {statement index knownVarsName} {
     set words [splitStatement $statement $index indices]
     if {[llength $words] == 0} {return}
 
+    addImplicitVariablesCmd [join $words] $index knownVars
+
     if {$::Nagelfar(firstpass)} {
         if {[lindex $words 0] eq "proc"} {
             # OK
@@ -3210,7 +3215,7 @@ proc parseArgsToSyn {name procArgs indexArgs syn knownVarsName} {
     return $newsyntax
 }
 
-# Look for implicit variables
+# Look for implicit variables for the surrounding namespace
 proc addImplicitVariablesNs {cmd index knownVarsName} {
     upvar $knownVarsName knownVars
     set cNs  [currentNamespace]
@@ -3230,6 +3235,24 @@ proc addImplicitVariablesNs {cmd index knownVarsName} {
         set type    [lindex $var 1]
         markVariable $varName 1 "" 1 \
                 $index unknown knownVars type
+    }
+}
+
+# Look for implicit variables for this command
+proc addImplicitVariablesCmd {cmd index knownVarsName} {
+    if {[array size ::implicitVarCmd] == 0} return
+    upvar $knownVarsName knownVars
+    foreach pattern [array names ::implicitVarCmd] {
+        set impVar {}
+        if {[string match $pattern $cmd]} {
+            eval lappend impVar $::implicitVarCmd($pattern)
+        }
+        foreach var $impVar {
+            set varName [lindex $var 0]
+            set type    [lindex $var 1]
+            markVariable $varName 1 "" 1 \
+                    $index unknown knownVars type
+        }
     }
 }
 
@@ -3943,6 +3966,9 @@ proc loadDatabases {{addDb {}}} {
                 implicitvarns {
                     _ipset ::implictVarNs($first) $rest
                 }
+                implicitvarcmd {
+                    _ipset ::implictVarCmd($first) $rest
+                }
                 return {
                     _ipset ::return($first) $rest
                 }
@@ -4018,6 +4044,7 @@ proc loadDatabases {{addDb {}}} {
         # Clean up if we are loading all databases
         catch {unset ::syntax}
         catch {unset ::implicitVarNs}
+        catch {unset ::implicitVarCmd}
         catch {unset ::return}
         catch {unset ::subCmd}
         catch {unset ::option}
@@ -4028,6 +4055,9 @@ proc loadDatabases {{addDb {}}} {
     }
     if {[_iparray exists ::implicitVarNs]} {
         array set ::implicitVarNs [_iparray get ::implicitVarNs]
+    }
+    if {[_iparray exists ::implicitVarCmd]} {
+        array set ::implicitVarCmd [_iparray get ::implicitVarCmd]
     }
     if {[_iparray exists ::return]} {
         array set ::return [_iparray get ::return]
@@ -4127,6 +4157,7 @@ proc doCheck {} {
         array set h_oldoption [array get ::option]
         array set h_oldreturn [array get ::return]
         array set h_oldimplicitvarns [array get ::implicitVarNs]
+        array set h_oldimplicitvarcmd [array get ::implicitVarCmd]
         array set h_oldaliases [array get ::knownAliases]
         set h_oldknownpackages $::knownPackages
     }
@@ -4197,6 +4228,11 @@ proc doCheck {} {
                 unset ::implicitVarNs($item)
             }
         }
+        foreach item [array names h_oldimplicitvarcmd] {
+            if {$h_oldimplicitvarcmd($item) eq $::implicitVarCmd($item)} {
+                unset ::implicitVarCmd($item)
+            }
+        }
         foreach item [array names h_oldaliases] {
             if {$h_oldaliases($item) eq $::knownAliases($item)} {
                 unset ::knownAliases($item)
@@ -4228,6 +4264,9 @@ proc doCheck {} {
             }
             foreach item [lsort -dictionary [array names ::implicitVarNs]] {
                 puts $ch "\#\#nagelfar [list implicitvarns $item] $::implicitVarNs($item)"
+            }
+            foreach item [lsort -dictionary [array names ::implicitVarCmd]] {
+                puts $ch "\#\#nagelfar [list implicitvarcmd $item] $::implicitVarCmd($item)"
             }
             foreach item [lsort -dictionary [array names ::knownAliases]] {
                 puts $ch "\#\#nagelfar [list alias $item] $::knownAliases($item)"

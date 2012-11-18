@@ -341,3 +341,61 @@ test inline-11.1 {
     }
     execTestFile
 } -result {%%Line   3: E Wrong number of arguments (3) to "string length"}
+
+test inline-12.1 {
+    implicitvarcmd
+} -body {
+    createTestFile {
+        ##nagelfar implicitvarcmd {dict with gurka {}} apa bepa cepa
+        proc x {gurka} {
+            list $apa
+            dict with gurka {}
+            list $apa $bepa $cepa
+        }
+    }
+    execTestFile
+} -result {%%Line   4: E Unknown variable "apa"}
+
+test inline-12.2 {
+    implicitvarcmd
+} -body {
+    createTestFile {
+        ##nagelfar implicitvarcmd {dict with *gurka* {}} apa bepa
+        ##nagelfar implicitvarcmd {dict with *tomat* {}} cepa depa
+        proc x {vargurka} {
+            list $apa
+            dict with vargurka {}
+            list $apa $bepa
+        }
+        proc x {sometomat} {
+            list $cepa
+            dict with sometomat {}
+            list $cepa $depa $apa
+        }
+        proc x {sometomatwithgurka} {
+            list $cepa
+            dict with sometomatwithgurka {}
+            list $cepa $depa $apa
+        }
+    }
+    execTestFile
+} -result {%%Line   5: E Unknown variable "apa"
+Line  10: E Unknown variable "cepa"
+Line  12: E Unknown variable "apa"
+Line  15: E Unknown variable "cepa"}
+
+test inline-12.3 {
+    implicitvarcmd, with type
+} -body {
+    createTestFile {
+        ##nagelfar implicitvarcmd {dict with gurka {}} apa bepa\ _obj,frame cepa
+        proc x {gurka} {
+            list $apa
+            dict with gurka {}
+            list $apa $bepa $cepa
+            $bepa configure -fniss hej
+        }
+    }
+    execTestFile
+} -result {%%Line   4: E Unknown variable "apa"
+Line   7: E Bad option -fniss to "_obj,frame configure"}

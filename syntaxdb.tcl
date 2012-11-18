@@ -240,8 +240,8 @@ set {::syntax(dict incr)} {n x x*}
 set {::syntax(dict lappend)} {n x x*}
 set {::syntax(dict set)} {n x x*}
 set {::syntax(dict unset)} {n x x*}
-set {::syntax(dict update)} {n x x x* c}
-set {::syntax(dict with)} {n x* c}
+set {::syntax(dict update)} {l x x x* c}
+set {::syntax(dict with)} {l x* c}
 set ::syntax(encoding) {s x*}
 set {::syntax(encoding convertfrom)} {r 1 2}
 set {::syntax(encoding convertto)} {r 1 2}

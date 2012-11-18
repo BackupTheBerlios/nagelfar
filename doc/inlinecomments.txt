@@ -43,6 +43,21 @@ Example:
 ##nagelfar variable apaName varName
 set hejsan [set $apaName]
 
+<ul>Specifying implicit variables</ul>
+
+##nagelfar implictvarcmd pattern var ?var ...?
+
+Some commands will dynamically create variables that are impossible to
+predict from static checking. By restriciting such usage to a known
+pattern in your code, it can become checkable by this annotation.
+The pattern is a glob pattern applied to any statement encountered and
+if matched will make the listed variables known.
+
+Example:
+##nagelfar implictvarcmd {dict with *Stat {}} name size value
+dict with fileStat {}
+dostuffwith $name $size $value
+
 <ul>Syntax database</ul>
 
 ##nagelfar syntax cmd tokens

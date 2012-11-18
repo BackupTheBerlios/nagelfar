@@ -1,4 +1,8 @@
 2012-11-18
+ Added inline implictvarcmd to handle misc situations where variables come
+ into existance.
+
+2012-11-18
  Changed inline comment implicitvar to implicitvarns.
 
 2012-10-04
