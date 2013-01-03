@@ -4087,7 +4087,7 @@ proc lookForPackageDb {pName i} {
         #errorMsg N "Seeing known package $pName" $i
         return
     }
-    set fileName [string tolower $pName]db.tcl
+    set fileName [string tolower [string map ":: _" $pName]]db.tcl
     set found 0
     foreach db $::Nagelfar(allDb) {
         if {$fileName eq $db || $fileName eq [file tail $db]} {

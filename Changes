@@ -1,3 +1,7 @@
+2013-01-03
+ Added definition file for package "tkdnd"
+ Added definition file for package "vfs::mk4"
+
 2012-11-18
  Added inline implictvarcmd to handle misc situations where variables come
  into existance.

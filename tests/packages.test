@@ -101,3 +101,25 @@ test packages-2.3 {
     }
     execTestFile -flags -pkgpicky
 } -result {%%Line   6: E Wrong number of arguments (2) to "ini::close"}
+
+test packages-3.1 {
+    Test with included tkdnd package definition, through autodetect
+} -body {
+    createTestFile {
+        package require tkdnd
+        dnd bindtarget w x x x
+        dnd cleartarget w x
+    }
+    execTestFile -flags -pkgpicky
+} -result {%%Line   4: E Wrong number of arguments (3) to "dnd cleartarget"}
+
+test packages-4.1 {
+    Test with included vfs::mk4 package definition, through autodetect
+} -body {
+    createTestFile {
+        package require vfs::mk4
+        vfs::unmount x
+        vfs::mk4::Mount x
+    }
+    execTestFile -flags -pkgpicky
+} -result {%%Line   4: E Wrong number of arguments (1) to "vfs::mk4::Mount"}
