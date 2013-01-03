@@ -119,6 +119,10 @@ proc markCmdAsKnown {args} {
 
 # Build a syntax database and write it to a channel
 proc buildDb {ch} {
+    # Allow predefined info to be provided from outside
+    array set syntax [array get ::syntax]
+    array set getSubCmd [array get ::getSubCmd]
+
     set patch [info patchlevel]
     set ver   [package present Tcl]
 
@@ -680,8 +684,8 @@ proc buildDb {ch} {
 
     # subCmd(cmd) contains a list of all allowed subcommands
 
-    # Get subcommands for commands that can't use the standard loop below
-    set subCmd(wm) [getSubCmds wm gurkmeja .]
+    # Get subcommands for commands that can't use the standard below
+    set getSubCmd(wm) "wm gurkmeja ."
 
     # Get subcommands for any commands defining "s"
     foreach cmd [array names syntax] {
@@ -695,7 +699,12 @@ proc buildDb {ch} {
             if {$ci >= 0 && $ci < $oi} {
                 set syn [lrange $syn [expr {$ci + 1}] end]
             }
-            set opts [eval getSubCmds $cmd $syn]
+            if {[info exists getSubCmd($cmd)]} {
+                set cmdToTry $getSubCmd($cmd)
+            } else {
+                set cmdToTry "$cmd $syn"
+            }
+            set opts [eval getSubCmds $cmdToTry]
             if {[llength $opts] > 0} {
                 set subCmd($cmd) $opts
                 #puts "AutoSub: $cmd $subCmd($cmd)"
