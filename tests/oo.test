@@ -105,6 +105,41 @@ test oo-4.1 {
 } -result {%%Line  12: E Unknown variable "depa"}
 
 test oo-5.1 {
+    tcloo, misc
+} -constraints runin86 -body {
+    createTestFile {
+        oo::class create Base {
+            variable apa bepa cepa
+            constructor {n} {
+                set apa $n
+                set bepa $cepa
+            }
+            method id {} {
+                return $apa
+            }
+            # Recognise some keywords
+            expurt Upper
+            class x
+            deletemethod x x
+            export Upper x
+            filter x
+            forward x x x
+            mixin x
+            renamemethod x x
+            self s x
+            superclass gugge
+            unexport x x
+            destructor { }
+
+            method Upper {} {
+
+            }
+        }
+    }
+    execTestFile -s syntaxdb86.tcl
+} -result {%%Line  12: W Unknown command "expurt"}
+
+test oo-6.1 {
     Test with included snit package definition
 } -body {
     createTestFile {

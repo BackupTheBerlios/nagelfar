@@ -491,6 +491,17 @@ proc buildDb {ch} {
         set syntax(oo::class\ create::superclass)  di ;# Define inheritance
         set syntax(oo::class\ create::method) "dm"    ;# Define method 
         set syntax(oo::class\ create::destructor) c
+        set syntax(oo::class\ create::export) x
+        set syntax(oo::class\ create::class) x
+        set syntax(oo::class\ create::deletemethod) "x x*"
+        set syntax(oo::class\ create::export) "x x*"
+        set syntax(oo::class\ create::filter) "o? x*"
+        set syntax(oo::class\ create::forward) "x x x*"
+        set syntax(oo::class\ create::mixin) "o? x*"
+        set syntax(oo::class\ create::renamemethod) "x x"
+        set syntax(oo::class\ create::self) "x*"
+        set syntax(oo::class\ create::unexport) "x x*"
+
         set syntax(_stdclass_oo) "s x*"
         set subCmd(_stdclass_oo) "create new destroy variable"
         set syntax(_stdclass_oo\ create) "dc=_obj,_stdclass_oo x?"
@@ -528,7 +539,7 @@ proc buildDb {ch} {
         # Set up basic checking of self/my
         set syntax(my)           "s x*"
         set syntax(my\ variable) "n*"
-        set syntax(self)         "s?"
+        set syntax(self)         "s"
         lappend ::kC self my
         oo::class create miffo {
             constructor {} {

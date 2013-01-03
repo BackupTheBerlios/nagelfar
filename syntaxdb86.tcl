@@ -369,10 +369,19 @@ set {::syntax(namespace import)} {o* x*}
 set {::syntax(namespace which)} {o* x?}
 set ::syntax(oo::class) {s x*}
 set {::syntax(oo::class create)} {do=_stdclass_oo cn?}
+set {::syntax(oo::class create::class)} x
 set {::syntax(oo::class create::constructor)} dk
+set {::syntax(oo::class create::deletemethod)} {x x*}
 set {::syntax(oo::class create::destructor)} c
+set {::syntax(oo::class create::export)} {x x*}
+set {::syntax(oo::class create::filter)} {o? x*}
+set {::syntax(oo::class create::forward)} {x x x*}
 set {::syntax(oo::class create::method)} dm
+set {::syntax(oo::class create::mixin)} {o? x*}
+set {::syntax(oo::class create::renamemethod)} {x x}
+set {::syntax(oo::class create::self)} x*
 set {::syntax(oo::class create::superclass)} di
+set {::syntax(oo::class create::unexport)} {x x*}
 set ::syntax(oo::copy) {x x?}
 set ::syntax(oo::define) {2: x cn : x s x x*}
 set {::syntax(oo::define constructor)} cv
@@ -425,7 +434,7 @@ set ::syntax(scan) {x x n*}
 set ::syntax(scrollbar) {x p*}
 set ::syntax(seek) {r 2 3}
 set ::syntax(selection) {s x*}
-set ::syntax(self) s?
+set ::syntax(self) s
 set ::syntax(send) {o* x x x*}
 set ::syntax(set) {1: v=scalar : n=scalar x}
 set ::syntax(socket) {r 2}
@@ -1012,6 +1021,8 @@ set ::option(message) {-anchor -aspect -background -bd -bg -borderwidth -cursor 
 set {::option(message -textvariable)} n
 set {::option(namespace which)} {-variable -command}
 set {::option(namespace which -variable)} v
+set {::option(oo::class create::filter)} {create destroy}
+set {::option(oo::class create::mixin)} {create destroy}
 set {::option(package require)} -exact
 set ::option(panedwindow) {-background -bd -bg -borderwidth -cursor -handlepad -handlesize -height -opaqueresize -orient -relief -sashcursor -sashpad -sashrelief -sashwidth -showhandle -width}
 set ::option(puts) -nonewline
