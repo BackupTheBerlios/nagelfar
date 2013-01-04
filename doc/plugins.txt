@@ -1,6 +1,14 @@
 Nagelfar allows you to set up a plugin that can hook up and affect the
 checks in different stages.
 
+A plugin can be used for things like:
+* Enforce local rules
+* Handle checks for custom commands that cannot be handled within Nagelfar's syntax tokens
+* Annotate or ignore constructs in e.g. legacy code that cannot be changed
+* Collect statistics, e.g. a call graph
+
+See further examples below.
+
 <ul>Generic rules</ul>
 
 A plugin is a Tcl script file that must start with the verbatim sequence

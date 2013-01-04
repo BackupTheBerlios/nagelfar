@@ -345,6 +345,29 @@ test plugin-4.2 {
     execTestFile -plugin _testfile_.plugin.tcl
 } -result {%%Line   3: E Wrong number of arguments (2) to "mugg"}
 
+test plugin-4.3 {
+    Plugin for raw statement check
+} -body {
+    createTestFile {##Nagelfar Plugin : Some info
+        proc statementRaw {stmt info} {
+            set res {}
+            # The command "mugg" has a known message
+            if {[string match "mugg *" $stmt]} {
+                lappend res comment
+                lappend res "##nagelfar ignore +0 Unknown subcommand"
+            }
+            return $res
+        }
+    } 2
+    createTestFile {
+        ##nagelfar syntax mugg s x*
+        ##nagelfar subcmd mugg apa bepa cepa
+        mugg depa
+    }
+
+    execTestFile -plugin _testfile_.plugin.tcl
+} -result {%%}
+
 test plugin-5.1 {
     Plugin for words statement check
 } -body {
