@@ -439,6 +439,39 @@ test nagelfar-6.6 {
     execTestFile
 } -result {%%Line   3: N Expr called in expression}
 
+test nagelfar-6.7 {
+    Expression checking, user functions
+} -body {
+    createTestFile {
+        proc tcl::mathfunc::myfun {val} {
+            return $val
+        }
+        set apa 10
+        expr {sin($apa)}
+        expr {myfun($apa)}
+        expr {myfun2($apa)}
+    }
+    execTestFile
+} -result {%%Line   8: W Unknown command "tcl::mathfunc::myfun2"}
+
+test nagelfar-6.8 {
+    Expression checking, user function in namespace
+} -body {
+    createTestFile {
+        proc gurka::tcl::mathfunc::myfun {val} {
+            return $val
+        }
+        set apa 10
+        expr {myfun($apa)}
+        namespace eval gurka {
+            expr {myfun($apa)}
+            expr {myfun2($apa)}
+        }
+    }
+    execTestFile
+} -result {%%Line   6: W Unknown command "tcl::mathfunc::myfun"
+Line   9: W Unknown command "tcl::mathfunc::myfun2"}
+
 test nagelfar-7.1 {
     Command: upvar
 } -body {

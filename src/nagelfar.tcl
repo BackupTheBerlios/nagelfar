@@ -1070,7 +1070,18 @@ proc parseExpr {str index knownVarsName} {
 
     if {[catch [list expr $exp] msg]} {
         regsub {syntax error in expression.*:\s+} $msg {} msg
+        # Divide by zero can happen due to the substitutions above
+        # but should normally not be caused by a syntax error
         if {[string match "*divide by zero*" $msg]} return
+
+        # Invalid command name, look it up...
+        if {[regexp {invalid command name "(.*)"} $msg -> cmdName]} {
+            # FIXA: checking number of arguments to user defined functions?
+            # It would need manual parsing of some kind though
+            lookForCommand $cmdName [currentNamespace] $index
+            return
+        }
+
         errorMsg E "Bad expression: $msg" $index
     }
 }

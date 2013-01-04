@@ -1,4 +1,7 @@
 2013-01-03
+ Handle tcl::mathfunc for user defined functions.
+
+2013-01-03
  Added definition file for package "tkdnd"
  Added definition file for package "vfs::mk4"
 
