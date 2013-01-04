@@ -1,4 +1,7 @@
 2013-01-04
+ Allow line offset in inline filter comments.
+ 
+2013-01-04
  Plugin system added.
 
 2013-01-03

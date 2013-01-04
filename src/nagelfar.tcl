@@ -340,7 +340,14 @@ proc checkComment {str index knownVarsName} {
             filter {
                 # FIXA, syntax for several lines
                 set line [calcLineNo $index]
-                incr line
+                # Allow an offset to ignore a line further down
+                if {[regexp {^\+\d+$} $first]} {
+                    incr line $first
+                    set first [lindex $rest 0]
+                    set rest [lrange $rest 1 end]
+                } else {
+                    incr line
+                }
                 switch -- $first {
                     N { addFilter "*Line* $line: N *[join $rest]*" }
                     W { addFilter "*Line* $line: \[NW\] *[join $rest]*" }
@@ -2243,6 +2250,7 @@ proc parseStatement {statement index knownVarsName} {
                         lappend fVars apaV($fVar)
                         lappend varsAdded $fVar
                     }
+                    ##nagelfar ignore Non constant variable list to foreach
                     foreach $fVars $valList {
                         foreach fVar $varList {
                             ##nagelfar variable apaV
@@ -3785,6 +3793,7 @@ proc dumpInstrumenting {filename} {
     puts $ch [join $init \n]
     puts $ch "\}"
     # More common prolog
+    ##nagelfar ignore +2 Suspicious # char
     puts $ch {
         # Check if there is a stored log
         namespace eval ::_instrument_ {
