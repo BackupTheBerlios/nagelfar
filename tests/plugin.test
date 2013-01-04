@@ -400,6 +400,56 @@ test plugin-5.2 {
     execTestFile -plugin _testfile_.plugin.tcl
 } -result {%%Line   3: E Wrong number of arguments (2) to "mugg"}
 
+test plugin-5.3 {
+    Plugin for words statement check
+} -body {
+    createTestFile {##Nagelfar Plugin : Some info
+        proc statementWords {words info} {
+            set res {}
+            set firstTwo [join [lrange $words 0 1]]
+            # Automatically set the type to avoid the warning
+            if {$firstTwo eq "set \$tempArrayName"} {
+                lappend res comment
+                lappend res "##nagelfar variable tempArrayName varName"
+                return $res
+            }
+            # We are only interested in calls to "set listArgsOptions"
+            if {$firstTwo ne "set listArgsOptions"} {
+                return $res
+            }
+            # Find the variables that will be implicitely set
+            foreach {_ m} [regexp -all -inline {(\w+)\.arg} [lindex $words 2]] {
+                lappend res comment
+                lappend res "##nagelfar variable $m"
+            }
+            return $res
+        }
+    } 2
+    createTestFile {
+        ##nagelfar syntax cmdline::getKnownOptions l x x?
+        ##nagelfar syntax bar x
+        proc foo {args} {
+            set listArgsOptions {
+                {isValid.arg "" "bla bla" "NO_CUSTOMIZE"}
+                {getDefaultValue.arg "" "bla bla" "NO_CUSTOMIZE"}
+            }
+
+            array set listargsParams [::cmdline::getKnownOptions args $listArgsOptions]
+            foreach tempArrayName [array names listargsParams] {
+                set $tempArrayName $listargsParams($tempArrayName)
+            }
+
+            if {$isValid} {
+                return [bar $getDefaultValue]
+            } else {
+                return 0
+            }
+        }
+    }
+
+    execTestFile -plugin _testfile_.plugin.tcl
+} -result {%%}
+
 test plugin-6.1 {
     Plugin finalize
 } -body {
