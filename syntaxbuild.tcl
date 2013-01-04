@@ -458,6 +458,7 @@ proc buildDb {ch} {
         set syntax(chan\ pipe)               0
         set syntax(chan\ pop)                "x"
         set syntax(chan\ push)               "x c"
+        set syntax(dict\ map)                "nl x c"
         set syntax(file\ tempfile)           "n? x?*"
         set syntax(info\ coroutine)          0
         set syntax(interp\ cancel)           "o* x? x?"
@@ -471,6 +472,9 @@ proc buildDb {ch} {
         set special(tailcall) 1
         set special(next) 1
         set syntax(yield)        "x?"
+        set syntax(yieldto)        "x x*"
+        set syntax(lmap) "n x c"
+        #set special(lmap) 1 FIXA
         set syntax(zlib)             "s x*"
         set syntax(zlib\ adler32)    "x x?"
         set syntax(zlib\ compress)   "x x?"
@@ -480,8 +484,14 @@ proc buildDb {ch} {
         set syntax(zlib\ gzip)       "x p*"
         set syntax(zlib\ gunzip)     "x p*"
         set syntax(zlib\ inflate)    "x x?"
-        set syntax(zlib\ push)       "s x*"
+        set syntax(zlib\ push)       "s x p*"
         set syntax(zlib\ stream)     "s x*"
+        set syntax(zlib\ stream\ compress)   "p*"
+        set syntax(zlib\ stream\ decompress) "p*"
+        set syntax(zlib\ stream\ deflate)    "p*"
+        set syntax(zlib\ stream\ gunzip)     "0" ;# No options for gunzip
+        set syntax(zlib\ stream\ gzip)       "p*"
+        set syntax(zlib\ stream\ inflate)    "p*"
         lappend ::kP zlib
         set syntax(tcl::prefix)  "s x*"
         set syntax(tcl::prefix\ all)  "x x"
@@ -699,6 +709,9 @@ proc buildDb {ch} {
             if {$ci >= 0 && $ci < $oi} {
                 set syn [lrange $syn [expr {$ci + 1}] end]
             }
+            # Remove anything optional
+            set syn [lsearch -all -inline -not -regexp $syn {\*$}]
+
             if {[info exists getSubCmd($cmd)]} {
                 set cmdToTry $getSubCmd($cmd)
             } else {
@@ -723,6 +736,8 @@ proc buildDb {ch} {
     set option(fcopy)      [getSubCmds fcopy stdin stdout -gurkmeja x]
     set option(unset)      [list -nocomplain --]
     set option(clock\ format) [getSubCmds clock format 1 -gurkmeja x]
+
+    set option(zlib\ push) [getSubCmds zlib push compress stdout -gurkmeja x]
 
     # Add additonal fconfigure, known for serial channels
     lappend option(fconfigure) -mode -handshake -queue -timeout -ttycontrol -ttystatus -xchar -pollinterval -sysbuffer -lasterror
