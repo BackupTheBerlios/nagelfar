@@ -578,8 +578,8 @@ proc makeWin {} {
 
     .m add cascade -label "Help" -underline 0 -menu .m.help
     menu .m.help
-    foreach label {README Messages {Syntax Databases} {Inline Comments} {Call By Name} {Syntax Tokens} {Code Coverage}} \
-            file {README.txt messages.txt syntaxdatabases.txt inlinecomments.txt call-by-name.txt syntaxtokens.txt codecoverage.txt} {
+    foreach label {README Messages {Syntax Databases} {Inline Comments} {Call By Name} {Syntax Tokens} {Code Coverage} {Plugins}} \
+            file {README.txt messages.txt syntaxdatabases.txt inlinecomments.txt call-by-name.txt syntaxtokens.txt codecoverage.txt plugins.txt} {
         .m.help add command -label $label -command [list makeDocWin $file]
     }
     .m.help add separator

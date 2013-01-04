@@ -1,0 +1,74 @@
+Nagelfar allows you to set up a plugin that can hook up and affect the
+checks in different stages.
+
+<ul>Generic rules</ul>
+
+A plugin is a Tcl script file that must start with the verbatim sequence
+"##Nagelfar Plugin :". A plugin is sourced and used in its own safe
+interpreter and thus have free access to its own global space. Hookup
+points are defined by declaring specifically named procedures as specified
+below, and apart from those, a plugin can define and do whatever within
+the limits of a safe interpreter.
+
+In addition to the standard safe interpreter environment, a plugin has
+access to stdout as well.
+
+<ul>Result of plugin procedures</ul>
+
+Each hookup procedure returns a list with an even number of elements.
+These are interpreted as keyword-value pairs, with the following keywords
+allowed.
+
+replace : The value is used to replace the incoming value for further processing.
+comment : The value is fed throug inline comment parsing to affect surroundings.
+error   : The value produces an error message.
+warning : The value produces a warning message.
+note    : The value produces a note message.
+
+To do nothing, return an empty list.
+
+<ul>Finalizing checking</ul>
+
+proc finalizePlugin {} { }
+
+If this procedure is declared, it is called at the end
+of checking.
+
+The return value from finalizePlugin may only contain messages.
+
+<ul>Information dictionary</ul>
+
+Each hook procedure receives an information dictionary as one argument.
+It currently has at least these elements:
+
+namespace : Current namespace
+caller    : Current procedure
+file      : Current file
+
+<ul>Raw Statement Hook</ul>
+
+proc statementRaw {stmt info} { }
+
+If declared, this receives each statement unparsed.
+
+<ul>Statement Words Hook</ul>
+
+proc statementWords {words info} { }
+
+If declared, this receives each statement split into words but otherwise
+unprocessed/unsubstitued.
+
+<ul>Raw Expression Hook</ul>
+
+proc earlyExpr {exp info} { }
+
+If declared, this receives any expression unparsed.
+
+<ul>Late Expression Hook</ul>
+
+proc lateExpr {exp info} { }
+
+If declared, this receives any expression after all variable or
+command substitutions have been replaced by "${_____}". It is still
+basically the same expression and this allows a handler that
+knows fewer syntax rules.
