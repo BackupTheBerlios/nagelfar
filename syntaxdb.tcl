@@ -230,6 +230,7 @@ set {::syntax(clock scan)} {x p*}
 set {::syntax(clock seconds)} 0
 set ::syntax(close) 1
 set ::syntax(concat) {r 0}
+set ::syntax(console) {r 1}
 set ::syntax(continue) 0
 set ::syntax(destroy) x*
 set ::syntax(dict) {s x*}

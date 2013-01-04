@@ -246,6 +246,7 @@ set {::syntax(clock scan)} {x p*}
 set {::syntax(clock seconds)} 0
 set ::syntax(close) {x x?}
 set ::syntax(concat) {r 0}
+set ::syntax(console) {r 1}
 set ::syntax(continue) 0
 set ::syntax(coroutine) {x x x*}
 set ::syntax(destroy) x*

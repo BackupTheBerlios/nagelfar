@@ -588,7 +588,9 @@ proc buildDb {ch} {
         set syntax(bind)     "x x? cg?"
         set syntax(bindtags) "x x?"
         set syntax(clipboard) "s x*"
+        # console is windows only, but keep it in the db on all platforms
         set syntax(console)  "r 1"
+        set keep(console) 1
         set syntax(destroy)  "x*"
         set syntax(event)    "s x*"
         set syntax(focus)    "o? x?"
@@ -840,7 +842,8 @@ proc buildDb {ch} {
                 set first [lindex [split $i] 0]
                 if {![string match _* $first] && \
                         ![string match *::* $first] && \
-                        [lsearch $::kC $first] == -1} {
+                        [lsearch $::kC $first] == -1 && \
+                        ![info exists keep($first)]} {
                     puts stderr "Skipping ${a}($i) since $i is not known."
                 } else {
                     puts $ch [list set ::${a}($i) $v]
