@@ -21,6 +21,9 @@ the limits of a safe interpreter.
 In addition to the standard safe interpreter environment, a plugin has
 access to stdout as well.
 
+Note that backslash-newline is always removed at an early stage in Nagelfar,
+so when hooks receive "unparsed" data, those have been removed.
+
 <ul>Result of plugin procedures</ul>
 
 Each hookup procedure returns a list with an even number of elements.
@@ -63,8 +66,12 @@ If declared, this receives each statement unparsed.
 
 proc statementWords {words info} { }
 
-If declared, this receives each statement split into words but otherwise
-unprocessed/unsubstituted.
+If declared, this receives each statement split into a list of words but
+otherwise unprocessed/unsubstituted. Things like quotes and braces are left
+in the words.
+
+Many checks can be done in a simple way here since you have direct access to
+the command word and the number of arguments.
 
 <ul>Raw Expression Hook</ul>
 
