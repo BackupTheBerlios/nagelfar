@@ -76,6 +76,8 @@ proc createPluginInterp {plugin} {
     interp hide $pi close
 
     # Set global variables
+    set ::Nagelfar(pluginStatementRaw) [expr {[$pi eval info proc statementRaw] ne ""}]
+    set ::Nagelfar(pluginStatementWords) [expr {[$pi eval info proc statementWords] ne ""}]
     set ::Nagelfar(pluginEarlyExpr) [expr {[$pi eval info proc earlyExpr] ne ""}]
     set ::Nagelfar(pluginLateExpr) [expr {[$pi eval info proc lateExpr] ne ""}]
 
@@ -134,34 +136,66 @@ proc printPlugins {} {
     }
 }
 
-# This is called to let a plugin react to an expression, pre-substitution
-proc pluginHandleEarlyExpr {expName knownVarsName index} {
-    upvar 1 $expName exp $knownVarsName knownVars
-    if {!$::Nagelfar(pluginEarlyExpr)} return
+# Generic handler to call plugin,
+proc PluginHandle {what indata outdataName knownVarsName index} {
+    upvar 1 $outdataName outdata $knownVarsName knownVars
 
-    set x [$::Nagelfar(pluginInterp) eval [list earlyExpr $exp]]
+    set outdata $indata
+    set x [$::Nagelfar(pluginInterp) eval [list $what $indata]]
     if {[catch {llength $x}] || ([llength $x] % 2) != 0} {
-        errorMsg E "Plugin $::Nagelfar(plugin) returned malformed list from earlyExpr" $index
+        errorMsg E "Plugin $::Nagelfar(plugin) returned malformed list from $what" $index
         return
     }
-
     foreach {cmd value} $x {
         switch $cmd {
             replace {
-                set exp $value
+                set outdata $value
             }
             comment {
                 foreach line [split $value \n] {
                     checkComment $line $index knownVars
                 }
             }
-            error {
-                set severity E
-                regexp {^(E|N|W) (.*)$} $value -> severity value
-                errorMsg $severity $value $index
+            error   { errorMsg E $value $index }
+            warning { errorMsg W $value $index }
+            note    { errorMsg N $value $index }
+            default {
+                errorMsg E "Plugin $::Nagelfar(plugin) returned bad keyword '$cmd' from $what" $index
             }
         }
     }
+}
+
+# This is called to let a plugin react to a statement, pre-substitution
+proc pluginHandleStatementRaw {stmtName knownVarsName index} {
+    upvar 1 $stmtName stmt $knownVarsName knownVars
+    if {!$::Nagelfar(pluginStatementRaw)} return
+
+    PluginHandle statementRaw $stmt outdata knownVars $index
+    set stmt $outdata
+}
+
+# This is called to let a plugin react to a statement, pre-substitution
+proc pluginHandleStatementWords {wordsName knownVarsName index} {
+    upvar 1 $wordsName words $knownVarsName knownVars
+    if {!$::Nagelfar(pluginStatementWords)} return
+
+    PluginHandle statementWords $words outdata knownVars $index
+    # A replacement must be a list
+    if {[string is list $outdata]} {
+        set words $outdata
+    } else {
+        errorMsg E "Plugin $::Nagelfar(plugin) returned malformed replacement from statementWords" $index
+    }
+}
+
+# This is called to let a plugin react to an expression, pre-substitution
+proc pluginHandleEarlyExpr {expName knownVarsName index} {
+    upvar 1 $expName exp $knownVarsName knownVars
+    if {!$::Nagelfar(pluginEarlyExpr)} return
+
+    PluginHandle earlyExpr $exp outdata knownVars $index
+    set exp $outdata
 }
 
 # This is called to let a plugin react to an expression, post-substitution
@@ -169,32 +203,12 @@ proc pluginHandleLateExpr {expName knownVarsName index} {
     upvar 1 $expName exp $knownVarsName knownVars
     if {!$::Nagelfar(pluginLateExpr)} return
 
-    set x [$::Nagelfar(pluginInterp) eval [list lateExpr $exp]]
-    if {[catch {llength $x}] || ([llength $x] % 2) != 0} {
-        errorMsg E "Plugin $::Nagelfar(plugin) returned malformed list from lateExpr" $index
-        return
-    }
+    PluginHandle lateExpr $exp outdata knownVars $index
 
-    foreach {cmd value} $x {
-        switch $cmd {
-            replace {
-                # A replacement expression must not have commands in it
-                if {[string first "\[" $value] == -1} {
-                    set exp $value
-                } else {
-                    errorMsg E "Plugin $::Nagelfar(plugin) returned malformed replacement from lateExpr" $index
-                }
-            }
-            comment {
-                foreach line [split $value \n] {
-                    checkComment $line $index knownVars
-                }
-            }
-            error {
-                set severity E
-                regexp {^(E|N|W) (.*)$} $value -> severity value
-                errorMsg $severity $value $index
-            }
-        }
+    # A replacement expression must not have commands in it
+    if {[string first "\[" $outdata] == -1} {
+        set exp $outdata
+    } else {
+        errorMsg E "Plugin $::Nagelfar(plugin) returned malformed replacement from lateExpr" $index
     }
 }

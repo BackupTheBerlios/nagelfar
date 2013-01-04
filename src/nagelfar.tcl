@@ -1910,7 +1910,19 @@ proc lookForCommand {cmd ns index} {
 # Returns the return type of the statement
 proc parseStatement {statement index knownVarsName} {
     upvar $knownVarsName knownVars
+
+    # Allow a plugin to have a look at the statement
+    if {$::Nagelfar(pluginStatementRaw)} {
+        pluginHandleStatementRaw statement knownVars $index
+    }
+
     set words [splitStatement $statement $index indices]
+
+    # Allow a plugin to have a look at the statement words
+    if {$::Nagelfar(pluginStatementWords)} {
+        pluginHandleStatementWords words knownVars $index
+    }
+
     if {[llength $words] == 0} {return}
 
     addImplicitVariablesCmd [join $words] $index knownVars

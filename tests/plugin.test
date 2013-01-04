@@ -185,9 +185,9 @@ test plugin-3.2 {
 } -body {
     createTestFile {##Nagelfar Plugin : Some info
         proc earlyExpr {exp} {
-            # Any expression with an "eq" in it pre-substitution is an error
+            # Any expression with an "eq" in it pre-substitution is a warning
             if {[string match "* eq *" $exp]} {
-                return [list error "Operator \"eq\" is forbidden here"]
+                return [list warning "Operator \"eq\" is unwanted here"]
             }
             return ""
         }
@@ -199,7 +199,7 @@ test plugin-3.2 {
     }
 
     execTestFile -plugin _testfile_.plugin.tcl
-} -result {%%Line   4: E Operator "eq" is forbidden here}
+} -result {%%Line   4: W Operator "eq" is unwanted here}
 
 test plugin-3.3 {
     Plugin for early expr check
@@ -283,3 +283,119 @@ test plugin-3.6 {
 
     execTestFile -plugin _testfile_.plugin.tcl
 } -result {%%Line   4: E Reading "gurka" is forbidden here}
+
+test plugin-4.1 {
+    Plugin for raw statement check
+} -body {
+    createTestFile {##Nagelfar Plugin : Some info
+        proc statementRaw {stmt} {
+            set res {}
+            # The command "mugg" has a side effect
+            if {[string match "mugg *" $stmt]} {
+                lappend res comment
+                lappend res "##nagelfar variable gurka"
+            }
+            return $res
+        }
+    } 2
+    createTestFile {
+        proc mugg {x} {
+            upvar 1 gurka gurka ; set gurka 1 ; return $x
+        }
+        list $gurka
+        set apa [mugg 5]
+        list $gurka
+    }
+
+    execTestFile -plugin _testfile_.plugin.tcl
+} -result {%%Line   5: E Unknown variable "gurka"}
+
+test plugin-4.2 {
+    Plugin for raw statement check
+} -body {
+    createTestFile {##Nagelfar Plugin : Some info
+        proc statementRaw {stmt} {
+            set res {}
+            # We are only interested in calls to "mugg"
+            if {![string match "mugg *" $stmt]} {
+                return $res
+            }
+            # The command "mugg" has varying syntax depending on stuff
+            # Assume that a mugg call is always a valid list
+            if {![string is list $stmt]} {
+                lappend res error 
+                lappend res "mugg calls should be valid lists"
+                return $res
+            }
+            lappend res comment
+            if {[llength $stmt] == 6} {
+                lappend res "##nagelfar syntax mugg x x x x x"
+            } else {
+                lappend res "##nagelfar syntax mugg x"
+            }
+            return $res
+        }
+    } 2
+    createTestFile {
+        set apa [mugg 1]
+        set apa [mugg 1 2]
+        set apa [mugg 1 2 3 4 5]
+    }
+
+    execTestFile -plugin _testfile_.plugin.tcl
+} -result {%%Line   3: E Wrong number of arguments (2) to "mugg"}
+
+test plugin-5.1 {
+    Plugin for words statement check
+} -body {
+    createTestFile {##Nagelfar Plugin : Some info
+        proc statementWords {words} {
+            set res {}
+            # The command "mugg" has a side effect
+            if {[lindex $words 0] eq "mugg"} {
+                lappend res comment
+                lappend res "##nagelfar variable gurka"
+            }
+            return $res
+        }
+    } 2
+    createTestFile {
+        proc mugg {x} {
+            upvar 1 gurka gurka ; set gurka 1 ; return $x
+        }
+        list $gurka
+        set apa [mugg 5]
+        list $gurka
+    }
+
+    execTestFile -plugin _testfile_.plugin.tcl
+} -result {%%Line   5: E Unknown variable "gurka"}
+
+test plugin-5.2 {
+    Plugin for words statement check
+} -body {
+    createTestFile {##Nagelfar Plugin : Some info
+        proc statementWords {words} {
+            set res {}
+            # We are only interested in calls to "mugg"
+            if {[lindex $words 0] ne "mugg"} {
+                return $res
+            }
+            # The command "mugg" has varying syntax depending on stuff
+            lappend res comment
+            if {[llength $words] == 6} {
+                lappend res "##nagelfar syntax mugg x x x x x"
+            } else {
+                lappend res "##nagelfar syntax mugg x"
+            }
+            return $res
+        }
+    } 2
+    createTestFile {
+        set apa [mugg 1]
+        set apa [mugg 1 2]
+        set apa [mugg 1 2 3 4 5]
+    }
+
+    execTestFile -plugin _testfile_.plugin.tcl
+} -result {%%Line   3: E Wrong number of arguments (2) to "mugg"}

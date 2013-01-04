@@ -73,6 +73,8 @@ proc StartUp {} {
     set ::Nagelfar(procs) {}
     set ::Nagelfar(stop) 0
     set ::Nagelfar(trace) ""
+    set ::Nagelfar(pluginStatementRaw) 0
+    set ::Nagelfar(pluginStatementWords) 0
     set ::Nagelfar(pluginEarlyExpr) 0
     set ::Nagelfar(pluginLateExpr) 0
     set ::Nagelfar(pluginInterp) ""
