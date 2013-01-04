@@ -61,6 +61,8 @@ a connection.  There is also a Swedish word "nagelfara" which means
       Tcl's introspection to extract syntax information from any Tcl
       interpreter.  Thus you can test scripts for applications using Tcl as
       script language.</li>
+  <li>Plugins. Even more extendible through plugins that can hook up at certain
+      points in the check flow and do custom checking.</li>
   <li>Severity level filter and glob matching filters to remove errors
       known to be ok.</li>
   <li>View and edit the checked source directly in Nagelfar.</li>
@@ -277,7 +279,7 @@ Line  93: N Close brace not aligned with line 90 (4 0)
 
 <a name="NagelfarDownload"></a><h3>Download</h3>
 
-Version 1.1.12:<br>
+Version 1.2:<br>
 Is available from the
 <a href="https://developer.berlios.de/projects/nagelfar/">Project page</a>
 , including as a Starkit and as Starpacks for Windows, Linux and Solaris.
@@ -288,6 +290,18 @@ More information about <a href="http://wiki.tcl.tk/starkit">Starkits</a>
 and <a href="http://wiki.tcl.tk/starpack">Starpacks</a>.
 
 <a name="NagelfarChanges"></a><h3>Changes</h3>
+Changes in v1.2 (2013-01-04):<br>
+<ul>
+  <li>  Added handling of databases for packages. Databases for a few packages like Snit are included.</li>
+  <li>  Autoload package definition on package require. </li>
+  <li>  New plugin system to allow lots of possibilities.</li>
+  <li>  Handle "dict for" better.</li>
+  <li>  Handle "try" better.</li>
+  <li>  Handle "tcl::mathfunc" better.</li>
+  <li>  Fixed bug where filter pragmas could leak to similar line numbers. [Bug 18486] </li>
+  <li>  Added note for unescaped close braces.</li>
+  <li>  Changed inline comment implicitvar to implicitvarns.</il>
+</ul>
 Changes in v1.1.12 (2011-11-27):<br>
 <ul>
   <li>  Added checks for array/scalar mixup.</li>
