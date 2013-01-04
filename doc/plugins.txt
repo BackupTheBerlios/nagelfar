@@ -20,7 +20,7 @@ These are interpreted as keyword-value pairs, with the following keywords
 allowed.
 
 replace : The value is used to replace the incoming value for further processing.
-comment : The value is fed throug inline comment parsing to affect surroundings.
+comment : The value is fed through inline comment parsing to affect surroundings.
 error   : The value produces an error message.
 warning : The value produces a warning message.
 note    : The value produces a note message.
@@ -56,7 +56,7 @@ If declared, this receives each statement unparsed.
 proc statementWords {words info} { }
 
 If declared, this receives each statement split into words but otherwise
-unprocessed/unsubstitued.
+unprocessed/unsubstituted.
 
 <ul>Raw Expression Hook</ul>
 
@@ -72,3 +72,79 @@ If declared, this receives any expression after all variable or
 command substitutions have been replaced by "${_____}". It is still
 basically the same expression and this allows a handler that
 knows fewer syntax rules.
+
+<ul>Examples</ul>
+
+Here are some examples. Some are somewhat silly from a practical point
+of view but hopefully informative.
+
+##Nagelfar Plugin : Ignore mugg command
+proc statementRaw {stmt info} {
+    set res {}
+    if {[string match "mugg *" $stmt]} {
+        lappend res replace {}
+    }
+    return $res
+}
+
+##Nagelfar Plugin : Handle known side effect
+proc statementWords {words info} {
+    set res {}
+    # The command "mugg" sets a variable in the caller
+    if {[lindex $words 0] eq "mugg"} {
+        lappend res comment
+        lappend res "##nagelfar variable gurka"
+    }
+    return $res
+}
+
+##Nagelfar Plugin : Forbid operator
+proc lateExpr {exp info} {
+    if {[string match "* eq *" $exp]} {
+        return [list error "Operator \"eq\" is forbidden here"]
+    }
+    return {}
+}
+
+##Nagelfar Plugin : Allow custom operator
+proc lateExpr {exp info} {
+    # Just replace it with something further processing recognizes
+    set exp [string map {{ my_cool_bin_op } { eq }} $exp]
+    return [list replace $exp]
+}
+
+##Nagelfar Plugin : Create a call graph
+proc statementWords {words info} {
+    set caller [dict get $info caller]
+    set callee [lindex $words 0]
+    if {$caller ne "" && $callee ne ""} {
+        array set ::callGraph [list "$caller -> $callee" 1]
+    }
+    return
+}
+proc finalizePlugin {} {
+    foreach item [lsort -dictionary [array names ::callGraph]] {
+        puts "Call: $item"
+    }
+    return
+}
+
+##Nagelfar Plugin : Handle special syntax
+proc statementWords {words info} {
+    set res {}
+    # We are only interested in calls to "mugg"
+    if {[lindex $words 0] ne "mugg"} {
+        return $res
+    }
+    # If a command has varying syntax depending on contents it can be handled,
+    # compare e.g. with a complex command like "if".
+    # In this example, only 1 or 5 arguments are allowed, which could
+    # also be expressed directly with the syntax string "1: x : 5"
+    lappend res comment
+    if {[llength $words] == 6} {
+        lappend res "##nagelfar syntax mugg x x x x x"
+    } else {
+        lappend res "##nagelfar syntax mugg x"
+    }
+    return $res
+}
