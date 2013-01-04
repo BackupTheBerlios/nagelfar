@@ -1120,11 +1120,23 @@ Line   3: E Unknown variable "c"}
 
 test nagelfar-28.1 {
     Expression checking, application defined operators
-} -constraints knownbug -body {
+} -body {
+    createTestFile {##Nagelfar Plugin : Some info
+        proc lateExpr {exp info} {
+            # Allow application defined operators
+            set map {
+                { my_cool_bin_op } { eq }
+                {my_cool_un_op } { ! }
+            }
+            set exp [string map $map $exp]
+            return [list replace $exp]
+        }
+    } 2
     createTestFile {
         set apa 10
         expr {$apa my_cool_bin_op $apa}
         expr {$apa my_noncool_bin_op $apa}
+        expr {my_cool_un_op $apa}
     }
-    execTestFile
-} -result {%%}
+    execTestFile -plugin _testfile_.plugin.tcl
+} -match glob -result {%%Line   4: E Bad expression: invalid bareword "my_noncool_bin_op"*}
