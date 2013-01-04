@@ -392,7 +392,7 @@ test nagelfar-6.2.2 {
     }
     execTestFile
 } -result {%%Line   3: E Bad expression: missing operand at _@_
-in expression "1 + ${dummy} /_@_"}
+in expression "1 + ${_____} /_@_"}
 
 test nagelfar-6.3 {
     Expression checking
@@ -1117,3 +1117,14 @@ test nagelfar-27.3 {
     execTestFile -flags "-s syntaxdb86.tcl"
 } -result {%%Line   2: E Unknown variable "z"
 Line   3: E Unknown variable "c"}
+
+test nagelfar-28.1 {
+    Expression checking, application defined operators
+} -constraints knownbug -body {
+    createTestFile {
+        set apa 10
+        expr {$apa my_cool_bin_op $apa}
+        expr {$apa my_noncool_bin_op $apa}
+    }
+    execTestFile
+} -result {%%}

@@ -73,6 +73,10 @@ proc StartUp {} {
     set ::Nagelfar(procs) {}
     set ::Nagelfar(stop) 0
     set ::Nagelfar(trace) ""
+    set ::Nagelfar(pluginEarlyExpr) 0
+    set ::Nagelfar(pluginLateExpr) 0
+    set ::Nagelfar(pluginInterp) ""
+    set ::Nagelfar(plugin) ""
     if {![info exists ::Nagelfar(embedded)]} {
         set ::Nagelfar(embedded) 0
     }
@@ -279,6 +283,21 @@ if {![info exists gurka]} {
                 instrumentMarkup [lindex $::Nagelfar(files) 0]
                 exit
             }
+ 	    -plugin {
+                incr i
+                set arg [lindex $argv $i]
+                set ::Nagelfar(plugin) $arg
+            }
+ 	    -plugindump {
+                incr i
+                set arg [lindex $argv $i]
+                printPlugin $arg
+                exit
+            }
+            -pluginlist {
+                printPlugins
+                exit
+            }
             -novar {
                 set ::Prefs(noVar) 1
             }
@@ -350,6 +369,15 @@ if {![info exists gurka]} {
                 lappend ::Nagelfar(files) $arg
             }
         }
+    }
+    if {$::Nagelfar(plugin) ne ""} {
+        set pinterp [createPluginInterp $::Nagelfar(plugin)]
+        if {$pinterp eq ""} {
+            puts "Bad plugin: $::Nagelfar(plugin)"
+            printPlugins
+            exit 1
+        }
+        set ::Nagelfar(pluginInterp) $pinterp
     }
 
     # Use default database if none were given

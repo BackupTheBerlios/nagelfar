@@ -1000,6 +1000,11 @@ proc parseSubst {str index typeName knownVarsName} {
 proc parseExpr {str index knownVarsName} {
     upvar $knownVarsName knownVars
 
+    # Allow a plugin to have a look at the expression before substitution
+    if {$::Nagelfar(pluginEarlyExpr)} {
+        pluginHandleEarlyExpr str knownVars $index
+    }
+
     # First do a quick check for $ or [
     if {[string first "\$" $str] == -1 && [string first "\[" $str] == -1} {
         set exp $str
@@ -1025,7 +1030,7 @@ proc parseExpr {str index knownVarsName} {
                     if {$c eq "\$"} {
                         incr i
                         parseVar $str $len $index i knownVars
-                        append exp {${dummy}}
+                        append exp {${_____}}
                         continue
                     } elseif {$c eq "\["} {
                         set si $i
@@ -1047,7 +1052,7 @@ proc parseExpr {str index knownVarsName} {
                         }
                         parseBody $body [expr {$index + $si}] knownVars 1
                         incr i
-                        append exp {${dummy}}
+                        append exp {${_____}}
                         continue
                     }
                 }
@@ -1058,9 +1063,14 @@ proc parseExpr {str index knownVarsName} {
         }
     }
 
+    # Allow a plugin to have a look at the expression after substitution
+    if {$::Nagelfar(pluginLateExpr)} {
+        pluginHandleLateExpr exp knownVars $index
+    }
+
     # The above have replaced any variable substitution or command
-    # substitution in the expression by "$dummy"
-    set dummy 1
+    # substitution in the expression by "${_____}"
+    set _____ 1
 
     # This uses [expr] to do the checking which means that the checking
     # can't recognise anything that differs from the Tcl version Nagelfar

@@ -1,0 +1,285 @@
+#------------------------------------------------------------*- tcl -*-
+# Tests for plugins in Nagelfar
+#----------------------------------------------------------------------
+
+test plugin-1.1 {
+    Command line checks
+} -body {
+    createTestFile {
+        # Not a valid plugin
+    } 2
+    createTestFile {
+        set apa $bepa
+    }
+
+    execTestFile -plugin _testfile_.plugin.tcl
+} -returnCodes 1 -result {Bad plugin: _testfile_.plugin.tcl
+No plugins found.}
+
+test plugin-1.2 {
+    Command line checks
+} -body {
+    createTestFile {##Nagelfar Plugin : Some info
+
+    } 2
+    createTestFile {
+        set apa $bepa
+    }
+
+    execTestFile -plugin _testfile_.plugin.tcl
+} -result {%%Line   2: E Unknown variable "bepa"}
+
+test plugin-1.3 {
+    Command line checks
+} -body {
+    createTestFile {##Nagelfar Plugin : Some info
+
+    } 2
+    createTestFile {
+        set apa $bepa
+    }
+
+    execTestFile -plugin _testfile_.plugin2.tcl
+} -returnCodes 1 -result {Bad plugin: _testfile_.plugin2.tcl
+Available plugins:
+Plugin "_testfile_.plugin" :  Some info}
+
+test plugin-1.4 {
+    Command line checks
+} -body {
+    createTestFile {##Nagelfar Plugin : Some info
+
+    } 2
+    createTestFile {
+        set apa $bepa
+    }
+
+    execTestFile -flags -pluginlist
+} -result {Available plugins:
+Plugin "_testfile_.plugin" :  Some info}
+
+test plugin-2.1 {
+    Plugin for late expr check
+} -body {
+    createTestFile {##Nagelfar Plugin : Some info
+        proc lateExpr {exp} {
+            # Any expression with an "a" in it post-substitution is ignored
+            if {[string match *a* $exp]} {
+                return [list replace "1"]
+            }
+            return ""
+        }
+    } 2
+    createTestFile {
+        set apa [expr {1 b 1}]
+        set apa [expr {1 a 1}]
+    }
+
+    execTestFile -plugin _testfile_.plugin.tcl
+} -result {%%Line   2: E Bad expression: invalid bareword "b"*} -match glob
+
+test plugin-2.2 {
+    Plugin for late expr check
+} -body {
+    createTestFile {##Nagelfar Plugin : Some info
+        proc lateExpr {exp} {
+            # Any expression with an "eq" in it post-substitution is an error
+            if {[string match "* eq *" $exp]} {
+                return [list error "Operator \"eq\" is forbidden here"]
+            }
+            return ""
+        }
+    } 2
+    createTestFile {
+        set apa [expr {1 ne 1}]
+        set apa [expr {1 eq 1}]
+    }
+
+    execTestFile -plugin _testfile_.plugin.tcl
+} -result {%%Line   3: E Operator "eq" is forbidden here}
+
+test plugin-2.3 {
+    Plugin for late expr check
+} -body {
+    createTestFile {##Nagelfar Plugin : Some info
+        proc lateExpr {exp} {
+            # Allow application defined operators
+            set exp [string map {{ my_cool_bin_op } { eq }} $exp]
+            return [list replace $exp]
+        }
+    } 2
+    createTestFile {
+        set apa [expr {1 my_cool_bin_op 1}]
+        set apa [expr {1 my_noncool_bin_op 1}]
+    }
+
+    execTestFile -plugin _testfile_.plugin.tcl
+} -match glob -result {%%Line   3: E Bad expression: invalid bareword "my_noncool_bin_op"*}
+
+test plugin-2.4 {
+    Plugin for late expr check
+} -body {
+    createTestFile {##Nagelfar Plugin : Some info
+        proc lateExpr {exp} {
+            set res {}
+            # Any expression with a "mugg" function has a side effect
+            if {[string match "*mugg(*" $exp]} {
+                lappend res comment
+                lappend res "##nagelfar variable gurka"
+            }
+            return $res
+        }
+    } 2
+    createTestFile {
+        proc tcl::mathfunc::mugg {x} {
+            upvar 1 gurka gurka ; set gurka 1 ; return $x
+        }
+        list $gurka
+        set apa [expr {1 + mugg(5)}]
+        list $gurka
+    }
+
+    execTestFile -plugin _testfile_.plugin.tcl
+} -result {%%Line   5: E Unknown variable "gurka"}
+
+test plugin-2.5 {
+    Plugin for late expr check
+} -body {
+    createTestFile {##Nagelfar Plugin : Some info
+        proc lateExpr {exp} {
+            # Try to inject code
+            set exp [string map {{ eq } { eq [exit 1] + }} $exp]
+            return [list replace $exp]
+        }
+    } 2
+    createTestFile {
+        set apa [expr {1 eq 1}]
+        set apa [expr {1 ne 1}]
+    }
+
+    execTestFile -plugin _testfile_.plugin.tcl
+} -result {%%Line   2: E Plugin _testfile_.plugin.tcl returned malformed replacement from lateExpr}
+
+test plugin-3.1 {
+    Plugin for early expr check
+} -body {
+    createTestFile {##Nagelfar Plugin : Some info
+        proc earlyExpr {exp} {
+            # Any expression with an "a" in it pre-substitution is ignored
+            if {[string match *a* $exp]} {
+                return [list replace "1"]
+            }
+            return ""
+        }
+    } 2
+    createTestFile {
+        set apa [expr {1 b 1}]
+        set apa [expr {1 b $apa}]
+    }
+
+    execTestFile -plugin _testfile_.plugin.tcl
+} -result {%%Line   2: E Bad expression: invalid bareword "b"*} -match glob
+
+test plugin-3.2 {
+    Plugin for early expr check
+} -body {
+    createTestFile {##Nagelfar Plugin : Some info
+        proc earlyExpr {exp} {
+            # Any expression with an "eq" in it pre-substitution is an error
+            if {[string match "* eq *" $exp]} {
+                return [list error "Operator \"eq\" is forbidden here"]
+            }
+            return ""
+        }
+    } 2
+    createTestFile {
+        set eq 1
+        set apa [expr {$eq ne 1}]
+        set apa [expr {$eq eq 1}]
+    }
+
+    execTestFile -plugin _testfile_.plugin.tcl
+} -result {%%Line   4: E Operator "eq" is forbidden here}
+
+test plugin-3.3 {
+    Plugin for early expr check
+} -body {
+    createTestFile {##Nagelfar Plugin : Some info
+        proc earlyExpr {exp} {
+            # Allow application defined operators
+            set exp [string map {{ my_cool_bin_op } { eq }} $exp]
+            return [list replace $exp]
+        }
+    } 2
+    createTestFile {
+        set apa [expr {1 my_cool_bin_op 1}]
+        set apa [expr {1 my_noncool_bin_op 1}]
+    }
+
+    execTestFile -plugin _testfile_.plugin.tcl
+} -match glob -result {%%Line   3: E Bad expression: invalid bareword "my_noncool_bin_op"*}
+
+test plugin-3.4 {
+    Plugin for early expr check
+} -body {
+    createTestFile {##Nagelfar Plugin : Some info
+        proc earlyExpr {exp} {
+            set res {}
+            # Any expression with a "mugg" function has a side effect
+            if {[string match "*mugg(*" $exp]} {
+                lappend res comment
+                lappend res "##nagelfar variable gurka"
+            }
+            return $res
+        }
+    } 2
+    createTestFile {
+        proc tcl::mathfunc::mugg {x} {
+            upvar 1 gurka gurka ; set gurka 1 ; return $x
+        }
+        list $gurka
+        set apa [expr {1 + mugg(5)}]
+        list $gurka
+    }
+
+    execTestFile -plugin _testfile_.plugin.tcl
+} -result {%%Line   5: E Unknown variable "gurka"}
+
+test plugin-3.5 {
+    Plugin for early expr check
+} -body {
+    createTestFile {##Nagelfar Plugin : Some info
+        proc earlyExpr {exp} {
+            # Try to inject code, it should not matter
+            set exp [string map {{ eq } { eq [exit 1] + }} $exp]
+            return [list replace $exp]
+        }
+    } 2
+    createTestFile {
+        set apa [expr {1 eq 1}]
+        set apa [expr {1 ne 1}]
+    }
+
+    execTestFile -plugin _testfile_.plugin.tcl
+} -result {%%}
+
+test plugin-3.6 {
+    Plugin for early expr check
+} -body {
+    createTestFile {##Nagelfar Plugin : Some info
+        proc earlyExpr {exp} {
+            # Any expression reading $gurka is an error
+            if {[string match "*\$gurka*" $exp]} {
+                return [list error "Reading \"gurka\" is forbidden here"]
+            }
+            return ""
+        }
+    } 2
+    createTestFile {
+        set gurk 1 ; set gurka 2
+        set apa [expr {$gurk ne 1}]
+        set apa [expr {$gurka eq 1}]
+    }
+
+    execTestFile -plugin _testfile_.plugin.tcl
+} -result {%%Line   4: E Reading "gurka" is forbidden here}

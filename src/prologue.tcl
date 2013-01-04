@@ -31,7 +31,7 @@ set debug 0
 package require Tcl 8.4
 
 package provide app-nagelfar 1.0
-set version "Version 1.1.12+ 2013-01-03"
+set version "Version 1.1.12+ 2013-01-04"
 
 set thisScript [file normalize [file join [pwd] [info script]]]
 set thisDir    [file dirname $thisScript]
@@ -50,7 +50,7 @@ set dbDir      $thisDir
 set docDir     $thisDir/doc
 set libDir     $thisDir/lib
  
-# Search where the script is to be able to place e.g. ctext there.
+# Search where the script is, to be able to place e.g. ctext there.
 if {[info exists ::starkit::topdir]} {
     lappend auto_path [file dirname [file normalize $::starkit::topdir]]
 } else {

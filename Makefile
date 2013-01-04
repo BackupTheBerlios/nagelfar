@@ -63,7 +63,7 @@ setup: links
 #----------------------------------------------------------------
 
 CATFILES = src/prologue.tcl src/nagelfar.tcl src/gui.tcl src/dbbrowser.tcl \
-	src/registry.tcl src/preferences.tcl src/startup.tcl
+	src/registry.tcl src/preferences.tcl src/plugin.tcl src/startup.tcl
 
 
 nagelfar.tcl: $(CATFILES)
