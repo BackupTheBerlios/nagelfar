@@ -400,8 +400,26 @@ test nagelfar-6.3 {
     createTestFile {
         set apa 10
         set bepa 5
-        # This gave a divide by zero error in the first implementation
+        # This gave a divide by zero error in the first implementation,
+        # since all variables are replaced by 1 during expression check
         expr {1 / ($apa - $bepa)}
+        # Different divide by zero scenarios
+        expr {1   / (1.0 - $bepa)}
+        expr {1   / (1   - $bepa)}
+        expr {1.0 / (1.0 - $bepa)}
+        expr {1.0 / (1   - $bepa)}
+        expr {0   / (1.0 - $bepa)}
+        expr {0   / (1   - $bepa)}
+        expr {0.0 / (1.0 - $bepa)}
+        expr {0.0 / (1   - $bepa)}
+        # Other math error scenarios
+        expr {asin($apa + $bepa)}
+        expr {acos($apa + $bepa)}
+        expr {log($apa - $bepa - $bepa)}
+        expr {log10($apa - $bepa - $bepa)}
+        expr {sqrt($apa - $bepa - $bepa)}
+        expr {isqrt($apa - $bepa - $bepa)}
+        expr {pow(-5,-5.5)}
     }
     execTestFile
 } -result {%%}

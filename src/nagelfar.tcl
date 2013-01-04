@@ -1090,6 +1090,9 @@ proc parseExpr {str index knownVarsName} {
         # Divide by zero can happen due to the substitutions above
         # but should normally not be caused by a syntax error
         if {[string match "*divide by zero*" $msg]} return
+        # Another messages that means similar things
+        if {[string match "*square root of negative argument*" $msg]} return
+        if {[string match "*domain error: argument not in valid range*" $msg]} return
 
         # Invalid command name, look it up...
         if {[regexp {invalid command name "(.*)"} $msg -> cmdName]} {
