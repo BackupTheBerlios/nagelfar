@@ -26,15 +26,9 @@
 
 ##nagelfar syntax markVariable x x x x x x n n
 
-# This application uses TkDnd but since the standard database usually
-# do not know about 'dnd', it is included here to avoid false warnings.
+# This application uses some package but since the standard database usually
+# do not know about them, they are included here to avoid false warnings.
 
-##nagelfar syntax dnd s x*
-
-# The "s" above denotes a subcommand, and those can be listed like this.
-
-##nagelfar subcmd dnd bindtarget cleartarget
-
-# Additional syntax can be defined for a subcommand
-
-##nagelfar syntax dnd\ bindtarget 4
+##nagelfar syntax ctext::setHighlightTcl x
+##nagelfar syntax textSearch::enableSearch x p*
+##nagelfar syntax textSearch::searchMenu x
