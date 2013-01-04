@@ -73,12 +73,8 @@ proc StartUp {} {
     set ::Nagelfar(procs) {}
     set ::Nagelfar(stop) 0
     set ::Nagelfar(trace) ""
-    set ::Nagelfar(pluginStatementRaw) 0
-    set ::Nagelfar(pluginStatementWords) 0
-    set ::Nagelfar(pluginEarlyExpr) 0
-    set ::Nagelfar(pluginLateExpr) 0
-    set ::Nagelfar(pluginInterp) ""
     set ::Nagelfar(plugin) ""
+
     if {![info exists ::Nagelfar(embedded)]} {
         set ::Nagelfar(embedded) 0
     }
@@ -96,6 +92,9 @@ proc synCheck {fpath dbPath} {
     set ::Nagelfar(db) [list $dbPath]
     set ::Nagelfar(embedded) 1
     set ::Nagelfar(chkResult) ""
+    # FIXA: Allow control of plugin when embedded?
+    set ::Nagelfar(plugin) ""
+    initPlugin
     doCheck
     return $::Nagelfar(chkResult)
 }
@@ -372,15 +371,9 @@ if {![info exists gurka]} {
             }
         }
     }
-    if {$::Nagelfar(plugin) ne ""} {
-        set pinterp [createPluginInterp $::Nagelfar(plugin)]
-        if {$pinterp eq ""} {
-            puts "Bad plugin: $::Nagelfar(plugin)"
-            printPlugins
-            exit 1
-        }
-        set ::Nagelfar(pluginInterp) $pinterp
-    }
+
+    # Initialise plugin system
+    initPlugin
 
     # Use default database if none were given
     if {[llength $::Nagelfar(db)] == 0} {

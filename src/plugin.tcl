@@ -84,6 +84,55 @@ proc createPluginInterp {plugin} {
     return $pi
 }
 
+proc initPlugin {} {
+    set ::Nagelfar(pluginStatementRaw) 0
+    set ::Nagelfar(pluginStatementWords) 0
+    set ::Nagelfar(pluginEarlyExpr) 0
+    set ::Nagelfar(pluginLateExpr) 0
+    set ::Nagelfar(pluginInterp) ""
+
+    if {$::Nagelfar(plugin) ne ""} {
+        set pinterp [createPluginInterp $::Nagelfar(plugin)]
+        if {$pinterp eq ""} {
+            puts "Bad plugin: $::Nagelfar(plugin)"
+            printPlugins
+            exit 1
+        }
+        set ::Nagelfar(pluginInterp) $pinterp
+    }
+}
+
+proc finalizePlugin {} {
+    if {$::Nagelfar(pluginInterp) ne ""} {
+        set pi $::Nagelfar(pluginInterp)
+        if {[$pi eval info proc finalizePlugin] ne ""} {
+            set x [$pi eval finalizePlugin]
+            if {[catch {llength $x}] || ([llength $x] % 2) != 0} {
+                errorMsg E "Plugin $::Nagelfar(plugin) returned malformed list from finalizePlugin" 0
+            } else {
+                foreach {cmd value} $x {
+                    switch $cmd {
+                        error   { errorMsg E $value 0 }
+                        warning { errorMsg W $value 0 }
+                        note    { errorMsg N $value 0 }
+                        default {
+                            errorMsg E "Plugin $::Nagelfar(plugin) returned bad keyword '$cmd' from finalizePlugin" 0
+                        }
+                    }
+                }
+            }
+        }
+
+        interp delete $::Nagelfar(pluginInterp)
+    }
+
+    set ::Nagelfar(pluginStatementRaw) 0
+    set ::Nagelfar(pluginStatementWords) 0
+    set ::Nagelfar(pluginEarlyExpr) 0
+    set ::Nagelfar(pluginLateExpr) 0
+    set ::Nagelfar(pluginInterp) ""
+}
+
 proc printPlugin {plugin} {
     set src [LocatePlugin $plugin]
     if {$src eq ""} {
@@ -141,11 +190,15 @@ proc PluginHandle {what indata outdataName knownVarsName index} {
     upvar 1 $outdataName outdata $knownVarsName knownVars
 
     set outdata $indata
-    set x [$::Nagelfar(pluginInterp) eval [list $what $indata]]
+    set info [list namespace [currentNamespace] caller [currentProc]]
+
+    set x [$::Nagelfar(pluginInterp) eval [list $what $indata $info]]
+
     if {[catch {llength $x}] || ([llength $x] % 2) != 0} {
         errorMsg E "Plugin $::Nagelfar(plugin) returned malformed list from $what" $index
         return
     }
+
     foreach {cmd value} $x {
         switch $cmd {
             replace {

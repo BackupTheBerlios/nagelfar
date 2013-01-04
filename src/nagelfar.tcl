@@ -4334,4 +4334,5 @@ proc doCheck {} {
         normalCursor
         progressUpdate -1
     }
+    finalizePlugin
 }

@@ -62,7 +62,7 @@ test plugin-2.1 {
     Plugin for late expr check
 } -body {
     createTestFile {##Nagelfar Plugin : Some info
-        proc lateExpr {exp} {
+        proc lateExpr {exp info} {
             # Any expression with an "a" in it post-substitution is ignored
             if {[string match *a* $exp]} {
                 return [list replace "1"]
@@ -82,7 +82,7 @@ test plugin-2.2 {
     Plugin for late expr check
 } -body {
     createTestFile {##Nagelfar Plugin : Some info
-        proc lateExpr {exp} {
+        proc lateExpr {exp info} {
             # Any expression with an "eq" in it post-substitution is an error
             if {[string match "* eq *" $exp]} {
                 return [list error "Operator \"eq\" is forbidden here"]
@@ -102,7 +102,7 @@ test plugin-2.3 {
     Plugin for late expr check
 } -body {
     createTestFile {##Nagelfar Plugin : Some info
-        proc lateExpr {exp} {
+        proc lateExpr {exp info} {
             # Allow application defined operators
             set exp [string map {{ my_cool_bin_op } { eq }} $exp]
             return [list replace $exp]
@@ -120,7 +120,7 @@ test plugin-2.4 {
     Plugin for late expr check
 } -body {
     createTestFile {##Nagelfar Plugin : Some info
-        proc lateExpr {exp} {
+        proc lateExpr {exp info} {
             set res {}
             # Any expression with a "mugg" function has a side effect
             if {[string match "*mugg(*" $exp]} {
@@ -146,7 +146,7 @@ test plugin-2.5 {
     Plugin for late expr check
 } -body {
     createTestFile {##Nagelfar Plugin : Some info
-        proc lateExpr {exp} {
+        proc lateExpr {exp info} {
             # Try to inject code
             set exp [string map {{ eq } { eq [exit 1] + }} $exp]
             return [list replace $exp]
@@ -164,7 +164,7 @@ test plugin-3.1 {
     Plugin for early expr check
 } -body {
     createTestFile {##Nagelfar Plugin : Some info
-        proc earlyExpr {exp} {
+        proc earlyExpr {exp info} {
             # Any expression with an "a" in it pre-substitution is ignored
             if {[string match *a* $exp]} {
                 return [list replace "1"]
@@ -184,7 +184,7 @@ test plugin-3.2 {
     Plugin for early expr check
 } -body {
     createTestFile {##Nagelfar Plugin : Some info
-        proc earlyExpr {exp} {
+        proc earlyExpr {exp info} {
             # Any expression with an "eq" in it pre-substitution is a warning
             if {[string match "* eq *" $exp]} {
                 return [list warning "Operator \"eq\" is unwanted here"]
@@ -205,7 +205,7 @@ test plugin-3.3 {
     Plugin for early expr check
 } -body {
     createTestFile {##Nagelfar Plugin : Some info
-        proc earlyExpr {exp} {
+        proc earlyExpr {exp info} {
             # Allow application defined operators
             set exp [string map {{ my_cool_bin_op } { eq }} $exp]
             return [list replace $exp]
@@ -223,7 +223,7 @@ test plugin-3.4 {
     Plugin for early expr check
 } -body {
     createTestFile {##Nagelfar Plugin : Some info
-        proc earlyExpr {exp} {
+        proc earlyExpr {exp info} {
             set res {}
             # Any expression with a "mugg" function has a side effect
             if {[string match "*mugg(*" $exp]} {
@@ -249,7 +249,7 @@ test plugin-3.5 {
     Plugin for early expr check
 } -body {
     createTestFile {##Nagelfar Plugin : Some info
-        proc earlyExpr {exp} {
+        proc earlyExpr {exp info} {
             # Try to inject code, it should not matter
             set exp [string map {{ eq } { eq [exit 1] + }} $exp]
             return [list replace $exp]
@@ -267,7 +267,7 @@ test plugin-3.6 {
     Plugin for early expr check
 } -body {
     createTestFile {##Nagelfar Plugin : Some info
-        proc earlyExpr {exp} {
+        proc earlyExpr {exp info} {
             # Any expression reading $gurka is an error
             if {[string match "*\$gurka*" $exp]} {
                 return [list error "Reading \"gurka\" is forbidden here"]
@@ -288,7 +288,7 @@ test plugin-4.1 {
     Plugin for raw statement check
 } -body {
     createTestFile {##Nagelfar Plugin : Some info
-        proc statementRaw {stmt} {
+        proc statementRaw {stmt info} {
             set res {}
             # The command "mugg" has a side effect
             if {[string match "mugg *" $stmt]} {
@@ -314,7 +314,7 @@ test plugin-4.2 {
     Plugin for raw statement check
 } -body {
     createTestFile {##Nagelfar Plugin : Some info
-        proc statementRaw {stmt} {
+        proc statementRaw {stmt info} {
             set res {}
             # We are only interested in calls to "mugg"
             if {![string match "mugg *" $stmt]} {
@@ -349,7 +349,7 @@ test plugin-5.1 {
     Plugin for words statement check
 } -body {
     createTestFile {##Nagelfar Plugin : Some info
-        proc statementWords {words} {
+        proc statementWords {words info} {
             set res {}
             # The command "mugg" has a side effect
             if {[lindex $words 0] eq "mugg"} {
@@ -375,7 +375,7 @@ test plugin-5.2 {
     Plugin for words statement check
 } -body {
     createTestFile {##Nagelfar Plugin : Some info
-        proc statementWords {words} {
+        proc statementWords {words info} {
             set res {}
             # We are only interested in calls to "mugg"
             if {[lindex $words 0] ne "mugg"} {
@@ -399,3 +399,37 @@ test plugin-5.2 {
 
     execTestFile -plugin _testfile_.plugin.tcl
 } -result {%%Line   3: E Wrong number of arguments (2) to "mugg"}
+
+test plugin-6.1 {
+    Plugin finalize
+} -body {
+    createTestFile {##Nagelfar Plugin : Create a call graph
+        proc statementWords {words info} {
+            set caller [dict get $info caller]
+            set callee [lindex $words 0]
+            if {$caller ne "" && $callee ne ""} {
+                array set ::callGraph [list "$caller -> $callee" 1]
+            }
+            return
+        }
+        proc finalizePlugin {} {
+            foreach item [lsort -dictionary [array names ::callGraph]] {
+                puts "Call: $item"
+            }
+            return
+        }
+    } 2
+    createTestFile {
+        proc mugg {x} {
+            hugg $x
+        }
+        proc hugg {x} {
+            mugg $x
+            lindex $x 0
+        }
+    }
+
+    execTestFile -plugin _testfile_.plugin.tcl
+} -result {%%Call: hugg -> lindex
+Call: hugg -> mugg
+Call: mugg -> hugg}
