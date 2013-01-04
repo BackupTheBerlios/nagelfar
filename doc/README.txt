@@ -72,6 +72,17 @@ You can then check file1 and get it to recognise procs from file2 too:
 nagelfar.tcl \u003cout-file\u003e \u003cfile1\u003e
 
 
+PACKAGE DATABASES
+
+A few syntax databases are included in the packagedb directory, and
+more can be added by a user to automatically handle packages.
+
+For example, if "package require snit" is encountered in the checked code,
+Nagelfar looks for the file "snitdb.tcl" in the packagedb directly.
+The file is always lower case and and "::" in the package names is replaced
+with "_".
+
+
 TODO
 
 The database in syntaxbuild is far from complete when it comes to subcommands.
@@ -80,8 +91,6 @@ Handle e.g. -textvariable
 Handle namespaces and qualified vars better
 Everything marked FIXA
 Tidy up code structure. Things are getting messy.
-A standardized way to handle databases for packages, and loading
-them when package require is seen.
 Handle namespace import if the namespace is known e.g. from a package db.
 Maybe places where a constant list is expected (e.g. foreach {a b} ...)
 should be able to recognise [list a b] as a constant list.

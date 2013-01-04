@@ -89,3 +89,15 @@ Copy syntax from command
 
 For more examples, use the database browser to see how the comments
 would look like for the commands known in the database.
+
+<ul>Package handling</ul>
+
+To mark a package as known, use the following. Any subsequent
+package require for this package will assume it is already there.
+
+##nagelfar package known snit
+
+To trigger loading of a package database, use the following. It
+is equivalent to encountering the same package require in the code.
+
+##nagelfar package require snit
