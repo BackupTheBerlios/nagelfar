@@ -48,6 +48,9 @@ if 1 { # Not working yet?
             # Assume lowercase-convention for public commands
             set exports [list {[a-z]*}]
         }
+        if {[info exists ::syntaxbuild_allnamespace]} {
+            set exports [list *]
+        }
         foreach pat $exports {
             foreach p [info commands ${ns}::$pat] {
                 # Do not include the first :: in the name
