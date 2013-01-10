@@ -462,7 +462,7 @@ proc buildDb {ch} {
         set syntax(chan\ pop)                "x"
         set syntax(chan\ push)               "x c"
         set syntax(dict\ map)                "nl x c"
-        set syntax(file\ tempfile)           "n? x?*"
+        set syntax(file\ tempfile)           "n? x?"
         set syntax(info\ coroutine)          0
         set syntax(interp\ cancel)           "o* x? x?"
         # New commands

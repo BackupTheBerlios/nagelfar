@@ -306,7 +306,7 @@ set {::syntax(file split)} x
 set {::syntax(file stat)} {x n}
 set {::syntax(file system)} x
 set {::syntax(file tail)} x
-set {::syntax(file tempfile)} {n? x?*}
+set {::syntax(file tempfile)} {n? x?}
 set {::syntax(file type)} x
 set {::syntax(file volumes)} 0
 set {::syntax(file writable)} x
