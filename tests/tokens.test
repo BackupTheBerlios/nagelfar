@@ -516,3 +516,56 @@ test tokens-15.3 {
 } -result {%%Line   3: N Non constant variable list.
 Line   4: E Unknown variable "apa"}
 
+test tokens-16.1 {
+    Token with type
+} -body {
+    createTestFile {
+        ##nagelfar syntax _obj,apa x x
+        ##nagelfar syntax bepa x(_obj,apa)
+        
+        proc bepa {h} {
+            $h x y z
+        }
+    }
+    execTestFile
+} -result {%%Line   6: E Wrong number of arguments (3) to "_obj,apa"}
+
+test tokens-16.2 {
+    Token with type, optional
+} -body {
+    createTestFile {
+        ##nagelfar syntax _obj,apa x x
+        ##nagelfar syntax bepa x x(_obj,apa)?
+        
+        proc bepa {a {h ""}} {
+            $h x y z
+        }
+        bepa x
+        bepa x y 
+        bepa x y z
+    }
+    execTestFile
+} -result {%%Line   6: E Wrong number of arguments (3) to "_obj,apa"
+Line  10: E Wrong number of arguments (3) to "bepa"}
+
+test tokens-16.3 {
+    Token with type, optional
+} -body {
+    createTestFile {
+        ##nagelfar syntax _obj,apa x x
+        ##nagelfar syntax _obj,qupa x x x
+        ##nagelfar syntax bepa x x(_obj,apa)? x(_obj,qupa)?
+        
+        proc bepa {a {h ""} {i ""}} {
+            $h x y z
+            $i x y
+        }
+        bepa x
+        bepa x y 
+        bepa x y z
+        bepa x y z q
+    }
+    execTestFile
+} -result {%%Line   7: E Wrong number of arguments (3) to "_obj,apa"
+Line   8: E Wrong number of arguments (2) to "_obj,qupa"
+Line  13: E Wrong number of arguments (4) to "bepa"}

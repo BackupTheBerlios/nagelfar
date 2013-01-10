@@ -1149,13 +1149,16 @@ proc WA {{debug {}}} {
     }
 }
 
-proc SplitToken {token tokName tokCountName modName} {
-    upvar 1 $tokName tok $tokCountName tokCount $modName mod
+proc SplitToken {token tokName tokCountName typeName modName} {
+    upvar 1 $tokName tok $tokCountName tokCount $typeName type $modName mod
     set mod ""
     set tokCount ""
+    set type ""
     set tok _baad_
     # Type in parenthesis
-    if {[regexp {^(\w+)\(.*\)$} $token -> tok]} return
+    if {[regexp {^(\w+)\((.*)\)$} $token -> tok type]} return
+    # Type in parenthesis, with modifier
+    if {[regexp {^(\w+)\((.*)\)(\W.*)$} $token -> tok type mod]} return
     # Normal format
     if {[regexp {^(\w+?)(\d*)(\W.*)?$} $token -> tok tokCount mod]} return
     #echo "Unsupported token $token in syntax for $cmd"
@@ -1252,7 +1255,7 @@ proc checkCommand {cmd index argv wordstatus wordtype indices {firsti 0}} {
         set token [lindex $syn 0]
         set syn [lrange $syn 1 end]
 
-        SplitToken $token tok tokCount mod
+        SplitToken $token tok tokCount _ mod
         # Is it optional and there can't be any optional?
         if {$mod ne "" && !$anyOptional} {
             continue
@@ -3123,7 +3126,8 @@ proc parseArgs {procArgs indexArgs syn knownVarsName} {
         set knownVars(known,$var) 1
         set knownVars(local,$var) 1
         set knownVars(set,$var)   1
-        if {[regexp {\((.*)\)} [lindex $syn $i] -> type]} {
+        SplitToken [lindex $syn $i] _ _ type _
+        if {$type ne ""} {
             set knownVars(type,$var)  $type
         } else {
             set knownVars(type,$var)  ""
@@ -3217,7 +3221,7 @@ proc parseArgsToSyn {name procArgs indexArgs syn knownVarsName} {
             }
         } else {
             foreach token $syn {
-                SplitToken $token tok tokCount mod
+                SplitToken $token tok tokCount _ mod
                 set n [expr {$tok == "p" ? 2 : 1}]
                 if {$mod == ""} {
                     incr prevmin $n
