@@ -4061,7 +4061,7 @@ proc loadDatabases {{addDb {}}} {
         eval lappend ::knownGlobals [_ipset ::knownGlobals]
     }
     if {[_ipexists ::knownCommands]} {
-        eval lappend ::knownCommands [_ipset ::knownCommands]
+        eval [linsert [_ipset ::knownCommands] 0 lappend "::knownCommands"] 
     }
     if {[_ipexists ::knownPackages]} {
         eval lappend ::knownPackages [_ipset ::knownPackages]

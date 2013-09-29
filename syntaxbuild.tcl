@@ -835,7 +835,7 @@ proc buildDb {ch} {
     puts $ch [list lappend ::dbInfo $dbstring]
     puts $ch [list set ::dbTclVersion $::tcl_version]
     puts $ch [list set ::knownGlobals [lsort $::kG]]
-    puts $ch [list set ::knownCommands [lsort $::kC]]
+    puts $ch [list set ::knownCommands \n[join [lsort $::kC] \n]\n]
     puts $ch [list set ::knownPackages [lsort $::kP]]
 
     foreach a {syntax return subCmd option} {
