@@ -1635,6 +1635,8 @@ set {::option(string map)} -nocase
 set {::option(string match)} -nocase
 set ::option(subst) {-nobackslashes -nocommands -novariables}
 set ::option(switch) {-- -exact -glob -indexvar -matchvar -nocase -regexp}
+set {::option(switch -indexvar)} x
+set {::option(switch -matchvar)} x
 set {::option(tcl::prefix match)} {-error -exact -message}
 set {::option(tcl::prefix match -error)} x
 set {::option(tcl::prefix match -message)} x
