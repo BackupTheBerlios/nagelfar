@@ -433,6 +433,8 @@ proc buildDb {ch} {
         set syntax(apply)      "x x*"
         set syntax(source)     "p* x"
         set option(interp\ invokehidden\ -namespace) 1
+        set option(switch\ -matchvar) x
+        set option(switch\ -indexvar) x
     }
 
     # Things added in 8.6
